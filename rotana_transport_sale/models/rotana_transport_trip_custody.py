@@ -1,0 +1,599 @@
+# -*- coding: utf-8 -*-
+"""عهدة رحلة النقل (rotana.transport.trip.custody).
+
+دورة العهدة:
+    مسودة -> مؤكدة -> مدفوعة -> منتهية
+
+- تأكيد   : قيد يومية  (حساب العهدة مدين / ذمم السائق الدائنة دائن).
+- دفع     : دفعة مورد قياسية للسائق تُسجَّل على قيد التأكيد، وتنتقل العهدة
+            إلى (مدفوعة) تلقائياً عند تسوية الدفعة بالكامل.
+- إنهاء   : قيد يومية (المصروفات مدين، موزعة تحليلياً على حساب الرحلة /
+            حساب العهدة دائن) بإجمالي سطور المصروفات الفعلية.
+- الفرق   : إن اختلف المصروف عن العهدة يظهر زر دفعية للسائق أو عليه.
+- الإلغاء : حذف القيود والدفعات وإعادة العهدة إلى مسودة.
+"""
+from odoo import Command, _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+
+CUSTODY_STATES = [
+    ('draft', 'مسودة'),
+    ('confirmed', 'مؤكدة'),
+    ('paid', 'مدفوعة'),
+    ('done', 'منتهية'),
+]
+
+
+class RotanaTransportTripCustody(models.Model):
+    _name = 'rotana.transport.trip.custody'
+    _description = 'عهدة رحلة النقل'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'id desc'
+
+    name = fields.Char(
+        string='رقم العهدة',
+        default=lambda self: _('جديد'),
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    state = fields.Selection(
+        CUSTODY_STATES,
+        string='الحالة',
+        default='draft',
+        required=True,
+        readonly=True,
+        copy=False,
+        tracking=True,
+        index=True,
+    )
+    trip_id = fields.Many2one(
+        'rotana.transport.trip',
+        string='الرحلة',
+        required=True,
+        ondelete='restrict',
+        tracking=True,
+        index=True,
+    )
+    sale_order_id = fields.Many2one(
+        related='trip_id.sale_order_id',
+        string='أمر البيع',
+    )
+    vehicle_id = fields.Many2one(
+        related='trip_id.vehicle_id',
+        string='المركبة',
+    )
+    partner_id = fields.Many2one(
+        'res.partner',
+        string='السائق',
+        compute='_compute_partner_id',
+        store=True,
+        readonly=False,
+        required=True,
+        tracking=True,
+    )
+    date = fields.Date(
+        string='التاريخ',
+        default=fields.Date.context_today,
+        required=True,
+    )
+    company_id = fields.Many2one(
+        'res.company',
+        string='الشركة',
+        default=lambda self: self.env.company,
+        required=True,
+        index=True,
+    )
+    currency_id = fields.Many2one(
+        related='company_id.currency_id',
+        string='العملة',
+    )
+    amount = fields.Monetary(
+        string='مبلغ العهدة',
+        required=True,
+        tracking=True,
+    )
+    line_ids = fields.One2many(
+        'rotana.transport.trip.custody.line',
+        'custody_id',
+        string='سطور التصفية',
+    )
+    spent_amount = fields.Monetary(
+        string='إجمالي المصروف',
+        compute='_compute_amounts',
+        store=True,
+    )
+    difference_amount = fields.Monetary(
+        string='فرق التصفية',
+        compute='_compute_amounts',
+        store=True,
+        help='مبلغ العهدة - إجمالي المصروف. الموجب: على السائق، السالب: للسائق.',
+    )
+    remaining_amount = fields.Monetary(
+        string='المتبقي بعد الدفعات',
+        compute='_compute_remaining',
+        help='الفرق بعد خصم دفعيات التسوية المرحّلة.',
+    )
+    settle_direction = fields.Selection(
+        [('inbound', 'على السائق'), ('outbound', 'للسائق')],
+        string='اتجاه التسوية',
+        compute='_compute_remaining',
+    )
+    confirm_move_id = fields.Many2one(
+        'account.move',
+        string='قيد التأكيد',
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    done_move_id = fields.Many2one(
+        'account.move',
+        string='قيد التصفية',
+        readonly=True,
+        copy=False,
+    )
+    payment_ids = fields.One2many(
+        'account.payment',
+        'custody_id',
+        string='الدفعات',
+    )
+    notes = fields.Text(string='ملاحظات')
+
+    # ==============================
+    # الحقول المحسوبة
+    # ==============================
+
+    @api.depends('trip_id.driver_id')
+    def _compute_partner_id(self):
+        for custody in self:
+            custody.partner_id = custody.trip_id.driver_id
+
+    @api.depends('amount', 'line_ids.amount')
+    def _compute_amounts(self):
+        for custody in self:
+            spent = sum(custody.line_ids.mapped('amount'))
+            custody.spent_amount = spent
+            custody.difference_amount = custody.amount - spent
+
+    @api.depends(
+        'state', 'amount', 'spent_amount',
+        'payment_ids.state', 'payment_ids.amount',
+        'payment_ids.payment_type', 'payment_ids.is_custody_settlement',
+    )
+    def _compute_remaining(self):
+        for custody in self:
+            remaining = 0.0
+            if custody.state == 'done':
+                remaining = custody.amount - custody.spent_amount
+                settled = custody.payment_ids.filtered(
+                    lambda pay: pay.is_custody_settlement
+                    and pay.state in ('in_process', 'paid')
+                )
+                for pay in settled:
+                    # دفعية للسائق تقلل ما له، ودفعية منه تقلل ما عليه
+                    remaining += pay.amount if pay.payment_type == 'outbound' else -pay.amount
+            currency = custody.currency_id
+            if currency:
+                remaining = currency.round(remaining)
+            custody.remaining_amount = remaining
+            if currency and currency.is_zero(remaining):
+                custody.settle_direction = False
+            else:
+                custody.settle_direction = 'inbound' if remaining > 0 else 'outbound'
+
+    @api.constrains('amount')
+    def _check_amount(self):
+        for custody in self:
+            if custody.amount <= 0:
+                raise ValidationError(_('مبلغ العهدة يجب أن يكون أكبر من صفر.'))
+
+    # ==============================
+    # دورة الحياة
+    # ==============================
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('name') or vals['name'] == _('جديد'):
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'rotana.transport.trip.custody'
+                ) or _('جديد')
+        return super().create(vals_list)
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_not_draft(self):
+        if any(custody.state != 'draft' for custody in self):
+            raise UserError(_(
+                'لا يمكن حذف عهدة غير مسودة. استخدم (إلغاء وإعادة لمسودة) أولاً.'
+            ))
+
+    # ==============================
+    # مساعدات
+    # ==============================
+
+    def _get_custody_settings(self):
+        """حساب العهدة ودفتر اليومية من إعدادات الشركة."""
+        self.ensure_one()
+        company = self.company_id
+        account = company.custody_account_id
+        journal = company.custody_journal_id
+        if not account or not journal:
+            raise UserError(_(
+                'حدّد حساب العهدة ودفتر يومية العهد في إعدادات نقل روتانا (العهد المالية).'
+            ))
+        if account.account_type != 'asset_receivable':
+            raise UserError(_(
+                'حساب العهدة يجب أن يكون من نوع (مدينة / Receivable) '
+                'ليعمل مع الدفعات والتسوية القياسية.'
+            ))
+        return account, journal
+
+    def _get_move_label(self):
+        self.ensure_one()
+        return _(
+            'عهدة %(name)s - رحلة %(trip)s',
+            name=self.name,
+            trip=self.trip_id.manifest_number,
+        )
+
+    # ==============================
+    # الأزرار
+    # ==============================
+
+    def action_confirm(self):
+        """تأكيد: قيد (العهدة مدين / ذمم السائق الدائنة دائن)."""
+        for custody in self:
+            if custody.state != 'draft':
+                raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.name))
+            account, journal = custody._get_custody_settings()
+            payable = custody.partner_id.with_company(
+                custody.company_id
+            ).property_account_payable_id
+            if not payable:
+                raise UserError(_(
+                    'لا يوجد حساب ذمم دائنة للسائق %s.', custody.partner_id.display_name
+                ))
+            label = custody._get_move_label()
+            move = self.env['account.move'].create({
+                'move_type': 'entry',
+                'journal_id': journal.id,
+                'company_id': custody.company_id.id,
+                'date': custody.date,
+                'ref': custody.name,
+                'line_ids': [
+                    Command.create({
+                        'account_id': account.id,
+                        'partner_id': custody.partner_id.id,
+                        'name': label,
+                        'debit': custody.amount,
+                        'credit': 0.0,
+                    }),
+                    Command.create({
+                        'account_id': payable.id,
+                        'partner_id': custody.partner_id.id,
+                        'name': label,
+                        'debit': 0.0,
+                        'credit': custody.amount,
+                    }),
+                ],
+            })
+            move.action_post()
+            custody.write({'confirm_move_id': move.id, 'state': 'confirmed'})
+        return True
+
+    def action_register_payment(self):
+        """فتح معالج الدفعات القياسي على سطر الذمم الدائنة في قيد التأكيد."""
+        self.ensure_one()
+        if self.state != 'confirmed':
+            raise UserError(_('تسجيل الدفعة متاح للعهدة المؤكدة فقط.'))
+        payable_line = self.confirm_move_id.line_ids.filtered(
+            lambda line: line.account_id.account_type == 'liability_payable'
+        )
+        return {
+            'name': _('تسجيل دفعة للسائق'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment.register',
+            'view_mode': 'form',
+            'views': [[False, 'form']],
+            'target': 'new',
+            'context': {
+                'active_model': 'account.move.line',
+                'active_ids': payable_line.ids,
+                'dont_redirect_to_payments': True,
+            },
+        }
+
+    def _update_advance_payment(self):
+        """يُستدعى بعد أي تسوية على قيد التأكيد: ربط الدفعات وتحويل الحالة لمدفوعة."""
+        for custody in self.filtered(
+            lambda c: c.state in ('confirmed', 'paid') and c.confirm_move_id
+        ):
+            payable_line = custody.confirm_move_id.line_ids.filtered(
+                lambda line: line.account_id.account_type == 'liability_payable'
+            )
+            payments = payable_line.matched_debit_ids.debit_move_id.payment_id
+            payments.filtered(lambda pay: not pay.custody_id).write(
+                {'custody_id': custody.id}
+            )
+            if custody.state == 'confirmed' and payable_line and payable_line.reconciled:
+                custody.state = 'paid'
+
+    def action_done(self):
+        """إنهاء: قيد (المصروفات مدين موزعة تحليلياً / العهدة دائن) بإجمالي السطور."""
+        for custody in self:
+            if custody.state != 'paid':
+                raise UserError(_('إنهاء العهدة %s متاح للعهدة المدفوعة فقط.', custody.name))
+            if not custody.line_ids:
+                raise UserError(_('أضف سطور المصروفات الفعلية قبل الإنهاء.'))
+            analytic = custody.trip_id.account_analytic_id
+            if not analytic:
+                raise UserError(_(
+                    'الرحلة %s ليس لها حساب تحليلي (يُنشأ عند تأكيد الرحلة).',
+                    custody.trip_id.manifest_number,
+                ))
+            account, journal = custody._get_custody_settings()
+            partner = custody.partner_id
+            move_lines = []
+            for line in custody.line_ids:
+                expense = line.product_id.product_tmpl_id.with_company(
+                    custody.company_id
+                )._get_product_accounts()['expense']
+                if not expense:
+                    raise UserError(_(
+                        'لا يوجد حساب مصروف للمنتج %s (على المنتج أو فئته).',
+                        line.product_id.display_name,
+                    ))
+                move_lines.append(Command.create({
+                    'account_id': expense.id,
+                    'partner_id': partner.id,
+                    'name': line.name or line.product_id.display_name,
+                    'debit': line.amount,
+                    'credit': 0.0,
+                    'analytic_distribution': {str(analytic.id): 100},
+                }))
+            move_lines.append(Command.create({
+                'account_id': account.id,
+                'partner_id': partner.id,
+                'name': custody._get_move_label(),
+                'debit': 0.0,
+                'credit': custody.spent_amount,
+            }))
+            move = self.env['account.move'].create({
+                'move_type': 'entry',
+                'journal_id': journal.id,
+                'company_id': custody.company_id.id,
+                'date': fields.Date.context_today(custody),
+                'ref': custody.name,
+                'line_ids': move_lines,
+            })
+            move.action_post()
+            custody.write({'done_move_id': move.id, 'state': 'done'})
+            custody._reconcile_custody_lines()
+        return True
+
+    def action_settlement_payment(self):
+        """دفعية فرق التصفية: للسائق (إن زاد المصروف) أو عليه (إن زادت العهدة)."""
+        self.ensure_one()
+        if self.state != 'done' or not self.settle_direction:
+            raise UserError(_('لا يوجد فرق تصفية مفتوح لهذه العهدة.'))
+        draft = self.payment_ids.filtered(
+            lambda pay: pay.is_custody_settlement and pay.state == 'draft'
+        )
+        payment = draft[:1] or self.env['account.payment'].create({
+            'payment_type': self.settle_direction,
+            'partner_type': 'customer',
+            'partner_id': self.partner_id.id,
+            'amount': abs(self.remaining_amount),
+            'currency_id': self.currency_id.id,
+            'company_id': self.company_id.id,
+            'memo': _('تسوية عهدة %s', self.name),
+            'custody_id': self.id,
+            'is_custody_settlement': True,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'res_id': payment.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+        }
+
+    def _reconcile_custody_lines(self):
+        """تسوية سطور حساب العهدة (قيد التأكيد مع قيد التصفية ودفعيات التسوية)."""
+        for custody in self:
+            account = custody.company_id.custody_account_id
+            if not account or not account.reconcile:
+                continue
+            moves = (
+                custody.confirm_move_id
+                | custody.done_move_id
+                | custody.payment_ids.filtered('is_custody_settlement').move_id
+            )
+            lines = moves.line_ids.filtered(
+                lambda line: line.account_id == account
+                and not line.reconciled
+                and line.parent_state == 'posted'
+            )
+            if len(lines) > 1:
+                try:
+                    with self.env.cr.savepoint():
+                        lines.reconcile()
+                except UserError:
+                    # تسوية القيود اختيارية ولا تمنع إكمال العهدة
+                    pass
+
+    # ==============================
+    # الإلغاء وإعادة لمسودة
+    # ==============================
+
+    def action_cancel_reset(self):
+        """حذف القيود والدفعات وإعادة العهدة إلى مسودة."""
+        for custody in self:
+            if custody.state == 'draft':
+                continue
+            cancelled = custody._wipe_accounting()
+            custody.write({
+                'state': 'draft',
+                'confirm_move_id': False,
+                'done_move_id': False,
+            })
+            body = _('تم حذف القيود والدفعات وإعادة العهدة إلى مسودة.')
+            if cancelled:
+                body += ' ' + _(
+                    'تعذر حذف بعض القيود حسب قواعد المحاسبة فتم إلغاؤها: %s',
+                    '، '.join(cancelled.mapped('name')),
+                )
+            custody.message_post(body=body)
+        return True
+
+    def _wipe_accounting(self):
+        """يحذف الدفعات ثم القيود. يرجع القيود التي تعذر حذفها فتم إلغاؤها."""
+        self.ensure_one()
+        # 1) الدفعات: حذفها يفك التسويات بنفس الطريقة القياسية
+        self.payment_ids.unlink()
+        # 2) قيد التصفية ثم قيد التأكيد
+        moves = (self.done_move_id | self.confirm_move_id).exists()
+        for move in moves.filtered(lambda m: m.state == 'posted'):
+            move.line_ids.remove_move_reconcile()
+            move.button_draft()
+        cancelled = self.env['account.move']
+        for move in moves:
+            try:
+                with self.env.cr.savepoint():
+                    move.unlink()
+            except UserError:
+                # قواعد التدقيق أو تسلسل الأرقام تمنع الحذف: يُلغى القيد بدلاً منه
+                move.button_cancel()
+                cancelled |= move
+        return cancelled
+
+    # ==============================
+    # الأزرار الذكية
+    # ==============================
+
+    def action_view_trip(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'rotana.transport.trip',
+            'res_id': self.trip_id.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+        }
+
+    def action_view_moves(self):
+        self.ensure_one()
+        return {
+            'name': _('القيود'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', (self.confirm_move_id | self.done_move_id).ids)],
+        }
+
+    def action_view_payments(self):
+        self.ensure_one()
+        return {
+            'name': _('الدفعات'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self.payment_ids.ids)],
+        }
+
+
+class RotanaTransportTripCustodyLine(models.Model):
+    _name = 'rotana.transport.trip.custody.line'
+    _description = 'سطر مصروفات العهدة'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(default=10)
+    custody_id = fields.Many2one(
+        'rotana.transport.trip.custody',
+        string='العهدة',
+        required=True,
+        ondelete='cascade',
+        index=True,
+    )
+    product_id = fields.Many2one(
+        'product.product',
+        string='المنتج',
+        required=True,
+    )
+    name = fields.Char(
+        string='الوصف',
+        compute='_compute_name',
+        store=True,
+        readonly=False,
+    )
+    currency_id = fields.Many2one(
+        related='custody_id.currency_id',
+        string='العملة',
+    )
+    amount = fields.Monetary(
+        string='المبلغ المصروف',
+        required=True,
+    )
+
+    @api.depends('product_id')
+    def _compute_name(self):
+        for line in self:
+            line.name = line.product_id.display_name or False
+
+    @api.constrains('amount')
+    def _check_amount(self):
+        for line in self:
+            if line.amount <= 0:
+                raise ValidationError(_('مبلغ السطر يجب أن يكون أكبر من صفر.'))
+
+    def _check_custody_editable(self):
+        if any(line.custody_id.state != 'paid' for line in self):
+            raise UserError(_(
+                'سطور التصفية تُدخل وتُعدَّل في حالة (مدفوعة) فقط.'
+            ))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._check_custody_editable()
+        return lines
+
+    def write(self, vals):
+        self._check_custody_editable()
+        return super().write(vals)
+
+    def unlink(self):
+        self._check_custody_editable()
+        return super().unlink()
+
+
+class RotanaTransportTrip(models.Model):
+    _inherit = 'rotana.transport.trip'
+
+    custody_ids = fields.One2many(
+        'rotana.transport.trip.custody',
+        'trip_id',
+        string='العهد',
+        groups='account.group_account_user',
+    )
+    custody_count = fields.Integer(
+        string='عدد العهد',
+        compute='_compute_custody_count',
+        groups='account.group_account_user',
+    )
+
+    @api.depends('custody_ids')
+    def _compute_custody_count(self):
+        for trip in self:
+            trip.custody_count = len(trip.custody_ids)
+
+    def action_view_custody(self):
+        self.ensure_one()
+        return {
+            'name': _('العهد'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'rotana.transport.trip.custody',
+            'view_mode': 'list,form',
+            'domain': [('trip_id', '=', self.id)],
+            'context': {'default_trip_id': self.id},
+        }

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="fleet_inherit_fleet" model="ir.ui.view">
+        <field name="name">fleet.vehicle.view.form.inherit</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div//h2" position="after">
+                <label for="unit_number"/>
+                <h2>
+                    <field name="unit_number" class="oe_inline" placeholder="e.g. 253"/>
+                </h2>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="replace">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="oe_title">
+                        <label for="model_id"/>
+                        <h1>
+                            <field name="model_id" placeholder="e.g. Model S" class="w-100"/>
+                        </h1>
+                        <label for="license_plate"/>
+                        <h2>
+                            <field name="license_plate" class="oe_inline" placeholder="e.g. PAE 326"/>
+                        </h2>
+                        <label for="unit_number"/>
+                        <h2>
+                            <field name="unit_number" class="oe_inline" placeholder="e.g. 253"/>
+                        </h2>
+                        <label for="tag_ids" class="me-3"/>
+                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}"/>
+                    </div>
+                    <div class="d-flex flex-column align-items-end">
+                        <field name="readyness_state" widget="badge"
+               decoration-success="readyness_state == 'ready'"
+               decoration-warning="readyness_state == 'booked'"
+               decoration-info="readyness_state == 'on_trip'"
+               decoration-danger="readyness_state == 'on_maintenance'"
+               class="fs-4"/>
+                        <span class="badge rounded-pill text-bg-secondary fs-6">
+                            <i class="fa fa-map-marker me-1"/>
+                            <field name="current_location_id" readonly="1" options="{'no_open': True}"/>
+                        </span>
+                    </div>
+                </div>
+            </xpath>
+            <field name="plan_to_change_bike" position="after">
+                <field name="analytic_plan_id"/>
+                <field name="capacity_kg"/>
+            </field>
+            <!-- زر عرض الرحلات في الرأس -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_transport_trips"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck">
+                    <span>الرحلات</span>
+                </button>
+                <button name="action_view_analytic_plan"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o">
+                    <span>الخطة التحليلية</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+    <record id="fleet_vehicle_view_kanban_inherit_rotana" model="ir.ui.view">
+        <field name="name">fleet.vehicle.kanban.inherit.rotana</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_kanban"/>
+        <field name="arch" type="xml">
+            <!-- لازم نعرّف الحقول عشان تتوفر في record -->
+            <xpath expr="//field[@name='contract_renewal_overdue']" position="after">
+                <field name="readyness_state"/>
+                <field name="current_location_id"/>
+            </xpath>
+            <!-- الشارات على اليمين داخل الكارد -->
+            <xpath expr="//t[@t-name='card']/main" position="inside">
+                <div class="position-absolute top-0 end-0 m-2 d-flex flex-column align-items-end gap-1">
+                    <span t-attf-class="badge rounded-pill fs-6 #{
+                        record.readyness_state.raw_value == 'ready' ? 'text-bg-success' :
+                        record.readyness_state.raw_value == 'booked' ? 'text-bg-warning' :
+                        record.readyness_state.raw_value == 'on_trip' ? 'text-bg-info' :
+                        'text-bg-danger'}">
+                        <field name="readyness_state"/>
+                    </span>
+                    <span t-if="record.current_location_id.raw_value"
+                      class="badge rounded-pill text-bg-secondary">
+                        <i class="fa fa-map-marker me-1"/>
+                        <field name="current_location_id"/>
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

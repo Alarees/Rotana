@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+
+    <!--
+        NOTE:
+        - 'wa_account_id' below points to the company's connected WhatsApp
+          Business account. Replace the search domain / xmlid if your
+          instance already has a specific account you want to use
+          (Settings > WhatsApp > Accounts).
+        - This template still needs to be submitted to Meta for approval
+          the first time it is used (status will show Pending -> Approved
+          in Odoo). Sending will fail until it is Approved.
+    -->
+
+    <record id="whatsapp_template_weekly_statement" model="whatsapp.template">
+        <field name="name">كشف حساب أسبوعي - العميل</field>
+        <field name="template_name">weekly_customer_statement</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="phone_field">phone</field>
+        <field name="lang_code">ar</field>
+        <field name="template_type">utility</field>
+        <field name="header_type">document</field>
+        <field name="report_id" ref="report_weekly_statement_document"/>
+        <field name="body">عزيزي العميل {{1}}،
+نرسل لكم كشف الحساب الخاص بكم عن الفترة {{2}}.
+يوضح المستند المرفق حركة الحساب (الفواتير والسداد) خلال هذه الفترة.
+الرصيد المستحق حالياً: {{3}}
+نشكر تعاونكم معنا.</field>
+        <field name="footer_text">شركة روتانا</field>
+    </record>
+
+    <record id="whatsapp_template_weekly_statement_var1" model="whatsapp.template.variable">
+        <field name="wa_template_id" ref="whatsapp_template_weekly_statement"/>
+        <field name="name">1</field>
+        <field name="line_type">body</field>
+        <field name="field_type">field</field>
+        <field name="field_name">name</field>
+        <field name="demo_value">أحمد محمد</field>
+    </record>
+
+    <record id="whatsapp_template_weekly_statement_var2" model="whatsapp.template.variable">
+        <field name="wa_template_id" ref="whatsapp_template_weekly_statement"/>
+        <field name="name">2</field>
+        <field name="line_type">body</field>
+        <field name="field_type">free_text</field>
+        <field name="demo_value">1 - 7 سبتمبر 2026</field>
+    </record>
+
+    <record id="whatsapp_template_weekly_statement_var3" model="whatsapp.template.variable">
+        <field name="wa_template_id" ref="whatsapp_template_weekly_statement"/>
+        <field name="name">3</field>
+        <field name="line_type">body</field>
+        <field name="field_type">field</field>
+        <field name="field_name">credit</field>
+        <field name="demo_value">5000.00</field>
+    </record>
+
+</odoo>

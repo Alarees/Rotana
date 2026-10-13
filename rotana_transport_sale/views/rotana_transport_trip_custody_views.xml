@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- ============================== -->
+    <!-- عهدة رحلة النقل -->
+    <!-- ============================== -->
+    <record id="view_rotana_transport_trip_custody_form" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.custody.form</field>
+        <field name="model">rotana.transport.trip.custody</field>
+        <field name="arch" type="xml">
+            <form string="عهدة رحلة">
+                <header>
+                    <button name="action_confirm" string="تأكيد" type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_register_payment" string="تسجيل دفعة" type="object"
+                            class="btn-primary"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_done" string="إنهاء" type="object"
+                            class="btn-primary"
+                            invisible="state != 'paid'"/>
+                    <button name="action_settlement_payment" string="دفعية للسائق" type="object"
+                            class="btn-primary"
+                            invisible="state != 'done' or settle_direction != 'outbound'"/>
+                    <button name="action_settlement_payment" string="دفعية على السائق" type="object"
+                            class="btn-primary"
+                            invisible="state != 'done' or settle_direction != 'inbound'"/>
+                    <button name="action_cancel_reset" string="إلغاء وإعادة لمسودة" type="object"
+                            invisible="state == 'draft'"
+                            confirm="سيتم حذف القيود المحاسبية والدفعات المرتبطة بهذه العهدة وإعادتها إلى مسودة. هل أنت متأكد؟"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,paid,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_trip" type="object"
+                                class="oe_stat_button" icon="fa-truck">
+                            <span>الرحلة</span>
+                        </button>
+                        <button name="action_view_moves" type="object"
+                                class="oe_stat_button" icon="fa-book"
+                                invisible="not confirm_move_id">
+                            <span>القيود</span>
+                        </button>
+                        <button name="action_view_payments" type="object"
+                                class="oe_stat_button" icon="fa-money"
+                                invisible="not payment_ids">
+                            <span>الدفعات</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="trip_id" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="vehicle_id"/>
+                            <field name="sale_order_id"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="amount" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="settle_direction" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="سطور التصفية (المصروفات الفعلية)" name="lines">
+                            <field name="line_ids" readonly="state != 'paid'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount" sum="الإجمالي"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="amount" readonly="1"/>
+                                <field name="spent_amount"/>
+                                <field name="difference_amount"/>
+                                <field name="remaining_amount" invisible="state != 'done'"/>
+                            </group>
+                        </page>
+                        <page string="ملاحظات" name="notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_rotana_transport_trip_custody_list" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.custody.list</field>
+        <field name="model">rotana.transport.trip.custody</field>
+        <field name="arch" type="xml">
+            <list string="العهد المالية"
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'confirmed'"
+                  decoration-primary="state == 'paid'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="trip_id"/>
+                <field name="partner_id"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="الإجمالي"/>
+                <field name="spent_amount" sum="الإجمالي"/>
+                <field name="difference_amount" sum="الإجمالي"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'confirmed'"
+                       decoration-primary="state == 'paid'"
+                       decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rotana_transport_trip_custody_search" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.custody.search</field>
+        <field name="model">rotana.transport.trip.custody</field>
+        <field name="arch" type="xml">
+            <search string="بحث في العهد">
+                <field name="name"/>
+                <field name="trip_id"/>
+                <field name="partner_id" string="السائق"/>
+                <field name="vehicle_id"/>
+                <separator/>
+                <filter string="مسودة" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="مؤكدة" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="مدفوعة" name="paid" domain="[('state', '=', 'paid')]"/>
+                <filter string="منتهية" name="done" domain="[('state', '=', 'done')]"/>
+                <group>
+                    <filter string="الحالة" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="السائق" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="الرحلة" name="group_trip" context="{'group_by': 'trip_id'}"/>
+                    <filter string="الشهر" name="group_date" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rotana_transport_trip_custody" model="ir.actions.act_window">
+        <field name="name">العهد المالية</field>
+        <field name="res_model">rotana.transport.trip.custody</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                أنشئ أول عهدة مالية لرحلة
+            </p>
+        </field>
+    </record>
+
+    <!-- القائمة تحت: المحاسبة / المحاسبة -->
+    <menuitem id="menu_rotana_transport_trip_custody"
+              name="العهد المالية"
+              parent="account.menu_finance_entries"
+              action="action_rotana_transport_trip_custody"
+              sequence="5"
+              groups="account.group_account_user"/>
+
+    <!-- ============================== -->
+    <!-- تبويب وزر العهد داخل الرحلة -->
+    <!-- ============================== -->
+    <record id="view_rotana_transport_trip_form_custody" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.form.custody</field>
+        <field name="model">rotana.transport.trip</field>
+        <field name="inherit_id" ref="rotana_transport_sale.view_rotana_transport_trip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_custody" type="object"
+                        class="oe_stat_button" icon="fa-money"
+                        groups="account.group_account_user">
+                    <field name="custody_count" widget="statinfo" string="العهد"/>
+                </button>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <notebook groups="account.group_account_user">
+                    <page string="العهد المالية" name="custody">
+                        <field name="custody_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="date"/>
+                                <field name="partner_id"/>
+                                <field name="currency_id" column_invisible="1"/>
+                                <field name="amount"/>
+                                <field name="spent_amount"/>
+                                <field name="state" widget="badge"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

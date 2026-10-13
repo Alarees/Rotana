@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- ============================== -->
+    <!-- كانبان اختيار المركبات (ويزرد الرحلات) -->
+    <!-- ============================== -->
+    <record id="view_rotana_transport_trip_wizard_line_kanban" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.wizard.line.kanban</field>
+        <field name="model">rotana.transport.trip.wizard.line</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state"
+                    create="false"
+                    delete="false"
+                    group_create="false"
+                    group_edit="false"
+                    group_delete="false"
+                    quick_create="false"
+                    records_draggable="true"
+                    class="o_kanban_small_column">
+                <header>
+                    <button name="action_confirm_selection"
+                            type="object"
+                            string="إنشاء الرحلات للمركبات المختارة"
+                            class="btn-primary"
+                            display="always"/>
+                </header>
+                <field name="state"/>
+                <field name="readyness_state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong><field name="vehicle_id"/></strong>
+                            <field name="readyness_state" widget="badge"
+                                   decoration-success="readyness_state == 'ready'"
+                                   decoration-warning="readyness_state == 'booked'"
+                                   decoration-info="readyness_state == 'on_trip'"
+                                   decoration-danger="readyness_state == 'on_maintenance'"/>
+                        </div>
+                        <div class="text-muted">
+                            <field name="license_plate"/>
+                        </div>
+                        <div t-if="record.driver_id.raw_value">
+                            <i class="fa fa-user me-1"/><field name="driver_id"/>
+                        </div>
+                        <div t-if="record.current_location_id.raw_value">
+                            <i class="fa fa-map-marker me-1"/><field name="current_location_id"/>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fa fa-balance-scale me-1"/><field name="capacity_kg"/> كغ
+                        </div>
+                        <div t-if="record.trip_count.raw_value" class="text-warning small">
+                            <i class="fa fa-truck me-1"/>رحلات سابقة على هذا الأمر: <field name="trip_count"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- بحث داخل الكانبان -->
+    <record id="view_rotana_transport_trip_wizard_line_search" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.wizard.line.search</field>
+        <field name="model">rotana.transport.trip.wizard.line</field>
+        <field name="arch" type="xml">
+            <search string="بحث في المركبات">
+                <field name="vehicle_id" string="المركبة"/>
+                <field name="license_plate" string="اللوحة"/>
+                <field name="driver_id" string="السائق"/>
+                <field name="current_location_id" string="الموقع الحالي"/>
+                <separator/>
+                <filter string="جاهزة" name="ready" domain="[('readyness_state', '=', 'ready')]"/>
+                <filter string="محجوزة" name="booked" domain="[('readyness_state', '=', 'booked')]"/>
+                <filter string="في رحلة" name="on_trip" domain="[('readyness_state', '=', 'on_trip')]"/>
+                <filter string="في الصيانة" name="on_maintenance" domain="[('readyness_state', '=', 'on_maintenance')]"/>
+            </search>
+        </field>
+    </record>
+</odoo>

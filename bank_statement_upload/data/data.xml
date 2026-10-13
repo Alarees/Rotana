@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bank_statement_upload" model="ir.sequence">
+        <field name="name">Bank Statement Upload</field>
+        <field name="code">bank.statement.upload</field>
+        <field name="prefix">BSU/%(year)s/</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

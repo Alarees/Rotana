@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bsu_readonly,bank.statement.upload readonly,model_bank_statement_upload,account.group_account_readonly,1,0,0,0
+access_bsu_user,bank.statement.upload accountant,model_bank_statement_upload,account.group_account_user,1,1,1,1
+access_bsu_manager,bank.statement.upload manager,model_bank_statement_upload,account.group_account_manager,1,1,1,1
+access_bsul_readonly,bank.statement.upload.line readonly,model_bank_statement_upload_line,account.group_account_readonly,1,0,0,0
+access_bsul_user,bank.statement.upload.line accountant,model_bank_statement_upload_line,account.group_account_user,1,1,1,1
+access_bsul_manager,bank.statement.upload.line manager,model_bank_statement_upload_line,account.group_account_manager,1,1,1,1

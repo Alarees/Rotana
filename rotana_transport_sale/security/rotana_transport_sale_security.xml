@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo noupdate="0">
+    <data>
+        <!-- امتياز المديول (بديل category_id في أوو 19) -->
+        <record id="privilege_rotana_transport" model="res.groups.privilege">
+            <field name="name">Rotana Transport</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- مجموعة المستخدم -->
+        <record id="group_rotana_transport_user" model="res.groups">
+            <field name="name">مستخدم النقل</field>
+            <field name="privilege_id" ref="privilege_rotana_transport"/>
+            <field name="sequence">10</field>
+            <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+        </record>
+
+        <!-- مجموعة المدير -->
+        <record id="group_rotana_transport_manager" model="res.groups">
+            <field name="name">مدير النقل</field>
+            <field name="privilege_id" ref="privilege_rotana_transport"/>
+            <field name="sequence">20</field>
+            <field name="implied_ids" eval="[Command.link(ref('rotana_transport_sale.group_rotana_transport_user'))]"/>
+            <field name="user_ids" eval="[Command.link(ref('base.user_root')), Command.link(ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- سجل حركات المركبات: حسب الشركة -->
+        <record id="rule_fleet_vehicle_log_company" model="ir.rule">
+            <field name="name">سجل حركات المركبات: الشركات المسموحة</field>
+            <field name="model_id" ref="model_fleet_vehicle_log"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- العهد المالية: حسب الشركة -->
+        <record id="rule_rotana_transport_trip_custody_company" model="ir.rule">
+            <field name="name">العهد المالية: الشركات المسموحة</field>
+            <field name="model_id" ref="model_rotana_transport_trip_custody"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>

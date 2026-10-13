@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- ============================== -->
+    <!-- توسعة نموذج أمر البيع -->
+    <!-- ============================== -->
+    <record id="view_rotana_transport_sale_order_form" model="ir.ui.view">
+        <field name="name">rotana.transport.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- زر إنشاء الرحلات (ويزرد اختيار المركبات) -->
+            <xpath expr="//header" position="inside">
+                <button name="action_open_trip_wizard"
+                        type="object"
+                        string="إنشاء رحلات"
+                        class="btn-primary"
+                        groups="rotana_transport_sale.group_rotana_transport_user"
+                        invisible="not is_transport_order or state == 'cancel'"/>
+            </xpath>
+            <!-- زر عرض الرحلات في الرأس -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_transport_trips"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        invisible="not is_transport_order or transport_trip_count == 0">
+                    <field name="transport_trip_count" widget="statinfo" string="الرحلات"/>
+                </button>
+                <button name="action_view_account_analytic"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-calculator"
+                        invisible="not is_transport_order or analytic_account_count == 0">
+                    <field name="analytic_account_count" widget="statinfo" string="الحسابات التحليلية"/>
+                </button>
+            </xpath>
+            <!-- قسم بيانات النقل بعد مجموعة المعلومات الأساسية -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <group invisible="not is_transport_order">
+                    <field name="transport_location_from_id"
+                                   options="{'no_create': True}"/>
+                    <field name="transport_location_to_id"
+                                   options="{'no_create': True}"/>
+                </group>
+            </xpath>
+            <!-- إضافة حقل الوزن المنقول في سطور أمر البيع -->
+            <field name="payment_term_id" position="after">
+                <field name="total_weight_to_transport"
+                       string="إجمالي الوزن المراد نقله"
+                       readonly="1"
+                       invisible="not is_transport_order"/>
+                <field name="total_transported_weight"
+                       string="إجمالي الوزن المنقول"
+                       readonly="1"
+                       invisible="not is_transport_order"/>
+                <field name="total_discharged_quantity"
+                       string="إجمالي الكمية المفرغة"
+                       readonly="1"
+                       invisible="not is_transport_order"/>
+            </field>
+            <xpath expr="//page[@name='order_lines']" position="after">
+                <page name="transport_trips" string="الرحلات" invisible="not is_transport_order">
+                    <field name="trip_ids" nolabel="1">
+                        <list string="الرحلات" editable="bottom" create="true" delete="true">
+                            <field name="vehicle_id" />
+                            <field name="driver_id" />
+                            <field name="transported_weight" />
+                            <field name="allowable_deficit" />
+                            <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'confirmed'"
+                       decoration-primary="state == 'in_transit'"
+                       decoration-success="state == 'done'"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+            <!-- إضافة الحساب التحليلي للمركبة في سطور أمر البيع -->
+            <!-- <xpath expr="//field[@name='order_line']/list//field[@name='product_id']" position="after">
+                <field name="transport_vehicle_analytic_account_id"
+                       optional="show"
+                       string="الحساب التحليلي للمركبة"
+                       invisible="not parent.is_transport_order"/>
+            </xpath> -->
+        </field>
+    </record>
+    <!-- قائمة أوامر بيع النقل -->
+    <record id="view_rotana_transport_sale_order_list" model="ir.ui.view">
+        <field name="name">view.rotana.transport.sale.order.list</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_status']" position="after">
+                <field name="total_weight_to_transport" invisible="1" column_invisible="1" />
+                <field name="total_transported_weight" widget="progressbar" optional="show" options="{'current_value': 'total_transported_weight', 'max_value': 'total_weight_to_transport', 'editable': false}"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- إجراء قائمة أوامر بيع النقل (قائمة منفصلة) -->
+    <record id="action_rotana_transport_sale_orders" model="ir.actions.act_window">
+        <field name="name">أوامر بيع النقل</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_rotana_transport_sale_order_list" />
+        <field name="domain">[('is_transport_order', '=', True)]</field>
+        <field name="context">{'default_is_transport_order': True, 'search_default_is_transport_order': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                أنشئ أول أمر بيع نقل!
+            </p>
+        </field>
+    </record>
+    <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+        <field name="domain">[('is_transport_order', '=', False)]</field>
+        <field name="context">{'default_is_transport_order': False, 'search_default_is_transport_order': 0}</field>
+    </record>
+</odoo>

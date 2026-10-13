@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_rotana_kpi_root"
+              name="KPI Dashboards"
+              sequence="5"
+              web_icon="rotana_kpi_dashboard,static/description/icon.png"/>
+
+    <!-- Actions: each is a Client Action rendering our dashboard controller
+         page inside an iframe, so it stays within Odoo's backend frame
+         (top menu bar, breadcrumb, app switcher remain visible). -->
+    <record id="action_kpi_sales" model="ir.actions.client">
+        <field name="name">Sales KPI</field>
+        <field name="tag">rotana_kpi_dashboard.client_action</field>
+        <field name="params" eval="{'module': 'sales'}"/>
+    </record>
+
+    <record id="action_kpi_purchase" model="ir.actions.client">
+        <field name="name">Purchase KPI</field>
+        <field name="tag">rotana_kpi_dashboard.client_action</field>
+        <field name="params" eval="{'module': 'purchase'}"/>
+    </record>
+
+    <record id="action_kpi_accounting" model="ir.actions.client">
+        <field name="name">Accounting KPI</field>
+        <field name="tag">rotana_kpi_dashboard.client_action</field>
+        <field name="params" eval="{'module': 'accounting'}"/>
+    </record>
+
+    <record id="action_kpi_inventory" model="ir.actions.client">
+        <field name="name">Inventory KPI</field>
+        <field name="tag">rotana_kpi_dashboard.client_action</field>
+        <field name="params" eval="{'module': 'inventory'}"/>
+    </record>
+
+    <record id="action_kpi_manufacturing" model="ir.actions.client">
+        <field name="name">Manufacturing KPI</field>
+        <field name="tag">rotana_kpi_dashboard.client_action</field>
+        <field name="params" eval="{'module': 'manufacturing'}"/>
+    </record>
+
+    <!-- Sub menus -->
+    <menuitem id="menu_kpi_sales"
+              name="مبيعات - Sales"
+              parent="menu_rotana_kpi_root"
+              action="action_kpi_sales"
+              sequence="10"/>
+
+    <menuitem id="menu_kpi_purchase"
+              name="مشتريات - Purchase"
+              parent="menu_rotana_kpi_root"
+              action="action_kpi_purchase"
+              sequence="20"/>
+
+    <menuitem id="menu_kpi_accounting"
+              name="حسابات - Accounting"
+              parent="menu_rotana_kpi_root"
+              action="action_kpi_accounting"
+              sequence="30"/>
+
+    <menuitem id="menu_kpi_inventory"
+              name="مخازن - Inventory"
+              parent="menu_rotana_kpi_root"
+              action="action_kpi_inventory"
+              sequence="40"/>
+
+    <menuitem id="menu_kpi_manufacturing"
+              name="تصنيع - Manufacturing"
+              parent="menu_rotana_kpi_root"
+              action="action_kpi_manufacturing"
+              sequence="50"/>
+
+    <!-- Dashboard page template -->
+    <template id="dashboard_template" name="Rotana KPI Dashboard">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Rotana KPI Dashboard</title>
+                <!-- Google Material font, used purely for the Material Design look -->
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+                <link rel="stylesheet" type="text/css" href="/rotana_kpi_dashboard/static/src/css/dashboard.css"/>
+                <!-- Chart.js (plain UMD build via CDN, no build step, no framework) -->
+                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+            </head>
+            <body>
+                <div id="root"></div>
+                <script>
+                    window.ROTANA_KPI_MODULE = "<t t-esc="module"/>";
+                </script>
+                <script src="/rotana_kpi_dashboard/static/src/js/dashboard.js"></script>
+            </body>
+        </html>
+    </template>
+
+</odoo>

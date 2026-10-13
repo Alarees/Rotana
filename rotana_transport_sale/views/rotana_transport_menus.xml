@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- ============================== -->
+    <!-- قائمة روتانا للنقل -->
+    <!-- ============================== -->
+
+    <!-- القائمة الرئيسية -->
+    <menuitem id="menu_rotana_transport_root"
+              name="نقل روتانا"
+              sequence="80"
+              web_icon="rotana_transport_sale,static/description/icon.jpeg"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <!-- أوامر بيع النقل -->
+    <menuitem id="menu_rotana_transport_sales"
+              name="المبيعات"
+              parent="menu_rotana_transport_root"
+              sequence="10"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <menuitem id="menu_rotana_transport_sale_orders"
+              name="أوامر بيع النقل"
+              parent="menu_rotana_transport_sales"
+              sequence="10"
+              action="action_rotana_transport_sale_orders"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <!-- الرحلات -->
+    <menuitem id="menu_rotana_transport_operations"
+              name="العمليات"
+              parent="menu_rotana_transport_root"
+              sequence="20"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <menuitem id="menu_rotana_transport_trips"
+              name="الرحلات"
+              parent="menu_rotana_transport_operations"
+              sequence="10"
+              action="action_rotana_transport_trip"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <menuitem id="menu_fleet_vehicle_log"
+              name="سجل حركات المركبات"
+              parent="menu_rotana_transport_operations"
+              sequence="20"
+              action="action_fleet_vehicle_log"
+              groups="rotana_transport_sale.group_rotana_transport_user"/>
+
+    <!-- الإعدادات -->
+    <menuitem id="menu_rotana_transport_config"
+              name="الإعدادات"
+              parent="menu_rotana_transport_root"
+              sequence="90"
+              groups="rotana_transport_sale.group_rotana_transport_manager"/>
+
+    <menuitem id="menu_rotana_transport_settings"
+              name="التهيئة"
+              parent="menu_rotana_transport_config"
+              sequence="10"
+              action="action_rotana_transport_sale_config_settings"
+              groups="rotana_transport_sale.group_rotana_transport_manager"/>
+
+    <menuitem id="menu_rotana_transport_locations"
+              name="المواقع"
+              parent="menu_rotana_transport_config"
+              sequence="15"
+              action="action_rotana_transport_location"
+              groups="rotana_transport_sale.group_rotana_transport_manager"/>
+
+    <menuitem id="menu_rotana_transport_vehicles"
+              name="المركبات"
+              parent="menu_rotana_transport_config"
+              sequence="20"
+              action="action_rotana_transport_vehicle"
+              groups="rotana_transport_sale.group_rotana_transport_manager"/>
+
+    <menuitem id="menu_rotana_transport_drivers"
+              name="السائقون"
+              parent="menu_rotana_transport_config"
+              sequence="30"
+              action="action_rotana_transport_driver"
+              groups="rotana_transport_sale.group_rotana_transport_manager"/>
+</odoo>
