@@ -157,8 +157,9 @@ class RotanaTransportDashboard(models.AbstractModel):
         """يرجع الأقسام الثلاثة (رحلات/مبيعات/مركبات) مبنية على السطور التحليلية."""
         Trip = self.env['rotana.transport.trip'].sudo()
         Line = self.env['account.analytic.line']
-        trips = Trip.search(self._trip_domain(filters), order='planned_date desc, id desc')
-        trips = trips.filtered('account_analytic_id')
+        all_trips = Trip.search(self._trip_domain(filters), order='planned_date desc, id desc')
+        # الحساب التحليلي يُنشأ عند تأكيد الرحلة، فالمسودات بلا حساب (تظهر بقيم صفرية)
+        trips = all_trips.filtered('account_analytic_id')
         accounts = trips.account_analytic_id
 
         # السطور التحليلية تحفظ الحساب في عمود خاص بالخطة الجذر للحساب (x_plan{id}_id)،
@@ -166,8 +167,10 @@ class RotanaTransportDashboard(models.AbstractModel):
         fnames = {plan._column_name() for plan in accounts.plan_id}
         fnames = [f for f in fnames if f in Line._fields]
         debit_map, credit_map = defaultdict(float), defaultdict(float)
+        lines_count = 0
         for fname in fnames:
             domain = [(fname, 'in', accounts.ids)]
+            lines_count += Line.search_count(domain)
             for acc, amount in Line._read_group(domain + [('amount', '<', 0)], [fname], ['amount:sum']):
                 if acc:
                     debit_map[acc.id] += -amount
@@ -182,8 +185,9 @@ class RotanaTransportDashboard(models.AbstractModel):
 
         # --- حسب الرحلة ---
         trip_rows = []
-        for t in trips:
-            d, c, p = money([t.account_analytic_id.id])
+        for t in all_trips:
+            acc_ids = [t.account_analytic_id.id] if t.account_analytic_id else []
+            d, c, p = money(acc_ids)
             trip_rows.append({
                 'res_model': 'rotana.transport.trip', 'res_id': t.id,
                 'name': t.manifest_number,
@@ -192,14 +196,15 @@ class RotanaTransportDashboard(models.AbstractModel):
                 'debit': d, 'credit': c, 'profit': p,
             })
 
-        # --- حسب البيع (الحساب التحليلي المربوط بأمر البيع) ---
+        # --- حسب البيع (أمر البيع المربوط بالحساب التحليلي، وإلا أمر بيع الرحلة) ---
         sales = {}
-        for t in trips:
-            so = t.account_analytic_id.sale_order_id
+        for t in all_trips:
+            so = t.account_analytic_id.sale_order_id or t.sale_order_id
             if not so:
                 continue
             rec = sales.setdefault(so.id, {'so': so, 'accounts': [], 'trips': 0})
-            rec['accounts'].append(t.account_analytic_id.id)
+            if t.account_analytic_id:
+                rec['accounts'].append(t.account_analytic_id.id)
             rec['trips'] += 1
         sale_rows = []
         for rec in sales.values():
@@ -212,21 +217,18 @@ class RotanaTransportDashboard(models.AbstractModel):
                 'debit': d, 'credit': c, 'profit': p,
             })
 
-        # --- حسب المركبة (الخطة التحليلية للمركبة) ---
-        plans = accounts.plan_id
-        vehicles = self.env['fleet.vehicle'].sudo().search([('analytic_plan_id', 'in', plans.ids)])
-        plan_vehicle = {v.analytic_plan_id.id: v for v in vehicles}
-        by_plan = {}
-        for t in trips:
-            acc = t.account_analytic_id
-            veh = plan_vehicle.get(acc.plan_id.id)
+        # --- حسب المركبة (خطتها التحليلية؛ حسابات رحلاتها تتبع هذه الخطة) ---
+        by_vehicle = {}
+        for t in all_trips:
+            veh = t.vehicle_id
             if not veh:
                 continue
-            rec = by_plan.setdefault(veh.id, {'veh': veh, 'accounts': [], 'trips': 0})
-            rec['accounts'].append(acc.id)
+            rec = by_vehicle.setdefault(veh.id, {'veh': veh, 'accounts': [], 'trips': 0})
+            if t.account_analytic_id:
+                rec['accounts'].append(t.account_analytic_id.id)
             rec['trips'] += 1
         vehicle_rows = []
-        for rec in by_plan.values():
+        for rec in by_vehicle.values():
             d, c, p = money(rec['accounts'])
             vehicle_rows.append({
                 'res_model': 'fleet.vehicle', 'res_id': rec['veh'].id,
@@ -235,6 +237,12 @@ class RotanaTransportDashboard(models.AbstractModel):
                 'trips': rec['trips'],
                 'debit': d, 'credit': c, 'profit': p,
             })
+
+        self_diag = {
+            'trips': len(all_trips),
+            'without_account': len(all_trips) - len(trips),
+            'lines': lines_count,
+        }
 
         def pack(rows, columns):
             rows = sorted(rows, key=lambda r: r['profit'])
@@ -257,6 +265,7 @@ class RotanaTransportDashboard(models.AbstractModel):
             {'key': 'profit', 'label': _('الربح'), 'type': 'profit'},
         ]
         return {
+            'diagnostics': self_diag,
             'trips': pack(trip_rows, [
                 {'key': 'name', 'label': _('الرحلة'), 'type': 'text'},
                 {'key': 'vehicle', 'label': _('العربة'), 'type': 'text'},

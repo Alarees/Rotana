@@ -87,6 +87,18 @@
             </t>
 
             <t t-else="">
+                <!-- ======= تنبيهات التشخيص ======= -->
+                <div t-if="!state.data.diagnostics.trips" class="o_rt_notice">
+                    <i class="fa fa-info-circle"/> لا توجد رحلات ضمن الفلاتر الحالية.
+                </div>
+                <div t-if="state.data.diagnostics.without_account" class="o_rt_notice">
+                    <i class="fa fa-info-circle"/>
+                    <t t-esc="state.data.diagnostics.without_account"/> رحلة بلا حساب تحليلي (يُنشأ الحساب عند تأكيد الرحلة)، وتظهر بقيم صفرية.
+                </div>
+                <div t-if="state.data.diagnostics.trips &gt; state.data.diagnostics.without_account and !state.data.diagnostics.lines" class="o_rt_notice o_rt_notice_warn">
+                    <i class="fa fa-exclamation-triangle"/>
+                    لا توجد قيود تحليلية على حسابات الرحلات. تظهر الأرقام بعد ترحيل فاتورة أو قيد (مثل إنهاء العهدة) بتوزيع تحليلي على حساب الرحلة.
+                </div>
                 <!-- ======= تبويبات الحسابات ======= -->
                 <nav class="o_rt_tabs">
                     <t t-foreach="subTabs" t-as="tab" t-key="tab.key">

@@ -46,7 +46,7 @@
         ],
     },
     'external_dependencies': {'python': ['xlsxwriter']},
-    "images":  ['static/src/icon.png'],
+    "images":  ['static/src/logo.jpeg'],
     'installable': True,
     'application': True,
     'auto_install': False,
