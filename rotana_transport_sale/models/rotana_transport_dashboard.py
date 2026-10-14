@@ -7,6 +7,8 @@
 الحسابات التحليلية، فتتسق الأرقام بين الأقسام الثلاثة.
 المدين = مجموع المبالغ السالبة، الدائن = مجموع المبالغ الموجبة، الربح = الدائن - المدين.
 """
+from collections import defaultdict
+
 from odoo import _, api, models
 from odoo.exceptions import AccessError
 
@@ -159,11 +161,19 @@ class RotanaTransportDashboard(models.AbstractModel):
         trips = trips.filtered('account_analytic_id')
         accounts = trips.account_analytic_id
 
-        domain = [('account_id', 'in', accounts.ids)]
-        debit_map = {a.id: -amount for a, amount in Line._read_group(
-            domain + [('amount', '<', 0)], ['account_id'], ['amount:sum'])}
-        credit_map = {a.id: amount for a, amount in Line._read_group(
-            domain + [('amount', '>', 0)], ['account_id'], ['amount:sum'])}
+        # السطور التحليلية تحفظ الحساب في عمود خاص بالخطة الجذر للحساب (x_plan{id}_id)،
+        # وليس دائماً في account_id، لذلك نجمع على أعمدة خطط هذه الحسابات.
+        fnames = {plan._column_name() for plan in accounts.plan_id}
+        fnames = [f for f in fnames if f in Line._fields]
+        debit_map, credit_map = defaultdict(float), defaultdict(float)
+        for fname in fnames:
+            domain = [(fname, 'in', accounts.ids)]
+            for acc, amount in Line._read_group(domain + [('amount', '<', 0)], [fname], ['amount:sum']):
+                if acc:
+                    debit_map[acc.id] += -amount
+            for acc, amount in Line._read_group(domain + [('amount', '>', 0)], [fname], ['amount:sum']):
+                if acc:
+                    credit_map[acc.id] += amount
 
         def money(account_ids):
             d = sum(debit_map.get(i, 0.0) for i in account_ids)

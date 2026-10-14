@@ -23,7 +23,8 @@
 
     <template id="report_dashboard">
         <t t-call="web.html_container">
-            <div class="page" dir="rtl" style="text-align:right; font-size:11px;">
+            <!-- class="article" ضروري: Odoo يلف المحتوى به بتخطيط يحتوي ترميز UTF-8 -->
+            <div class="article" dir="rtl" style="text-align:right; font-size:11px;">
                 <h3 t-esc="title"/>
                 <p t-if="filters_text" t-esc="filters_text"/>
                 <table class="table table-sm table-bordered">

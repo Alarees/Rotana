@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="rotana_transport_sale.Dashboard">
-        <div class="o_rt_dash o_action">
+        <div class="o_rt_dash">
             <!-- ======= الشريط العلوي ======= -->
             <header class="o_rt_appbar">
                 <div class="o_rt_title">
