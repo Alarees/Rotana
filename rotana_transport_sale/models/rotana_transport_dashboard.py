@@ -14,6 +14,7 @@ from odoo.exceptions import AccessError
 
 TRIP_GROUP = 'rotana_transport_sale.group_rotana_transport_manager'
 ACCOUNT_GROUP = 'account.group_account_user'
+FLEET_GROUP = 'fleet.fleet_group_user'
 
 
 class RotanaTransportDashboard(models.AbstractModel):
@@ -289,6 +290,53 @@ class RotanaTransportDashboard(models.AbstractModel):
         data = self._accounts_sections(filters)
         data['currency'] = self._currency_symbol()
         return data
+
+    # ------------------------------------------------------------------
+    # صفحة المركبات (حالات المركبات حسب الموقع)
+    # ------------------------------------------------------------------
+    @api.model
+    def get_vehicles_data(self, filters=None):
+        self._check_group(FLEET_GROUP)
+        Vehicle = self.env['fleet.vehicle']
+        # البحث بصلاحيات المستخدم، والقراءة بـ sudo لأن مستخدم الأسطول قد لا يملك قراءة المواقع
+        vehicles = Vehicle.search([], order='unit_number, id').sudo()
+        states = Vehicle._fields['readyness_state']._description_selection(self.env)
+        state_labels = dict(states)
+
+        rows, locations = [], {}
+        for v in vehicles:
+            loc = v.current_location_id
+            loc_id = loc.id or 0
+            rows.append({
+                'res_model': 'fleet.vehicle',
+                'res_id': v.id,
+                'unit_number': v.unit_number or '',
+                'name': v.display_name,
+                'license_plate': v.license_plate or '',
+                'driver': v.driver_id.display_name or '',
+                'state': v.readyness_state,
+                'state_label': state_labels.get(v.readyness_state, v.readyness_state or ''),
+                'location_id': loc_id,
+            })
+            rec = locations.setdefault(loc_id, {
+                'id': loc_id,
+                'name': loc.name if loc else _('بدون موقع'),
+                'total': 0,
+                'states': {},
+            })
+            rec['total'] += 1
+            rec['states'][v.readyness_state] = rec['states'].get(v.readyness_state, 0) + 1
+
+        counts = {key: 0 for key, _label in states}
+        for r in rows:
+            counts[r['state']] = counts.get(r['state'], 0) + 1
+        loc_list = sorted(locations.values(), key=lambda x: (x['id'] == 0, -x['total'], x['name']))
+        return {
+            'total': len(rows),
+            'states': [{'key': k, 'label': l, 'count': counts.get(k, 0)} for k, l in states],
+            'locations': loc_list,
+            'rows': rows,
+        }
 
     # ------------------------------------------------------------------
     # التصدير (Excel / PDF)

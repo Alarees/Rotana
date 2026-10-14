@@ -20,6 +20,12 @@ const STATE_COLORS = {
     in_transit: PALETTE.amber,
     done: PALETTE.green,
 };
+const VEHICLE_STATE_COLORS = {
+    ready: PALETTE.green,
+    booked: PALETTE.amber,
+    on_trip: PALETTE.primary,
+    on_maintenance: PALETTE.red,
+};
 const NF = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 const NI = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
@@ -37,6 +43,9 @@ export class RotanaTransportDashboard extends Component {
             loading: true,
             data: null,
             sub: "trips", // قسم الحسابات: trips | sales | vehicles
+            vtab: "overview", // صفحة المركبات: overview | locations
+            locId: null, // الموقع المختار (null = الكل، 0 = بدون موقع)
+            vState: null, // فلتر الحالة في جدول الموقع
             open: null, // القائمة المنسدلة المفتوحة
             search: "",
             options: { trips: [], vehicles: [] },
@@ -54,12 +63,14 @@ export class RotanaTransportDashboard extends Component {
 
         onWillStart(async () => {
             await loadBundle("web.chartjs_lib");
-            this.state.options = await this.orm.call(MODEL, "get_filter_options", [this.page]);
+            if (this.page !== "vehicles") {
+                this.state.options = await this.orm.call(MODEL, "get_filter_options", [this.page]);
+            }
             await this.load();
         });
         useEffect(
             () => this.drawCharts(),
-            () => [this.state.data, this.state.sub, this.state.loading]
+            () => [this.state.data, this.state.sub, this.state.vtab, this.state.loading]
         );
     }
 
@@ -76,7 +87,11 @@ export class RotanaTransportDashboard extends Component {
 
     async load() {
         this.state.loading = true;
-        const method = this.page === "trips" ? "get_trips_data" : "get_accounts_data";
+        const method = {
+            trips: "get_trips_data",
+            accounts: "get_accounts_data",
+            vehicles: "get_vehicles_data",
+        }[this.page];
         this.state.data = await this.orm.call(MODEL, method, [this.cleanFilters()]);
         this.state.loading = false;
     }
@@ -208,6 +223,35 @@ export class RotanaTransportDashboard extends Component {
         });
     }
 
+    // ---------------- المركبات ----------------
+    selectLocation(id) {
+        this.state.locId = id;
+        this.state.vState = null;
+    }
+
+    openLocation(id) {
+        this.selectLocation(id);
+        this.state.vtab = "locations";
+    }
+
+    toggleVState(key) {
+        this.state.vState = this.state.vState === key ? null : key;
+    }
+
+    get locationRows() {
+        const id = this.state.locId;
+        return this.state.data.rows.filter((r) => id === null || r.location_id === id);
+    }
+
+    get vehicleRows() {
+        const key = this.state.vState;
+        return this.locationRows.filter((r) => !key || r.state === key);
+    }
+
+    stateCount(key) {
+        return this.locationRows.filter((r) => r.state === key).length;
+    }
+
     // ---------------- التصدير ----------------
     exportTable(fmt) {
         const section = this.page === "trips" ? "trips" : "acc_" + this.state.sub;
@@ -246,7 +290,40 @@ export class RotanaTransportDashboard extends Component {
         if (this.state.loading || !this.state.data) {
             return;
         }
-        if (this.page === "trips") {
+        if (this.page === "vehicles") {
+            if (this.state.vtab !== "overview") {
+                return;
+            }
+            const { states, locations } = this.state.data;
+            this.makeChart("o_rt_chart_1", {
+                type: "bar",
+                data: {
+                    labels: locations.map((l) => l.name),
+                    datasets: states.map((st) => ({
+                        label: st.label,
+                        data: locations.map((l) => l.states[st.key] || 0),
+                        backgroundColor: VEHICLE_STATE_COLORS[st.key] || PALETTE.grey,
+                        borderRadius: 4,
+                    })),
+                },
+                options: {
+                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } },
+                },
+            });
+            this.makeChart("o_rt_chart_2", {
+                type: "doughnut",
+                data: {
+                    labels: states.map((st) => st.label),
+                    datasets: [
+                        {
+                            data: states.map((st) => st.count),
+                            backgroundColor: states.map((st) => VEHICLE_STATE_COLORS[st.key] || PALETTE.grey),
+                        },
+                    ],
+                },
+                options: { cutout: "62%" },
+            });
+        } else if (this.page === "trips") {
             const { vehicles, states } = this.state.data.charts;
             this.makeChart("o_rt_chart_1", {
                 type: "bar",

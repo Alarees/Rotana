@@ -5,11 +5,12 @@
             <!-- ======= الشريط العلوي ======= -->
             <header class="o_rt_appbar">
                 <div class="o_rt_title">
-                    <i t-attf-class="fa #{page === 'trips' ? 'fa-truck' : 'fa-money'}"/>
+                    <i t-attf-class="fa #{page === 'accounts' ? 'fa-money' : 'fa-truck'}"/>
                     <span t-if="page === 'trips'">داشبورد الرحلات</span>
+                    <span t-elif="page === 'vehicles'">داشبورد المركبات</span>
                     <span t-else="">داشبورد الحسابات</span>
                 </div>
-                <div class="o_rt_actions">
+                <div class="o_rt_actions" t-if="page !== 'vehicles'">
                     <button class="o_rt_btn o_rt_btn_tonal" t-on-click="() => this.exportTable('xlsx')" t-att-disabled="state.loading">
                         <i class="fa fa-file-excel-o"/> Excel
                     </button>
@@ -20,7 +21,7 @@
             </header>
 
             <!-- ======= الفلاتر ======= -->
-            <section class="o_rt_card o_rt_filters">
+            <section class="o_rt_card o_rt_filters" t-if="page !== 'vehicles'">
                 <label class="o_rt_field">
                     <span>من تاريخ</span>
                     <input type="date" t-att-value="state.filters.date_from" t-on-change="(ev) => this.onDateChange('date_from', ev)"/>
@@ -62,6 +63,98 @@
             <div t-if="state.open" class="o_rt_scrim" t-on-click="closeDropdown"/>
 
             <div t-if="state.loading" class="o_rt_loading"><i class="fa fa-circle-o-notch fa-spin"/> جارٍ التحميل...</div>
+
+            <t t-elif="page === 'vehicles'">
+                <nav class="o_rt_tabs">
+                    <button t-att-class="{'o_rt_active': state.vtab === 'overview'}" t-on-click="() => state.vtab = 'overview'">
+                        <i class="fa fa-th-large"/> الحالات
+                    </button>
+                    <button t-att-class="{'o_rt_active': state.vtab === 'locations'}" t-on-click="() => state.vtab = 'locations'">
+                        <i class="fa fa-map-marker"/> حسب الموقع
+                    </button>
+                </nav>
+
+                <t t-if="state.vtab === 'overview'">
+                    <section class="o_rt_kpis">
+                        <div class="o_rt_kpi o_rt_k_primary"><span>إجمالي المركبات</span><b t-esc="fmtInt(state.data.total)"/></div>
+                        <t t-foreach="state.data.states" t-as="st" t-key="st.key">
+                            <div t-attf-class="o_rt_kpi o_rt_vs_#{st.key}"><span t-esc="st.label"/><b t-esc="fmtInt(st.count)"/></div>
+                        </t>
+                    </section>
+                    <section class="o_rt_charts">
+                        <div class="o_rt_card o_rt_chart_wide">
+                            <h4>حالات المركبات في كل موقع</h4>
+                            <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
+                        </div>
+                        <div class="o_rt_card">
+                            <h4>توزيع المركبات حسب الحالة</h4>
+                            <div class="o_rt_canvas"><canvas id="o_rt_chart_2"/></div>
+                        </div>
+                    </section>
+                    <h4 class="o_rt_section_title">المواقع</h4>
+                    <section class="o_rt_loc_grid">
+                        <t t-foreach="state.data.locations" t-as="loc" t-key="loc.id">
+                            <div class="o_rt_card o_rt_loc_card" t-on-click="() => this.openLocation(loc.id)">
+                                <div class="o_rt_loc_head">
+                                    <i class="fa fa-map-marker"/>
+                                    <b t-esc="loc.name"/>
+                                    <span class="o_rt_loc_total" t-esc="fmtInt(loc.total)"/>
+                                </div>
+                                <div class="o_rt_loc_states">
+                                    <t t-foreach="state.data.states" t-as="st" t-key="st.key">
+                                        <span t-attf-class="o_rt_pill o_rt_vs_#{st.key}">
+                                            <t t-esc="st.label"/> <b t-esc="loc.states[st.key] || 0"/>
+                                        </span>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </section>
+                </t>
+
+                <section t-else="" class="o_rt_split">
+                    <aside class="o_rt_card o_rt_loc_list">
+                        <ul>
+                            <li t-att-class="{'o_rt_selected': state.locId === null}" t-on-click="() => this.selectLocation(null)">
+                                <span>كل المواقع</span><b t-esc="fmtInt(state.data.total)"/>
+                            </li>
+                            <t t-foreach="state.data.locations" t-as="loc" t-key="loc.id">
+                                <li t-att-class="{'o_rt_selected': state.locId === loc.id}" t-on-click="() => this.selectLocation(loc.id)">
+                                    <span t-esc="loc.name"/><b t-esc="fmtInt(loc.total)"/>
+                                </li>
+                            </t>
+                        </ul>
+                    </aside>
+                    <div class="o_rt_loc_main">
+                        <div class="o_rt_state_chips">
+                            <t t-foreach="state.data.states" t-as="st" t-key="st.key">
+                                <button t-attf-class="o_rt_pill o_rt_vs_#{st.key} #{state.vState === st.key ? 'o_rt_pill_on' : ''}" t-on-click="() => this.toggleVState(st.key)">
+                                    <t t-esc="st.label"/> <b t-esc="stateCount(st.key)"/>
+                                </button>
+                            </t>
+                        </div>
+                        <section class="o_rt_card o_rt_table_card">
+                            <div class="o_rt_table_wrap">
+                                <table class="o_rt_table">
+                                    <thead>
+                                        <tr><th>رقم الوحدة</th><th>السائق</th><th>الحالة</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="vehicleRows" t-as="row" t-key="row.res_id">
+                                            <tr class="o_rt_row" t-on-click="() => this.openRecord(row)">
+                                                <td t-esc="row.unit_number"/>
+                                                <td t-esc="row.driver"/>
+                                                <td><span t-attf-class="o_rt_badge o_rt_s_#{row.state}" t-esc="row.state_label"/></td>
+                                            </tr>
+                                        </t>
+                                        <tr t-if="!vehicleRows.length"><td colspan="3" class="o_rt_empty">لا توجد مركبات</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </t>
 
             <t t-elif="page === 'trips'">
                 <!-- ======= KPIs الرحلات ======= -->

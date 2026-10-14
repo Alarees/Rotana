@@ -201,6 +201,70 @@ $rt-shadow-2: 0 2px 6px 2px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .12);
         &.o_rt_notice_warn { background: #fff4e5; color: #b26a00; }
     }
 
+    // ---- المركبات ----
+    $rt-vstates: (ready: $rt-green, booked: $rt-amber, on_trip: $rt-primary, on_maintenance: $rt-red);
+    @each $key, $color in $rt-vstates {
+        .o_rt_kpi.o_rt_vs_#{$key} { border-color: $color; > b { color: $color; } }
+        .o_rt_pill.o_rt_vs_#{$key} { background: rgba($color, .12); color: darken($color, 12%); }
+        .o_rt_badge.o_rt_s_#{$key} { background: $color; color: #fff; }
+    }
+    .o_rt_badge.o_rt_s_booked { color: #4a3b00; }
+    .o_rt_section_title { margin: 8px 4px 12px; color: $rt-muted; font-weight: 500; }
+    .o_rt_loc_grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+    }
+    .o_rt_loc_card {
+        cursor: pointer;
+        transition: box-shadow .15s, transform .15s;
+        &:hover { box-shadow: $rt-shadow-2; transform: translateY(-2px); }
+    }
+    .o_rt_loc_head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+        i { color: $rt-primary; }
+        b { flex: 1; font-weight: 600; }
+    }
+    .o_rt_loc_total {
+        background: $rt-primary-container;
+        color: $rt-primary;
+        border-radius: 12px;
+        padding: 2px 12px;
+        font-weight: 600;
+    }
+    .o_rt_loc_states, .o_rt_state_chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .o_rt_pill {
+        border: 0;
+        border-radius: 14px;
+        padding: 3px 12px;
+        font-size: .85rem;
+        &.o_rt_pill_on { outline: 2px solid currentColor; }
+    }
+    .o_rt_state_chips { margin-bottom: 12px; .o_rt_pill { cursor: pointer; } }
+    .o_rt_split {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 16px;
+        align-items: start;
+        @media (max-width: 900px) { grid-template-columns: 1fr; }
+    }
+    .o_rt_loc_list {
+        padding: 8px 0;
+        ul { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow: auto; }
+        li {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 18px;
+            cursor: pointer;
+            &:hover { background: $rt-surface; }
+            &.o_rt_selected { background: $rt-primary-container; color: $rt-primary; font-weight: 600; }
+        }
+    }
+
     // ---- التبويبات ----
     .o_rt_tabs {
         display: flex;
