@@ -8,7 +8,7 @@
     <menuitem id="menu_rotana_transport_root"
               name="نقل روتانا"
               sequence="80"
-              web_icon="rotana_transport_sale,static/description/icon.jpeg"
+              web_icon="rotana_transport_sale,static/description/icon.png"
               groups="rotana_transport_sale.group_rotana_transport_user"/>
 
     <!-- أوامر بيع النقل -->

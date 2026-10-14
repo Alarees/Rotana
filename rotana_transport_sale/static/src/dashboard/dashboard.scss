@@ -1,0 +1,245 @@
+// Material Design 3 مبسّط للداشبورد
+$rt-primary: #3949ab;
+$rt-primary-container: #e8eaf6;
+$rt-teal: #00897b;
+$rt-red: #e53935;
+$rt-amber: #ffb300;
+$rt-green: #43a047;
+$rt-surface: #fafafc;
+$rt-outline: #dfe1ea;
+$rt-text: #1c1b1f;
+$rt-muted: #6b6f7b;
+$rt-shadow-1: 0 1px 2px rgba(0, 0, 0, .12), 0 1px 3px 1px rgba(0, 0, 0, .08);
+$rt-shadow-2: 0 2px 6px 2px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .12);
+
+.o_rt_dash {
+    background: $rt-surface;
+    color: $rt-text;
+    height: 100%;
+    overflow: auto;
+    padding: 0 16px 24px;
+
+    .o_rt_appbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0 -16px 16px;
+        padding: 12px 20px;
+        background: $rt-primary;
+        color: #fff;
+        box-shadow: $rt-shadow-2;
+
+        .o_rt_title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .o_rt_actions { display: flex; gap: 8px; }
+    }
+
+    .o_rt_btn {
+        border: 0;
+        border-radius: 20px;
+        padding: 8px 18px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: box-shadow .15s, background .15s;
+        &[disabled] { opacity: .5; cursor: default; }
+    }
+    .o_rt_btn_tonal {
+        background: $rt-primary-container;
+        color: $rt-primary;
+        &:hover:not([disabled]) { box-shadow: $rt-shadow-1; }
+    }
+    .o_rt_btn_text {
+        background: transparent;
+        color: $rt-primary;
+        align-self: flex-end;
+        &:hover { background: $rt-primary-container; }
+    }
+
+    .o_rt_card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: $rt-shadow-1;
+        padding: 16px;
+        h4 { font-size: 1rem; font-weight: 500; margin-bottom: 12px; color: $rt-muted; }
+    }
+
+    // ---- الفلاتر ----
+    .o_rt_filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 4;
+    }
+    .o_rt_field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        position: relative;
+        > span { font-size: .8rem; color: $rt-muted; }
+        input[type="date"] {
+            border: 1px solid $rt-outline;
+            border-radius: 8px;
+            padding: 8px 10px;
+            min-width: 160px;
+            &:focus { outline: 2px solid $rt-primary; border-color: transparent; }
+        }
+    }
+    .o_rt_multi { min-width: 240px; }
+    .o_rt_multi_box {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        border: 1px solid $rt-outline;
+        border-radius: 8px;
+        padding: 5px 10px;
+        min-height: 38px;
+        cursor: pointer;
+        .o_rt_caret { margin-inline-start: auto; color: $rt-muted; }
+        .o_rt_placeholder { color: $rt-muted; }
+    }
+    .o_rt_chip {
+        background: $rt-primary-container;
+        color: $rt-primary;
+        border-radius: 8px;
+        padding: 2px 8px;
+        font-size: .85rem;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        i:hover { color: $rt-red; }
+    }
+    .o_rt_dropdown {
+        position: absolute;
+        top: 100%;
+        inset-inline: 0;
+        margin-top: 4px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: $rt-shadow-2;
+        z-index: 20;
+        .o_rt_search {
+            width: calc(100% - 16px);
+            margin: 8px;
+            border: 1px solid $rt-outline;
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+        ul { list-style: none; margin: 0; padding: 0 0 6px; max-height: 260px; overflow: auto; }
+        li {
+            padding: 8px 14px;
+            cursor: pointer;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            &:hover { background: $rt-surface; }
+            &.o_rt_selected { background: $rt-primary-container; color: $rt-primary; }
+        }
+    }
+    .o_rt_scrim { position: fixed; inset: 0; z-index: 3; }
+
+    .o_rt_loading { text-align: center; padding: 60px; color: $rt-muted; font-size: 1.1rem; }
+
+    // ---- KPI ----
+    .o_rt_kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    .o_rt_kpi {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: $rt-shadow-1;
+        padding: 14px 18px;
+        border-inline-start: 4px solid $rt-outline;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        > span { color: $rt-muted; font-size: .85rem; }
+        > b { font-size: 1.4rem; font-weight: 600; small { font-size: .75rem; color: $rt-muted; } }
+        &.o_rt_k_primary { border-color: $rt-primary; }
+        &.o_rt_k_teal { border-color: $rt-teal; }
+        &.o_rt_k_red { border-color: $rt-red; }
+    }
+
+    // ---- الرسوم ----
+    .o_rt_charts {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+        .o_rt_chart_full { grid-column: 1 / -1; }
+        @media (max-width: 900px) { grid-template-columns: 1fr; }
+    }
+    .o_rt_canvas { position: relative; height: 280px; }
+
+    // ---- التبويبات ----
+    .o_rt_tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid $rt-outline;
+        button {
+            border: 0;
+            background: transparent;
+            padding: 12px 22px;
+            color: $rt-muted;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            &:hover { background: $rt-primary-container; }
+            &.o_rt_active { color: $rt-primary; border-bottom-color: $rt-primary; }
+        }
+    }
+
+    // ---- الجدول ----
+    .o_rt_table_card { padding: 0; overflow: hidden; }
+    .o_rt_table_wrap { overflow: auto; max-height: 520px; }
+    .o_rt_table {
+        width: 100%;
+        border-collapse: collapse;
+        th, td { padding: 10px 14px; border-bottom: 1px solid $rt-outline; white-space: nowrap; }
+        thead th {
+            position: sticky;
+            top: 0;
+            background: $rt-primary-container;
+            color: $rt-primary;
+            font-weight: 600;
+            text-align: start;
+        }
+        .o_rt_num { text-align: end; font-variant-numeric: tabular-nums; }
+        .o_rt_row { cursor: pointer; &:hover { background: $rt-surface; } }
+        tfoot td {
+            position: sticky;
+            bottom: 0;
+            background: $rt-primary-container;
+            font-weight: 600;
+        }
+        .o_rt_empty { text-align: center; color: $rt-muted; padding: 28px; }
+    }
+    .o_rt_neg { color: $rt-red; }
+    .o_rt_pos { color: $rt-green; }
+
+    .o_rt_badge {
+        border-radius: 12px;
+        padding: 2px 12px;
+        font-size: .8rem;
+        color: #fff;
+        background: #78909c;
+        &.o_rt_s_confirmed { background: $rt-primary; }
+        &.o_rt_s_in_transit { background: $rt-amber; color: #4a3b00; }
+        &.o_rt_s_done { background: $rt-green; }
+    }
+}

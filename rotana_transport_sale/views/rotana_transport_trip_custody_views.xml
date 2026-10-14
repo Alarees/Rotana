@@ -38,7 +38,7 @@
                         </button>
                         <button name="action_view_moves" type="object"
                                 class="oe_stat_button" icon="fa-book"
-                                invisible="not confirm_move_id">
+                                invisible="not done_move_id">
                             <span>القيود</span>
                         </button>
                         <button name="action_view_payments" type="object"
@@ -81,6 +81,7 @@
                             </field>
                             <group class="oe_subtotal_footer">
                                 <field name="amount" readonly="1"/>
+                                <field name="paid_amount"/>
                                 <field name="spent_amount"/>
                                 <field name="difference_amount"/>
                                 <field name="remaining_amount" invisible="state != 'done'"/>
@@ -158,9 +159,14 @@
     </record>
 
     <!-- القائمة تحت: المحاسبة / المحاسبة -->
-    <menuitem id="menu_rotana_transport_trip_custody"
+    <menuitem id="menu_rotana_transport_trip_custody_root"
               name="العهد المالية"
               parent="account.menu_finance_entries"
+              sequence="5"
+              groups="account.group_account_user"/>
+    <menuitem id="menu_rotana_transport_trip_custody"
+              name="العهد المالية"
+              parent="menu_rotana_transport_trip_custody_root"
               action="action_rotana_transport_trip_custody"
               sequence="5"
               groups="account.group_account_user"/>

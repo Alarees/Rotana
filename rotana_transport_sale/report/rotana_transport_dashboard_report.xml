@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="paperformat_rotana_dashboard" model="report.paperformat">
+        <field name="name">Rotana Dashboard A4 Landscape</field>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_spacing">5</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_rotana_dashboard" model="ir.actions.report">
+        <field name="name">تقرير داشبورد النقل</field>
+        <field name="model">rotana.transport.dashboard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">rotana_transport_sale.report_dashboard</field>
+        <field name="report_file">rotana_transport_sale.report_dashboard</field>
+        <field name="paperformat_id" ref="paperformat_rotana_dashboard"/>
+    </record>
+
+    <template id="report_dashboard">
+        <t t-call="web.html_container">
+            <div class="page" dir="rtl" style="text-align:right; font-size:11px;">
+                <h3 t-esc="title"/>
+                <p t-if="filters_text" t-esc="filters_text"/>
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr style="background:#3949AB; color:#fff;">
+                            <t t-foreach="columns" t-as="col">
+                                <th><t t-esc="col"/></th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="rows" t-as="row">
+                            <tr>
+                                <t t-foreach="row" t-as="cell">
+                                    <td><t t-esc="cell"/></td>
+                                </t>
+                            </tr>
+                        </t>
+                        <tr t-if="total_row" style="font-weight:bold; background:#E8EAF6;">
+                            <t t-foreach="total_row" t-as="cell">
+                                <td><t t-esc="cell"/></td>
+                            </t>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+</odoo>

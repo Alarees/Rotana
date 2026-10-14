@@ -37,8 +37,16 @@
         'views/fleet_vehicle_log_views.xml',
         'views/rotana_transport_trip_custody_views.xml',
         'views/rotana_transport_menus.xml',
+        'report/rotana_transport_dashboard_report.xml',
+        'views/rotana_transport_dashboard_views.xml',
     ],
-    "images":  ['static/src/logo.jpeg'],
+    'assets': {
+        'web.assets_backend': [
+            'rotana_transport_sale/static/src/dashboard/**/*',
+        ],
+    },
+    'external_dependencies': {'python': ['xlsxwriter']},
+    "images":  ['static/src/icon.png'],
     'installable': True,
     'application': True,
     'auto_install': False,

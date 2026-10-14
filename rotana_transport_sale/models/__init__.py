@@ -13,4 +13,5 @@ from . import (
     res_company,
     account_payment,
     rotana_transport_trip_custody,
+    rotana_transport_dashboard,
 )

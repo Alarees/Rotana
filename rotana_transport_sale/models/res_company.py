@@ -8,8 +8,8 @@ class ResCompany(models.Model):
     custody_account_id = fields.Many2one(
         'account.account',
         string='حساب العهد',
-        domain="[('account_type', '=', 'asset_receivable')]",
-        help='حساب من نوع (مدينة) تُقيَّد عليه عهد السائقين.',
+        domain="[('account_type', 'in', ('liability_payable', 'asset_receivable'))]",
+        help='حساب العهد (Custody Payable) من نوع دائنة أو مدينة، تُقيَّد عليه عهد السائقين.',
     )
     custody_journal_id = fields.Many2one(
         'account.journal',

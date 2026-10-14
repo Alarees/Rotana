@@ -17,7 +17,7 @@
                         </setting>
                     </block>
                     <block title="العهد المالية" name="custody_settings_container">
-                        <setting id="custody_account_id" help="حساب من نوع (مدينة) تُقيَّد عليه عهد السائقين.">
+                        <setting id="custody_account_id" help="حساب العهد (Custody Payable) من نوع دائنة أو مدينة، تُقيَّد عليه عهد السائقين.">
                             <field name="custody_account_id"/>
                         </setting>
                         <setting id="custody_journal_id" help="دفتر اليومية الذي تُنشأ فيه قيود العهد.">

@@ -20,7 +20,7 @@ class ResConfigSettings(models.TransientModel):
     custody_account_id = fields.Many2one(
         related='company_id.custody_account_id',
         readonly=False,
-        domain="[('account_type', '=', 'asset_receivable')]",
+        domain="[('account_type', 'in', ('liability_payable', 'asset_receivable'))]",
     )
     custody_journal_id = fields.Many2one(
         related='company_id.custody_journal_id',

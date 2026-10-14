@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rotana_transport_sale.Dashboard">
+        <div class="o_rt_dash o_action">
+            <!-- ======= الشريط العلوي ======= -->
+            <header class="o_rt_appbar">
+                <div class="o_rt_title">
+                    <i t-attf-class="fa #{page === 'trips' ? 'fa-truck' : 'fa-money'}"/>
+                    <span t-if="page === 'trips'">داشبورد الرحلات</span>
+                    <span t-else="">داشبورد الحسابات</span>
+                </div>
+                <div class="o_rt_actions">
+                    <button class="o_rt_btn o_rt_btn_tonal" t-on-click="() => this.exportTable('xlsx')" t-att-disabled="state.loading">
+                        <i class="fa fa-file-excel-o"/> Excel
+                    </button>
+                    <button class="o_rt_btn o_rt_btn_tonal" t-on-click="() => this.exportTable('pdf')" t-att-disabled="state.loading">
+                        <i class="fa fa-file-pdf-o"/> PDF
+                    </button>
+                </div>
+            </header>
+
+            <!-- ======= الفلاتر ======= -->
+            <section class="o_rt_card o_rt_filters">
+                <label class="o_rt_field">
+                    <span>من تاريخ</span>
+                    <input type="date" t-att-value="state.filters.date_from" t-on-change="(ev) => this.onDateChange('date_from', ev)"/>
+                </label>
+                <label class="o_rt_field">
+                    <span>إلى تاريخ</span>
+                    <input type="date" t-att-value="state.filters.date_to" t-on-change="(ev) => this.onDateChange('date_to', ev)"/>
+                </label>
+                <t t-foreach="multiFilters" t-as="mf" t-key="mf.key">
+                    <div class="o_rt_field o_rt_multi">
+                        <span t-esc="mf.label"/>
+                        <div class="o_rt_multi_box" t-on-click="() => this.toggleDropdown(mf.key)">
+                            <t t-foreach="selectedOptions(mf)" t-as="opt" t-key="opt.id">
+                                <span class="o_rt_chip">
+                                    <t t-esc="opt.name"/>
+                                    <i class="fa fa-times" t-on-click.stop="() => this.toggleOption(mf, opt.id)"/>
+                                </span>
+                            </t>
+                            <span t-if="!state.filters[mf.key].length" class="o_rt_placeholder">الكل</span>
+                            <i class="fa fa-caret-down o_rt_caret"/>
+                        </div>
+                        <div t-if="state.open === mf.key" class="o_rt_dropdown">
+                            <input type="search" class="o_rt_search" placeholder="بحث..." t-att-value="state.search" t-on-input="onSearch"/>
+                            <ul>
+                                <t t-foreach="optionsFor(mf)" t-as="opt" t-key="opt.id">
+                                    <li t-att-class="{'o_rt_selected': isSelected(mf, opt.id)}" t-on-click="() => this.toggleOption(mf, opt.id)">
+                                        <i t-attf-class="fa #{isSelected(mf, opt.id) ? 'fa-check-square' : 'fa-square-o'}"/>
+                                        <t t-esc="opt.name"/>
+                                    </li>
+                                </t>
+                            </ul>
+                        </div>
+                    </div>
+                </t>
+                <button t-if="hasFilters" class="o_rt_btn o_rt_btn_text" t-on-click="resetFilters">
+                    <i class="fa fa-undo"/> إعادة تعيين
+                </button>
+            </section>
+            <div t-if="state.open" class="o_rt_scrim" t-on-click="closeDropdown"/>
+
+            <div t-if="state.loading" class="o_rt_loading"><i class="fa fa-circle-o-notch fa-spin"/> جارٍ التحميل...</div>
+
+            <t t-elif="page === 'trips'">
+                <!-- ======= KPIs الرحلات ======= -->
+                <section class="o_rt_kpis">
+                    <div class="o_rt_kpi"><span>عدد الرحلات</span><b t-esc="fmtInt(state.data.kpis.count)"/></div>
+                    <div class="o_rt_kpi o_rt_k_primary"><span>الوزن المنقول</span><b t-esc="fmt(state.data.kpis.transported)"/></div>
+                    <div class="o_rt_kpi o_rt_k_teal"><span>الوزن المفرغ</span><b t-esc="fmt(state.data.kpis.discharged)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>إجمالي العجز</span><b t-esc="fmt(state.data.kpis.shortage)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>نسبة العجز</span><b><t t-esc="fmt(state.data.kpis.shortage_pct)"/>%</b></div>
+                </section>
+                <!-- ======= الرسوم ======= -->
+                <section class="o_rt_charts">
+                    <div class="o_rt_card o_rt_chart_wide">
+                        <h4>المنقول والمفرغ والعجز حسب العربة (أعلى 10 عجزاً)</h4>
+                        <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
+                    </div>
+                    <div class="o_rt_card">
+                        <h4>الرحلات حسب الحالة</h4>
+                        <div class="o_rt_canvas"><canvas id="o_rt_chart_2"/></div>
+                    </div>
+                </section>
+                <t t-call="rotana_transport_sale.DashboardTable"/>
+            </t>
+
+            <t t-else="">
+                <!-- ======= تبويبات الحسابات ======= -->
+                <nav class="o_rt_tabs">
+                    <t t-foreach="subTabs" t-as="tab" t-key="tab.key">
+                        <button t-att-class="{'o_rt_active': state.sub === tab.key}" t-on-click="() => state.sub = tab.key">
+                            <i t-attf-class="fa #{tab.icon}"/> <t t-esc="tab.label"/>
+                        </button>
+                    </t>
+                </nav>
+                <section class="o_rt_kpis">
+                    <div class="o_rt_kpi"><span>عدد السجلات</span><b t-esc="fmtInt(section.rows.length)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>إجمالي المدين</span><b><t t-esc="fmt(section.totals.debit)"/> <small t-esc="currency"/></b></div>
+                    <div class="o_rt_kpi o_rt_k_teal"><span>إجمالي الدائن</span><b><t t-esc="fmt(section.totals.credit)"/> <small t-esc="currency"/></b></div>
+                    <div t-attf-class="o_rt_kpi #{section.totals.profit &lt; 0 ? 'o_rt_k_red' : 'o_rt_k_primary'}"><span>الربح</span><b><t t-esc="fmt(section.totals.profit)"/> <small t-esc="currency"/></b></div>
+                </section>
+                <section class="o_rt_charts">
+                    <div class="o_rt_card o_rt_chart_full">
+                        <h4>المدين والدائن والربح (أعلى 10 حسب قيمة الربح)</h4>
+                        <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
+                    </div>
+                </section>
+                <t t-call="rotana_transport_sale.DashboardTable"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="rotana_transport_sale.DashboardTable">
+        <section class="o_rt_card o_rt_table_card">
+            <div class="o_rt_table_wrap">
+                <table class="o_rt_table">
+                    <thead>
+                        <tr>
+                            <t t-foreach="section.columns" t-as="col" t-key="col.key">
+                                <th t-att-class="['float', 'int', 'shortage', 'profit'].includes(col.type) ? 'o_rt_num' : ''" t-esc="col.label"/>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="section.rows" t-as="row" t-key="row.res_id">
+                            <tr class="o_rt_row" t-on-click="() => this.openRecord(row)">
+                                <t t-foreach="section.columns" t-as="col" t-key="col.key">
+                                    <td t-att-class="cellClass(col, row)">
+                                        <span t-if="col.type === 'state'" t-attf-class="o_rt_badge o_rt_s_#{row.state}" t-esc="row.state_label"/>
+                                        <t t-else="" t-esc="cellText(col, row)"/>
+                                    </td>
+                                </t>
+                            </tr>
+                        </t>
+                        <tr t-if="!section.rows.length"><td t-att-colspan="section.columns.length" class="o_rt_empty">لا توجد بيانات ضمن الفلاتر الحالية</td></tr>
+                    </tbody>
+                    <tfoot t-if="section.rows.length">
+                        <tr>
+                            <t t-foreach="section.columns" t-as="col" t-key="col.key">
+                                <td t-att-class="totalClass(col)">
+                                    <t t-if="col_index === 0">الإجمالي</t>
+                                    <t t-else="" t-esc="totalText(col)"/>
+                                </td>
+                            </t>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+    </t>
+</templates>
