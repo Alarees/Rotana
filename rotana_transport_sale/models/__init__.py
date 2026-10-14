@@ -14,4 +14,5 @@ from . import (
     account_payment,
     rotana_transport_trip_custody,
     rotana_transport_dashboard,
+    account_move,
 )

@@ -9,6 +9,7 @@
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import float_round
 
 
 class RotanaTransportSaleOrder(models.Model):
@@ -200,6 +201,46 @@ class RotanaTransportSaleOrder(models.Model):
             'context': {'wizard_id': wizard.id},
             'target': 'current',
         }
+
+    # =======================================
+    # التوزيع التحليلي للرحلات عند الفوترة
+    # =======================================
+
+    def _get_trip_analytic_distribution(self):
+        """نسبة كل رحلة من الفاتورة: {حساب الرحلة التحليلي: النسبة %}.
+
+        النسبة = الوزن المنقول في الرحلة / إجمالي الوزن المطلوب نقله في أمر البيع.
+        - تُحتسب الرحلات غير المسودة التي لها حساب تحليلي ووزن منقول فقط.
+        - لا يتجاوز مجموع النسب 100% (نقل زائد أو اختلاف وحدات الوزن).
+        """
+        self.ensure_one()
+        total = self.total_weight_to_transport
+        if not self.is_transport_order or total <= 0:
+            return {}
+        shares = {}
+        for trip in self.trip_ids:
+            if (
+                trip.state == 'draft'
+                or not trip.account_analytic_id
+                or trip.transported_weight <= 0
+            ):
+                continue
+            key = str(trip.account_analytic_id.id)
+            shares[key] = shares.get(key, 0.0) + trip.transported_weight * 100.0 / total
+        if not shares:
+            return {}
+        percent_total = sum(shares.values())
+        if percent_total > 100.0:
+            shares = {key: value * 100.0 / percent_total for key, value in shares.items()}
+        shares = {
+            key: float_round(value, precision_digits=2) for key, value in shares.items()
+        }
+        # تصحيح فائض التقريب إن وُجد من أكبر نسبة
+        excess = sum(shares.values()) - 100.0
+        if excess > 0:
+            biggest = max(shares, key=shares.get)
+            shares[biggest] = float_round(shares[biggest] - excess, precision_digits=2)
+        return {key: value for key, value in shares.items() if value > 0}
 
     # =======================================
     # إجراء فتح الرحلات

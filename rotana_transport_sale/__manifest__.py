@@ -18,6 +18,7 @@
     'depends': [
         'base',
         'account',
+        'sale',
         'sale_management',
         'analytic',
         'fleet',
