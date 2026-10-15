@@ -49,7 +49,7 @@
                     </div>
                     <div class="oe_title">
                         <h1>
-                            <field name="name"/>
+                            <field name="form_number"/>
                         </h1>
                     </div>
                     <group>
@@ -106,7 +106,7 @@
                   decoration-warning="state == 'confirmed'"
                   decoration-primary="state == 'paid'"
                   decoration-success="state == 'done'">
-                <field name="name"/>
+                <field name="form_number"/>
                 <field name="date"/>
                 <field name="trip_id"/>
                 <field name="partner_id"/>
@@ -128,7 +128,7 @@
         <field name="model">rotana.transport.trip.custody</field>
         <field name="arch" type="xml">
             <search string="بحث في العهد">
-                <field name="name"/>
+                <field name="form_number"/>
                 <field name="trip_id"/>
                 <field name="partner_id" string="السائق"/>
                 <field name="vehicle_id"/>
@@ -188,10 +188,10 @@
             </xpath>
             <xpath expr="//sheet" position="inside">
                 <notebook groups="account.group_account_user">
-                    <page string="العهد المالية" name="custody">
+                    <page string="العهد المالية" name="custody" invisible="custody_count &lt; 1">
                         <field name="custody_ids" readonly="1">
                             <list>
-                                <field name="name"/>
+                                <field name="form_number"/>
                                 <field name="date"/>
                                 <field name="partner_id"/>
                                 <field name="currency_id" column_invisible="1"/>

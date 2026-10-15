@@ -32,8 +32,8 @@ class RotanaTransportTrip(models.Model):
         string='رقم المانيفستو',
         copy=False,
         help='رقم المانيفستو المخصص لأمر النقل.',
-        default=lambda self: _('جديد'),
-        required=True,
+        # default=lambda self: _('جديد'),
+        # required=True,
         readonly=True,
         index=True,
         tracking=True,
@@ -148,14 +148,14 @@ class RotanaTransportTrip(models.Model):
     # دورة الحياة
     # ==============================
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('manifest_number') or vals['manifest_number'] == _('جديد'):
-                vals['manifest_number'] = self.env['ir.sequence'].next_by_code(
-                    'rotana.transport.trip'
-                ) or _('جديد')
-        return super().create(vals_list)
+    # @api.model_create_multi
+    # def create(self, vals_list):
+    #     for vals in vals_list:
+    #         if not vals.get('manifest_number') or vals['manifest_number'] == _('جديد'):
+    #             vals['manifest_number'] = self.env['ir.sequence'].next_by_code(
+    #                 'rotana.transport.trip'
+    #             ) or _('جديد')
+    #     return super().create(vals_list)
 
     def _create_vehicle_log(self, state_to, to_destination=False):
         """تسجيل حركة في سجل مركبة الرحلة (وهو يحدّث حالة المركبة وموقعها).
@@ -182,6 +182,18 @@ class RotanaTransportTrip(models.Model):
             })
         return Log.create(vals_list)
 
+    def action_generate_manifest_number(self):
+        manifest_number = self.env['ir.sequence'].next_by_code('rotana.transport.trip')
+        self.write({'manifest_number': manifest_number})
+        account_analytic = self.env['account.analytic.account'].create({
+            'name': self.manifest_number,
+            'company_id': self.company_id.id,
+            'sale_order_id': self.sale_order_id.id,
+            'plan_id': self.vehicle_id.analytic_plan_id.id if self.vehicle_id else False,
+        })
+        self.account_analytic_id = account_analytic.id
+     
+
     def action_confirm(self):
         """تأكيد الرحلة: تنتقل من مسودة إلى مؤكدة."""
         for trip in self:
@@ -196,13 +208,6 @@ class RotanaTransportTrip(models.Model):
             #     'readyness_state': 'booked',
             #     'state_ref': trip,
             # })
-            account_analytic = self.env['account.analytic.account'].create({
-                'name': trip.manifest_number,
-                'company_id': trip.company_id.id,
-                'sale_order_id': trip.sale_order_id.id,
-                'plan_id': trip.vehicle_id.analytic_plan_id.id if trip.vehicle_id else False,
-            })
-            trip.account_analytic_id = account_analytic.id
         return True
 
     def action_start_transit(self):

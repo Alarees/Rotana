@@ -14,7 +14,7 @@
                             invisible="state != 'draft'"/>
                     <button name="action_start_transit" string="بدء الرحلة" type="object"
                             class="btn-primary"
-                            invisible="state != 'confirmed'"/>
+                            invisible="state != 'confirmed' or not manifest_number"/>
                     <button name="action_done" string="إكمال الرحلة" type="object"
                             class="btn-success"
                             invisible="state != 'in_transit'"/>
@@ -42,9 +42,22 @@
                         </button>
                     </div>
                     <div class="oe_title">
-                        <h1>
-                            <field name="manifest_number" readonly="1"/>
-                        </h1>
+                        <div class="container row">
+                            <div class="col-8">
+                                <h1>
+                                    <field name="manifest_number" readonly="1"/>
+                                </h1>
+                            </div>
+                            <div class="col-4">
+                                <button name="action_generate_manifest_number"
+                        type="object"
+                        class="btn-primary btn-big"
+                        invisible="state == 'draft' and not manifest_number or manifest_number"
+                        icon="fa-barcode">
+                                    <span>توليد المانفيستو</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <group>
                         <group string="المسار">

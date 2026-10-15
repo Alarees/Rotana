@@ -31,6 +31,13 @@ class FleetVehicle(models.Model):
         string='المرجع الحالي',
         help='المرجع الحالي للمركبة، مثل الرحلة الحالية التي تشارك فيها.',
     )
+    note_ids = fields.Many2many(
+            'fleet.vehicle.note',
+            'fleet_vehicle_note_rel',
+            'vehicle_id',
+            'note_id',
+            string='ملاحظات',
+        )
 
     def create(self, vals):
         model = self.env['fleet.vehicle.model'].browse(vals.get('model_id'))

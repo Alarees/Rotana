@@ -52,7 +52,7 @@ class RotanaTransportTripWizard(models.TransientModel):
             order.message_post(body=_(
                 'تم حذف %(count)s رحلة مسودة: %(names)s',
                 count=len(deleted_names),
-                names='، '.join(deleted_names),
+                # names='، '.join(deleted_names),
             ))
 
         Trip = self.env['rotana.transport.trip']
@@ -76,7 +76,8 @@ class RotanaTransportTripWizard(models.TransientModel):
             order.message_post(body=_(
                 'تم إنشاء %(count)s رحلة: %(names)s',
                 count=len(trips),
-                names='، '.join(trips.mapped('manifest_number')),
+                names=''
+                # names='، '.join(trips.mapped('manifest_number')),
             ))
         # العودة إلى أمر البيع
         return {

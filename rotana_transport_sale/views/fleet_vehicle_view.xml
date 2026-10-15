@@ -40,6 +40,9 @@
                             <i class="fa fa-map-marker me-1"/>
                             <field name="current_location_id" readonly="1" options="{'no_open': True}"/>
                         </span>
+                        <h2>
+                            <field name="note_ids" widget="many2many_tags" placeholder="ملاحظات"/>
+                        </h2>
                     </div>
                 </div>
             </xpath>

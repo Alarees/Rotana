@@ -15,3 +15,5 @@ access_fleet_vehicle_log_user,fleet.vehicle.log.user,model_fleet_vehicle_log,rot
 access_fleet_vehicle_log_manager,fleet.vehicle.log.manager,model_fleet_vehicle_log,rotana_transport_sale.group_rotana_transport_manager,1,0,0,0
 access_rotana_transport_trip_custody_accountant,rotana.transport.trip.custody.accountant,model_rotana_transport_trip_custody,account.group_account_user,1,1,1,1
 access_rotana_transport_trip_custody_line_accountant,rotana.transport.trip.custody.line.accountant,model_rotana_transport_trip_custody_line,account.group_account_user,1,1,1,1
+access_fleet_vehicle_note_user,fleet.vehicle.note.user,model_fleet_vehicle_note,rotana_transport_sale.group_rotana_transport_user,1,1,1,0
+access_fleet_vehicle_note_manager,fleet.vehicle.note.manager,model_fleet_vehicle_note,rotana_transport_sale.group_rotana_transport_manager,1,1,1,1

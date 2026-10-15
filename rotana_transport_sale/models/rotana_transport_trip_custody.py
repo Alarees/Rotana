@@ -28,15 +28,18 @@ class RotanaTransportTripCustody(models.Model):
     _name = 'rotana.transport.trip.custody'
     _description = 'عهدة رحلة النقل'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _rec_name = 'form_number'
     _order = 'id desc'
 
-    name = fields.Char(
-        string='رقم العهدة',
+    form_number = fields.Char(
+        'Form Number',
+        required=True,
         default=lambda self: _('جديد'),
-        readonly=True,
+        readonly=False,
         copy=False,
         index=True,
-    )
+        tracking=True
+        )
     state = fields.Selection(
         CUSTODY_STATES,
         string='الحالة',
@@ -204,14 +207,14 @@ class RotanaTransportTripCustody(models.Model):
     # دورة الحياة
     # ==============================
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('name') or vals['name'] == _('جديد'):
-                vals['name'] = self.env['ir.sequence'].next_by_code(
-                    'rotana.transport.trip.custody'
-                ) or _('جديد')
-        return super().create(vals_list)
+    # @api.model_create_multi
+    # def create(self, vals_list):
+    #     for vals in vals_list:
+    #         if not vals.get('name') or vals['name'] == _('جديد'):
+    #             vals['name'] = self.env['ir.sequence'].next_by_code(
+    #                 'rotana.transport.trip.custody'
+    #             ) or _('جديد')
+    #     return super().create(vals_list)
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_not_draft(self):
@@ -244,8 +247,8 @@ class RotanaTransportTripCustody(models.Model):
     def _get_move_label(self):
         self.ensure_one()
         return _(
-            'عهدة %(name)s - رحلة %(trip)s',
-            name=self.name,
+            'عهدة %(form_number)s - رحلة %(trip)s',
+            form_number=self.form_number,
             trip=self.trip_id.manifest_number,
         )
 
@@ -257,7 +260,7 @@ class RotanaTransportTripCustody(models.Model):
         """تأكيد: تغيير الحالة فقط (القيد المحاسبي هو قيد الدفعة)."""
         for custody in self:
             if custody.state != 'draft':
-                raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.name))
+                raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.form_number))
             # التحقق المبكر من إعدادات الحساب ودفتر اليومية
             custody._get_custody_settings()
             custody.state = 'confirmed'
@@ -322,7 +325,7 @@ class RotanaTransportTripCustody(models.Model):
         """إنهاء: قيد (المصروفات مدين موزعة تحليلياً / العهدة دائن) بإجمالي السطور."""
         for custody in self:
             if custody.state != 'paid':
-                raise UserError(_('إنهاء العهدة %s متاح للعهدة المدفوعة فقط.', custody.name))
+                raise UserError(_('إنهاء العهدة %s متاح للعهدة المدفوعة فقط.', custody.form_number))
             if not custody.line_ids:
                 raise UserError(_('أضف سطور المصروفات الفعلية قبل الإنهاء.'))
             analytic = custody.trip_id.account_analytic_id
@@ -363,7 +366,7 @@ class RotanaTransportTripCustody(models.Model):
                 'journal_id': journal.id,
                 'company_id': custody.company_id.id,
                 'date': fields.Date.context_today(custody),
-                'ref': custody.name,
+                'ref': custody.form_number,
                 'line_ids': move_lines,
             })
             move.action_post()

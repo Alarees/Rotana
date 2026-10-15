@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana Transport Sale',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Sales/Transport',
     'summary': 'نظام إدارة مبيعات خدمات النقل لشركة روتانا',
     'description': """
