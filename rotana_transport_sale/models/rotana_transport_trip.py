@@ -6,8 +6,7 @@
 عند الاكتمال يُحدَّث الموقع الحالي للمركبة.
 """
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
-
+from odoo.exceptions import UserError, ValidationError
 
 TRIP_STATES = [
     ('draft', 'مسودة'),
@@ -113,7 +112,6 @@ class RotanaTransportTrip(models.Model):
         string='الحد المسموح به من النقص',
         default=_defalut_allowable_deficit,
         help='الحد المسموح به من النقص في الوزن أثناء النقل.',
-        readonly=True,
         store=True,
     )
 
@@ -148,14 +146,22 @@ class RotanaTransportTrip(models.Model):
     # دورة الحياة
     # ==============================
 
-    # @api.model_create_multi
-    # def create(self, vals_list):
-    #     for vals in vals_list:
-    #         if not vals.get('manifest_number') or vals['manifest_number'] == _('جديد'):
-    #             vals['manifest_number'] = self.env['ir.sequence'].next_by_code(
-    #                 'rotana.transport.trip'
-    #             ) or _('جديد')
-    #     return super().create(vals_list)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            sale_order = self.env['sale.order'].browse(vals.get('sale_order_id'))
+            if sale_order.state in ('draft', 'cancel'):
+                raise ValidationError('لا يمكن إنشاء رحلة لأمر بيع غير مؤكد')
+        return super().create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError(_(
+                    'لا يمكن حذف الرحلة %(name)s إلا بعد اعادتها لحالة مسودة',
+                    name=rec.manifest_number,
+                ))
+        return super().unlink()
 
     def _create_vehicle_log(self, state_to, to_destination=False):
         """تسجيل حركة في سجل مركبة الرحلة (وهو يحدّث حالة المركبة وموقعها).
@@ -202,6 +208,11 @@ class RotanaTransportTrip(models.Model):
                     'لا يمكن تأكيد الرحلة %(name)s لأنها ليست في حالة مسودة.',
                     name=trip.manifest_number,
                 ))
+            if trip.transported_weight <= 0.0:
+                raise UserError(_(
+                    'لا يمكن تأكيد الرحلة %(name)s, الرجاء ادخال الوزن المنقول',
+                    name=trip.manifest_number,
+                ))
             trip.write({'state': 'confirmed'})
             trip._create_vehicle_log('booked')
             # trip.vehicle_id.sudo().write({
@@ -237,6 +248,8 @@ class RotanaTransportTrip(models.Model):
                     'يجب أن تكون الرحلة %(name)s في الطريق قبل إكمالها.',
                     name=trip.manifest_number,
                 ))
+            if trip.discharged_quantity <= 0.0:
+                raise UserError(_('الرجاء ادخال الوزن المفرغ للرحلة قبل اكمالها'))
             vals = {'state': 'done'}
             if not trip.actual_end_date:
                 vals['actual_end_date'] = fields.Datetime.now()
@@ -291,6 +304,17 @@ class RotanaTransportTrip(models.Model):
             'context': {
                 'default_sale_order_id': self.sale_order_id.id,
             },
+        }
+
+    def action_view_transport_trips(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('رحلات النقل'),
+            'res_model': 'rotana.transport.trip',
+            'views': [(False, 'form')],
+            # 'view_mode': 'list,form',
+            'res_id': self.id,
         }
 
     @api.depends('transported_weight', 'discharged_quantity')

@@ -16,12 +16,6 @@
               name="المبيعات"
               parent="menu_rotana_transport_root"
               sequence="10"
-              groups="rotana_transport_sale.group_rotana_transport_user"/>
-
-    <menuitem id="menu_rotana_transport_sale_orders"
-              name="أوامر بيع النقل"
-              parent="menu_rotana_transport_sales"
-              sequence="10"
               action="action_rotana_transport_sale_orders"
               groups="rotana_transport_sale.group_rotana_transport_user"/>
 

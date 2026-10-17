@@ -85,6 +85,13 @@ class RotanaTransportSaleOrder(models.Model):
         compute='_compute_analytic_account_count',
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('is_transport_order') or self.env.context.get('default_is_transport_order'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('rotana.transport.sale')
+        return super().create(vals_list)
+    
     # =======================================
     # حسابات
     # =======================================
@@ -248,6 +255,8 @@ class RotanaTransportSaleOrder(models.Model):
 
     def action_view_transport_trips(self):
         self.ensure_one()
+        active_id = self.env.context.get('active_id')
+        print("################## active_id -> ", active_id)
         return {
             'type': 'ir.actions.act_window',
             'name': _('رحلات النقل'),

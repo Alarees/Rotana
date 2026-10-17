@@ -77,7 +77,7 @@
                             <field name="driver_id"/>
                         </group>
                         <group string="الوزن وكفاءة النقل">
-                            <field name="transported_weight" readonly="1"/>
+                            <field name="transported_weight"/>
                             <field name="discharged_quantity" />
                             <field name="transport_efficiency" readonly="1" widget="progressbar"/>
                         </group>
@@ -96,10 +96,11 @@
         <field name="model">rotana.transport.trip</field>
         <field name="arch" type="xml">
             <list string="رحلات النقل"
-                  decoration-info="state == 'draft'"
-                  decoration-warning="state == 'confirmed'"
-                  decoration-primary="state == 'in_transit'"
-                  decoration-success="state == 'done'">
+                create="0"
+                decoration-info="state == 'draft'"
+                decoration-warning="state == 'confirmed'"
+                decoration-primary="state == 'in_transit'"
+                decoration-success="state == 'done'">
                 <field name="manifest_number"/>
                 <field name="sale_order_id"/>
                 <field name="vehicle_id"/>
