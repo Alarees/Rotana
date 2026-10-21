@@ -39,15 +39,17 @@ class FleetVehicle(models.Model):
             string='ملاحظات',
         )
 
-    def create(self, vals):
-        model = self.env['fleet.vehicle.model'].browse(vals.get('model_id'))
-        name = (model.brand_id.name or '') + '/' + (model.name or '') + '/' + (vals.get('unit_number'))
-        parent_plan = self.env['ir.config_parameter'].sudo().get_param('rotana_transport_sale.parent_analytic_plan_id')
-        analytic_plan_id = {
-            'parent_id': parent_plan,
-            'name': name,
-        }
-        vals['analytic_plan_id'] = self.env['account.analytic.plan'].create(analytic_plan_id).id
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            model = self.env['fleet.vehicle.model'].browse(vals.get('model_id'))
+            name = (model.brand_id.name or '') + '/' + (model.name or '') + '/' + (vals.get('unit_number'))
+            parent_plan = self.env['ir.config_parameter'].sudo().get_param('rotana_transport_sale.parent_analytic_plan_id')
+            analytic_plan_id = {
+                'parent_id': parent_plan,
+                'name': name,
+            }
+            vals['analytic_plan_id'] = self.env['account.analytic.plan'].create(analytic_plan_id).id
         return super().create(vals)
 
     def copy(self, default=None):
