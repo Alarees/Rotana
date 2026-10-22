@@ -142,6 +142,8 @@ class RotanaTransportTrip(models.Model):
         readonly=True,
     )
 
+    note_ids = fields.One2many('rotana.transport.trip.note', 'trip_id', string='note')
+
     # ==============================
     # دورة الحياة
     # ==============================

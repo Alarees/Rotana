@@ -15,5 +15,6 @@ from . import (
     rotana_transport_trip_custody,
     rotana_transport_dashboard,
     account_move,
-    fleet_vehicle_note
+    fleet_vehicle_note,
+    trip_note
 )
