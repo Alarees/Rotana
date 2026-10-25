@@ -14,7 +14,7 @@
         <record id="seq_rotana_transport_trip" model="ir.sequence">
             <field name="name">رحلة النقل - روتانا</field>
             <field name="code">rotana.transport.trip</field>
-            <field name="prefix"></field>
+            <field name="prefix">MNFS</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>

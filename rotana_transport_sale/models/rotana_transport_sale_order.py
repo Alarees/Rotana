@@ -104,9 +104,12 @@ class RotanaTransportSaleOrder(models.Model):
     @api.depends('trip_ids.transported_weight', 'trip_ids.state')
     def _compute_total_transported_weight(self):
         for order in self:
-            order.total_transported_weight = sum(
+            transported = sum(
                 trip.transported_weight for trip in order.trip_ids.filtered(lambda t: t.state != 'draft')
             )
+            if transported > order.total_weight_to_transport :
+                raise UserError(_(''))
+            order.total_transported_weight = transported
 
     @api.depends('total_transported_weight', 'vehicle_id.capacity_kg')
     def _compute_transport_efficiency(self):

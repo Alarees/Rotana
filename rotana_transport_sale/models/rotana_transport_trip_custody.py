@@ -34,7 +34,7 @@ class RotanaTransportTripCustody(models.Model):
     form_number = fields.Char(
         'Form Number',
         required=True,
-        default=lambda self: _('جديد'),
+        # default=lambda self: _('جديد'),
         readonly=False,
         copy=False,
         index=True,
@@ -259,6 +259,8 @@ class RotanaTransportTripCustody(models.Model):
     def action_confirm(self):
         """تأكيد: تغيير الحالة فقط (القيد المحاسبي هو قيد الدفعة)."""
         for custody in self:
+            if custody.form_number == '':
+                raise UserError(_(''))
             if custody.state != 'draft':
                 raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.form_number))
             # التحقق المبكر من إعدادات الحساب ودفتر اليومية
