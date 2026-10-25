@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- ============================== -->
+    <!-- ملاحظات الرحلة (note_ids): خط زمني أفقي من الأحدث إلى الأقدم -->
+    <!-- ============================== -->
+    <record id="view_rotana_transport_trip_form_notes" model="ir.ui.view">
+        <field name="name">rotana.transport.trip.form.notes</field>
+        <field name="model">rotana.transport.trip</field>
+        <field name="inherit_id" ref="rotana_transport_sale.view_rotana_transport_trip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <notebook>
+                    <page string="ملاحظات الرحلة" name="trip_notes">
+                        <field name="note_ids" mode="kanban" nolabel="1">
+                            <kanban class="o_trip_note_kanban" default_order="time desc">
+                                <field name="time"/>
+                                <field name="note_id"/>
+                                <templates>
+                                    <t t-name="card">
+                                        <div class="o_trip_note_line">
+                                            <small class="o_trip_note_date fw-bold">
+                                                <field name="time"/>
+                                            </small>
+                                            <div class="o_trip_note_marker"/>
+                                            <h4 class="o_trip_note_title mb-0">
+                                                <field name="note_id"/>
+                                            </h4>
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                            <form string="ملاحظة الرحلة">
+                                <sheet>
+                                    <group>
+                                        <field name="note_id"/>
+                                        <field name="time"/>
+                                    </group>
+                                </sheet>
+                            </form>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

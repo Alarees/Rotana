@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         نموذج طلب الصيانة: المركبة + تبويب قطع الغيار + أزرار التأكيد
+         ============================================================ -->
+    <record id="maintenance_request_view_form_inherit_fleet" model="ir.ui.view">
+        <field name="name">maintenance.request.view.form.inherit.fleet</field>
+        <field name="model">maintenance.request</field>
+        <field name="inherit_id" ref="mrp_maintenance.maintenance_request_view_form_inherit_mrp"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='maintenance_for']" position="after">
+                <field name="fleet_id" invisible="maintenance_for in ('equipment', 'workcenter')" required="maintenance_for == 'fleet'"/>
+            </xpath>
+            <xpath expr="//field[@name='equipment_id']" position="attributes">
+                <attribute name="invisible">maintenance_for in ('workcenter', 'fleet')</attribute>
+                <attribute name="required">maintenance_for == 'equipment'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='workcenter_id']" position="attributes">
+                <attribute name="invisible">maintenance_for in ('equipment', 'fleet')</attribute>
+            </xpath>
+
+            <!-- أزرار التأكيد / إلغاء التأكيد -->
+            <xpath expr="//field[@name='stage_id']" position="before">
+                <button name="action_confirm_parts" string="تأكيد" type="object" class="btn-primary"
+                        invisible="parts_state != 'draft' or maintenance_for != 'fleet' or archive"/>
+                <button name="action_reset_parts" string="إلغاء التأكيد" type="object"
+                        invisible="parts_state != 'confirmed'"
+                        confirm="سيتم إلغاء إذن التسليم وإعادة الطلب إلى المسودة. هل أنت متأكد؟"/>
+            </xpath>
+
+            <!-- تبويب قطع الغيار -->
+            <xpath expr="//notebook" position="inside">
+                <page string="قطع الغيار" name="spare_parts" invisible="maintenance_for != 'fleet'">
+                    <field name="parts_state" invisible="1"/>
+                    <div class="mb-2">
+                        <button name="action_add_from_catalog" type="object" class="btn btn-primary"
+                                string="اختيار قطع الغيار" icon="fa-th-large"
+                                invisible="parts_state != 'draft' or archive"/>
+                    </div>
+                    <field name="part_line_ids" readonly="parts_state != 'draft'">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="product_id" options="{'no_create': True}"/>
+                            <field name="qty_available" optional="show"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" optional="show"/>
+                            <field name="unit_cost" optional="show"/>
+                            <field name="subtotal" sum="الإجمالي"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group>
+                        <group>
+                            <field name="parts_state" widget="badge"
+                                   decoration-info="parts_state == 'draft'"
+                                   decoration-warning="parts_state == 'confirmed'"
+                                   decoration-success="parts_state == 'done'"/>
+                            <field name="picking_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="analytic_account_id" readonly="1"/>
+                            <field name="parts_move_id" readonly="1" invisible="not parts_move_id"/>
+                            <field name="parts_total"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         شاشة الكتالوج (مبنية على نفس كتالوج product / industry_fsm_sale)
+         ============================================================ -->
+    <record id="maintenance_part_product_catalog_kanban_view" model="ir.ui.view">
+        <field name="name">maintenance.part.product.catalog.kanban</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_view_kanban_catalog"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='o_kanban_price']" position="after">
+                <div class="text-muted small">
+                    <span>المتوفر: </span>
+                    <field name="qty_available"/>
+                    <field name="uom_id"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- بحث الكتالوج: قائمة جانبية للمخزن والفئة (كل المنتجات المخزنية بلا تقييد بفئة) -->
+    <record id="maintenance_part_product_catalog_search_view" model="ir.ui.view">
+        <field name="name">maintenance.part.product.catalog.search</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_view_search_catalog"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//searchpanel/field[@name='categ_id']" position="before">
+                <field name="maintenance_warehouse_id" string="المخزن" icon="fa-building" expand="1"/>
+            </xpath>
+            <xpath expr="//searchpanel/field[@name='categ_id']" position="attributes">
+                <attribute name="string">الفئات</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         إعدادات الشركة: الخطة التحليلية والحساب والدفتر
+         ============================================================ -->
+    <record id="res_company_view_form_inherit_fleet_maintenance" model="ir.ui.view">
+        <field name="name">res.company.view.form.inherit.fleet.maintenance</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="صيانة المركبات" name="fleet_maintenance">
+                    <group>
+                        <field name="maintenance_analytic_plan_id"/>
+                        <field name="maintenance_expense_account_id"/>
+                        <field name="maintenance_journal_id"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

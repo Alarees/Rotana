@@ -36,6 +36,7 @@
         'views/res_config_settings.xml',
         'views/rotana_transport_trip_wizard_views.xml',
         'views/fleet_vehicle_log_views.xml',
+        'views/rotana_transport_trip_note_views.xml',
         'views/rotana_transport_trip_custody_views.xml',
         'views/rotana_transport_menus.xml',
         'report/rotana_transport_dashboard_report.xml',
@@ -44,6 +45,7 @@
     'assets': {
         'web.assets_backend': [
             'rotana_transport_sale/static/src/dashboard/**/*',
+            'rotana_transport_sale/static/src/scss/trip_note_timeline.scss',
         ],
     },
     'external_dependencies': {'python': ['xlsxwriter']},

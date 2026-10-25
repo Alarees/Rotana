@@ -1,0 +1,68 @@
+// خط زمني أفقي لملاحظات الرحلة: الأحدث أولاً، ويتجه مع اتجاه اللغة (من اليمين في العربية)
+.o_trip_note_kanban {
+    &.o_kanban_renderer {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.5rem 0 1rem;
+    }
+
+    // عناصر التعبئة التي يضيفها أودو لا حاجة لها هنا
+    .o_kanban_ghost {
+        display: none !important;
+    }
+
+    .o_kanban_record {
+        flex: 0 0 auto;
+        width: 10rem;
+        max-width: 10rem;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .o_trip_note_line {
+        padding-inline: 0.25rem 0.75rem;
+    }
+
+    .o_trip_note_date {
+        display: block;
+        color: var(--bs-secondary-color, #6c757d);
+    }
+
+    // الخط الأفقي والنقطة
+    .o_trip_note_marker {
+        position: relative;
+        height: 1rem;
+        margin-block: 0.35rem;
+        margin-inline: -0.25rem -0.75rem;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset-inline: 0;
+            top: 50%;
+            height: 2px;
+            transform: translateY(-50%);
+            background: var(--bs-border-color, #dee2e6);
+        }
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset-inline-start: 0.25rem;
+            top: 50%;
+            width: 0.8rem;
+            height: 0.8rem;
+            transform: translateY(-50%);
+            border-radius: 50%;
+            background: var(--bs-info, #0dcaf0);
+        }
+    }
+
+    .o_trip_note_title {
+        overflow-wrap: anywhere;
+    }
+}

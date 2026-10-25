@@ -1,0 +1,173 @@
+<?xml version="1.0" ?>
+<!-- Copyright 2018-2019 ForgeFlow, S.L.
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0) -->
+<odoo>
+    <record id="purchase_request_line_tree" model="ir.ui.view">
+        <field name="name">purchase.request.line.list</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <list
+                name="Purchase Request Lines"
+                create="false"
+                decoration-muted="cancelled"
+            >
+                <field name="request_id" />
+                <field name="requested_by" widget="many2one_avatar_user" />
+                <field name="assigned_to" widget="many2one_avatar_user" />
+                <field name="date_required" />
+                <field name="description" />
+                <field name="product_qty" />
+                <field name="currency_id" column_invisible="1" />
+                <field name="price_unit" />
+                <field name="price_subtotal" />
+                <field
+                    name="analytic_distribution"
+                    widget="analytic_distribution"
+                    optional="hide"
+                    groups="analytic.group_analytic_accounting"
+                    options="{'business_domain': 'purchase_order'}"
+                />
+                <field
+                    name="company_id"
+                    groups="base.group_multi_company"
+                    widget="selection"
+                />
+                <field name="cancelled" column_invisible="1" />
+            </list>
+        </field>
+    </record>
+    <record id="purchase_request_line_form" model="ir.ui.view">
+        <field name="name">purchase.request.line.form</field>
+        <field name="model">purchase.request.line</field>
+        <field name="priority" eval="20" />
+        <field name="arch" type="xml">
+            <form string="Purchase Request Line" create="false" duplicate="false">
+                <sheet>
+                    <h1>
+                        <field name="request_id" />
+                    </h1>
+                    <group name="main">
+                        <group name="info">
+                            <field name="origin" />
+                            <field name="requested_by" />
+                            <field name="assigned_to" />
+                            <field name="date_start" />
+                            <field
+                                name="company_id"
+                                groups="base.group_multi_company"
+                                widget="selection"
+                            />
+                        </group>
+                        <group name="settings">
+                            <field name="description" />
+                            <field name="product_qty" />
+                            <field name="currency_id" invisible="1" />
+                            <field name="price_unit" />
+                            <field name="price_subtotal" />
+                            <field name="date_required" />
+                            <field name="cancelled" />
+                            <field
+                                name="analytic_distribution"
+                                widget="analytic_distribution"
+                                groups="analytic.group_analytic_accounting"
+                                options="{'business_domain': 'purchase_order'}"
+                            />
+                        </group>
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+    <record id="purchase_request_line_search" model="ir.ui.view">
+        <field name="name">purchase.request.line.search</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <search string="Search Purchase Request Line">
+                <field name="request_id" />
+                <field name="description" />
+                <field name="requested_by" />
+                <field name="assigned_to" />
+                <field name="date_start" />
+                <field name="date_required" />
+                <field
+                    name="analytic_distribution"
+                    groups="analytic.group_analytic_accounting"
+                />
+                <filter
+                    name="uncancelled"
+                    string="Uncancelled"
+                    domain="[('cancelled','=', False)]"
+                />
+                <filter
+                    name="assigned_to_me"
+                    string="Assigned to me"
+                    domain="[('assigned_to','=', uid)]"
+                    help="Assigned to me"
+                />
+                <filter
+                    name="my_requests"
+                    string="My requests"
+                    domain="[('requested_by','=', uid)]"
+                    help="My requests"
+                />
+                <group>
+                    <filter
+                        name="requested_by"
+                        string="Requested by"
+                        domain="[]"
+                        context="{'group_by':'requested_by'}"
+                    />
+                    <filter
+                        name="assigned_to"
+                        string="Assigned to"
+                        domain="[]"
+                        context="{'group_by':'assigned_to'}"
+                    />
+                    <filter
+                        name="request"
+                        string="Request"
+                        domain="[]"
+                        context="{'group_by':'request_id'}"
+                    />
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="purchase_request_line_form_action" model="ir.actions.act_window">
+        <field name="name">Purchase Request Lines</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="purchase_request_line_search" />
+    </record>
+    <record
+        id="purchase_request_line_form_action_tree"
+        model="ir.actions.act_window.view"
+    >
+        <field eval="1" name="sequence" />
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="purchase_request_line_tree" />
+        <field name="act_window_id" ref="purchase_request_line_form_action" />
+    </record>
+    <record
+        id="purchase_request_line_form_action_form2"
+        model="ir.actions.act_window.view"
+    >
+        <field eval="2" name="sequence" />
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="purchase_request_line_form" />
+        <field name="act_window_id" ref="purchase_request_line_form_action" />
+    </record>
+    <menuitem
+        action="purchase_request_line_form_action"
+        id="menu_purchase_request_line"
+        parent="purchase.menu_procurement_management"
+    />
+    <menuitem
+        id="menu_purchase_request_line_act"
+        sequence="20"
+        parent="menu_purchase_request"
+        action="purchase_request_line_form_action"
+    />
+</odoo>

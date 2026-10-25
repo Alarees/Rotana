@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- خطة تحليلية خاصة بالمركبات: كل طلب صيانة يُنشئ حساباً تحليلياً تحتها -->
+    <record id="analytic_plan_vehicles" model="account.analytic.plan">
+        <field name="name">المركبات</field>
+    </record>
+
+    <!-- موقع افتراضي (افتراضي/Virtual) تُسلَّم إليه قطع الغيار المستهلكة في الصيانة.
+         لا يحمل Valuation Account عمداً حتى لا يُنشئ أودو قيداً آلياً مكرراً؛
+         القيد يُنشأ عند إكمال طلب الصيانة. -->
+    <record id="stock_location_maintenance_consumption" model="stock.location">
+        <field name="name">استهلاك صيانة المركبات</field>
+        <field name="usage">inventory</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+</odoo>

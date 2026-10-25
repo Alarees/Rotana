@@ -177,7 +177,7 @@
     <record id="view_rotana_transport_trip_form_custody" model="ir.ui.view">
         <field name="name">rotana.transport.trip.form.custody</field>
         <field name="model">rotana.transport.trip</field>
-        <field name="inherit_id" ref="rotana_transport_sale.view_rotana_transport_trip_form"/>
+        <field name="inherit_id" ref="rotana_transport_sale.view_rotana_transport_trip_form_notes"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_custody" type="object"
@@ -186,9 +186,8 @@
                     <field name="custody_count" widget="statinfo" string="العهد"/>
                 </button>
             </xpath>
-            <xpath expr="//sheet" position="inside">
-                <notebook groups="account.group_account_user">
-                    <page string="العهد المالية" name="custody" invisible="custody_count &lt; 1">
+            <xpath expr="//sheet//notebook" position="inside">
+                    <page string="العهد المالية" name="custody" groups="account.group_account_user" invisible="custody_count &lt; 1">
                         <field name="custody_ids" readonly="1">
                             <list>
                                 <field name="form_number"/>
@@ -201,7 +200,6 @@
                             </list>
                         </field>
                     </page>
-                </notebook>
             </xpath>
         </field>
     </record>
