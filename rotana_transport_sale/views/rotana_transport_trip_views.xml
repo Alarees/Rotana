@@ -60,25 +60,25 @@
                         </div>
                     </div>
                     <group>
-                        <group string="المسار">
+                        <group string="المسار" readonly="state == 'done'">
                             <field name="planned_date"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="actual_start_date"/>
                             <field name="actual_end_date"/>
                         </group>
-                        <group string="المواقع">
+                        <group string="المواقع" readonly="1">
                             <field name="location_from_id"/>
                             <field name="location_to_id"/>
                         </group>
                     </group>
                     <group>
-                        <group string="الموارد">
+                        <group string="الموارد" readonly="1">
                             <field name="vehicle_id"/>
                             <field name="driver_id"/>
                         </group>
                         <group string="الوزن وكفاءة النقل">
-                            <field name="transported_weight"/>
-                            <field name="discharged_quantity" />
+                            <field name="transported_weight" readonly="state != 'draft'"/>
+                            <field name="discharged_quantity" readonly="state != 'in_transit'"/>
                             <field name="transport_efficiency" readonly="1" widget="progressbar"/>
                         </group>
                     </group>
@@ -187,6 +187,7 @@
         <field name="res_model">rotana.transport.trip</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_rotana_transport_trip_search"/>
+        <field name="context">{'create': False, 'edit': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 لا توجد رحلات بعد!

@@ -153,7 +153,7 @@ class RotanaTransportTrip(models.Model):
         for vals in vals_list:
             sale_order = self.env['sale.order'].browse(vals.get('sale_order_id'))
             if sale_order.total_transported_weight >= sale_order.total_weight_to_transport :
-                raise UserError(_(''))
+                raise UserError(_('لا يمكن إنشاء الرحلة، الوزن المنقول مكتمل'))
             if sale_order.state in ('draft', 'cancel'):
                 raise ValidationError('لا يمكن إنشاء رحلة لأمر بيع غير مؤكد')
         return super().create(vals_list)
@@ -171,7 +171,7 @@ class RotanaTransportTrip(models.Model):
     def _onchange_discharged_quantity(self):
         for trip in self:
             if trip.discharged_quantity > trip.transported_weight :
-                raise UserError(_(''))
+                raise UserError(_('لا يمكن أن يكون الوزن المفرغ أكبر من الوزن المنقول'))
 
     def _create_vehicle_log(self, state_to, to_destination=False):
         """تسجيل حركة في سجل مركبة الرحلة (وهو يحدّث حالة المركبة وموقعها).

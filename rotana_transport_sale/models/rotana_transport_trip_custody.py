@@ -260,7 +260,7 @@ class RotanaTransportTripCustody(models.Model):
         """تأكيد: تغيير الحالة فقط (القيد المحاسبي هو قيد الدفعة)."""
         for custody in self:
             if custody.form_number == '':
-                raise UserError(_(''))
+                raise UserError(_('اضف الارقم المتسلسل للعهدة قبل تأكيدها'))
             if custody.state != 'draft':
                 raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.form_number))
             # التحقق المبكر من إعدادات الحساب ودفتر اليومية

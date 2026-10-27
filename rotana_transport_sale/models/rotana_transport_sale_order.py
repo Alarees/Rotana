@@ -108,7 +108,7 @@ class RotanaTransportSaleOrder(models.Model):
                 trip.transported_weight for trip in order.trip_ids.filtered(lambda t: t.state != 'draft')
             )
             if transported > order.total_weight_to_transport :
-                raise UserError(_(''))
+                raise UserError(_('لا يمكن أن يكون الوزن المنقول أكبر من الوزن المراد نقله'))
             order.total_transported_weight = transported
 
     @api.depends('total_transported_weight', 'vehicle_id.capacity_kg')
@@ -225,6 +225,9 @@ class RotanaTransportSaleOrder(models.Model):
         """
         self.ensure_one()
         total = self.total_weight_to_transport
+        transported = self.total_transported_weight
+        if transported < total:
+            raise UserError(_('لا يمكن انشاء فاتورة قبل اكتمال الوزن المنقول'))
         if not self.is_transport_order or total <= 0:
             return {}
         shares = {}
@@ -259,7 +262,6 @@ class RotanaTransportSaleOrder(models.Model):
     def action_view_transport_trips(self):
         self.ensure_one()
         active_id = self.env.context.get('active_id')
-        print("################## active_id -> ", active_id)
         return {
             'type': 'ir.actions.act_window',
             'name': _('رحلات النقل'),
