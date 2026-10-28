@@ -71,7 +71,7 @@ class RotanaTransportTripCustody(models.Model):
         string='السائق',
         compute='_compute_partner_id',
         store=True,
-        readonly=False,
+        readonly=True,
         required=True,
         tracking=True,
     )
@@ -417,46 +417,30 @@ class RotanaTransportTripCustody(models.Model):
     # ==============================
 
     def action_cancel_reset(self):
-        """حذف القيود والدفعات وإعادة العهدة إلى مسودة."""
+        """حذف دفعات العهدة وقيود اليومية المرتبطة بها وإعادة العهدة إلى مسودة.
+
+        تعمل في حالة مسودة أو مؤكدة فقط.
+        """
         for custody in self:
-            if custody.state == 'draft':
-                continue
-            cancelled = custody._wipe_accounting()
-            custody.write({
-                'state': 'draft',
-                'done_move_id': False,
-            })
-            body = _('تم حذف القيود والدفعات وإعادة العهدة إلى مسودة.')
-            if cancelled:
-                body += ' ' + _(
-                    'تعذر حذف بعض القيود حسب قواعد المحاسبة فتم إلغاؤها: %s',
-                    '، '.join(cancelled.mapped('name')),
-                )
-            custody.message_post(body=body)
-        return True
-
-    def _wipe_accounting(self):
-        """يحذف الدفعات ثم القيود. يرجع القيود التي تعذر حذفها فتم إلغاؤها."""
-        self.ensure_one()
-        # 1) الدفعات: حذفها يفك التسويات بنفس الطريقة القياسية
-        self.payment_ids.unlink()
-        # 2) قيد التصفية
-        moves = self.done_move_id.exists()
-        for move in moves.filtered(lambda m: m.state == 'posted'):
-            move.line_ids.remove_move_reconcile()
-            move.button_draft()
-        cancelled = self.env['account.move']
-        for move in moves:
-            try:
-                with self.env.cr.savepoint():
-                    move.unlink()
-            except UserError:
-                # قواعد التدقيق أو تسلسل الأرقام تمنع الحذف: يُلغى القيد بدلاً منه
-                move.button_cancel()
-                cancelled |= move
-        return cancelled
-
-    # ==============================
+            if custody.state not in ('draft', 'confirmed', 'paid'):
+                raise UserError(_(
+                    'إلغاء العهدة %s متاح في حالة مسودة أو مؤكدة فقط.',
+                    custody.form_number,
+                ))
+            payments = custody.payment_ids
+            if payments:
+                names = '، '.join(payments.mapped('display_name'))
+                # 1) إعادة الدفعة وقيدها إلى مسودة بالطريقة القياسية
+                payments.action_draft()
+                # 2) حذف الدفعة يحذف قيدها (وهو مسودة الآن)
+                payments.unlink()
+                custody.message_post(body=_(
+                    'تم حذف الدفعات وقيود اليومية المرتبطة بها: %s', names
+                ))
+            if custody.state != 'draft':
+                custody.state = 'draft'
+                custody.message_post(body=_('تمت إعادة العهدة إلى مسودة.'))
+        return True    # ==============================
     # الأزرار الذكية
     # ==============================
 
