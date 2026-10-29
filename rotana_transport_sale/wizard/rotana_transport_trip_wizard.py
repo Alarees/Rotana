@@ -119,7 +119,7 @@ class RotanaTransportTripWizardLine(models.TransientModel):
     # حقول للعرض في بطاقة الكانبان
     license_plate = fields.Char(related='vehicle_id.license_plate')
     driver_id = fields.Many2one(related='vehicle_id.driver_id')
-    capacity_kg = fields.Float(related='vehicle_id.capacity_kg')
+    capacity_ton = fields.Float(related='vehicle_id.capacity_ton')
     current_location_id = fields.Many2one(related='vehicle_id.current_location_id')
     readyness_state = fields.Selection(related='vehicle_id.readyness_state')
     trip_count = fields.Integer(

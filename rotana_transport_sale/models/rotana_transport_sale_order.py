@@ -111,16 +111,6 @@ class RotanaTransportSaleOrder(models.Model):
                 raise UserError(_('لا يمكن أن يكون الوزن المنقول أكبر من الوزن المراد نقله'))
             order.total_transported_weight = transported
 
-    @api.depends('total_transported_weight', 'vehicle_id.capacity_kg')
-    def _compute_transport_efficiency(self):
-        for order in self:
-            if order.vehicle_id and order.vehicle_id.capacity_kg:
-                order.transport_efficiency = (
-                    order.total_transported_weight / order.vehicle_id.capacity_kg * 100
-                )
-            else:
-                order.transport_efficiency = 0.0
-
     @api.depends('order_line.product_uom_qty')
     def _compute_total_weight_to_transport(self):
         ton = self.env['uom.uom'].search([('name', '=', 'Ton')], limit=1)

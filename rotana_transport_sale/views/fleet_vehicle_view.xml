@@ -48,7 +48,7 @@
             </xpath>
             <field name="plan_to_change_bike" position="after">
                 <field name="analytic_plan_id"/>
-                <field name="capacity_kg"/>
+                <field name="capacity_ton"/>
             </field>
             <!-- زر عرض الرحلات في الرأس -->
             <xpath expr="//div[@name='button_box']" position="inside">

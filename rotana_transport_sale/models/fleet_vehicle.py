@@ -16,8 +16,10 @@ class FleetVehicle(models.Model):
         string='خطة الحساب التحليلي',
         index=True,
         help='خطة الحساب التحليلي الخاصة بهذه المركبة للتتبع المالي.',
+        store=True,
+        readonly=True
     )
-    capacity_kg = fields.Float(string='الطاقة الاستيعابية (كغ)')
+    capacity_ton = fields.Float(string='الطاقة الاستيعابية (طن)')
 
     readyness_state = fields.Selection(
         [('ready', 'جاهز'), ('booked', 'محجوز'), ('on_trip', 'في رحلة'), ('on_maintenance', 'في الصيانة')],
@@ -41,16 +43,35 @@ class FleetVehicle(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        Model = self.env['fleet.vehicle.model']
+        param = self.env['ir.config_parameter'].sudo().get_param(
+            'rotana_transport_sale.parent_analytic_plan_id'
+        )
+        parent_id = int(param) if param and str(param).isdigit() else False
+
+        # قراءة الموديلات والماركات دفعة واحدة بدل استعلام لكل صف
+        models = Model.browse([v['model_id'] for v in vals_list if v.get('model_id')])
+        models.mapped('brand_id.name')
+        by_id = {m.id: m for m in models}
+
+        pending = []  # (vals المركبة، vals الخطة)
         for vals in vals_list:
-            model = self.env['fleet.vehicle.model'].browse(vals.get('model_id'))
-            name = (model.brand_id.name or '') + '/' + (model.name or '') + '/' + (vals.get('unit_number'))
-            parent_plan = self.env['ir.config_parameter'].sudo().get_param('rotana_transport_sale.parent_analytic_plan_id')
-            analytic_plan_id = {
-                'parent_id': parent_plan,
-                'name': name,
-            }
-            vals['analytic_plan_id'] = self.env['account.analytic.plan'].create(analytic_plan_id).id
-        return super().create(vals)
+            if vals.get('analytic_plan_id'):
+                continue
+            model = by_id.get(vals.get('model_id'), Model)
+            name = '/'.join(filter(None, [
+                model.brand_id.name, model.name, vals.get('unit_number'),
+            ]))
+            if name:
+                pending.append((vals, {'name': name, 'parent_id': parent_id}))
+
+        if pending:
+            plans = self.env['account.analytic.plan'].sudo().create(
+                [plan_vals for __, plan_vals in pending]
+            )
+            for (vals, __), plan in zip(pending, plans):
+                vals['analytic_plan_id'] = plan.id
+        return super().create(vals_list)
 
     def copy(self, default=None):
         """تجاوز النسخ الافتراضي لتجنب تكرار رقم الوحدة."""

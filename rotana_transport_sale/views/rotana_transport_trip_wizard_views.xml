@@ -45,7 +45,7 @@
                             <i class="fa fa-map-marker me-1"/><field name="current_location_id"/>
                         </div>
                         <div class="text-muted small">
-                            <i class="fa fa-balance-scale me-1"/><field name="capacity_kg"/> كغ
+                            <i class="fa fa-balance-scale me-1"/><field name="capacity_ton"/> طن
                         </div>
                         <div t-if="record.trip_count.raw_value" class="text-warning small">
                             <i class="fa fa-truck me-1"/>رحلات سابقة على هذا الأمر: <field name="trip_count"/>

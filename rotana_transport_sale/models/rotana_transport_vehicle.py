@@ -61,7 +61,7 @@ class RotanaTransportVehicle(models.Model):
         help='الحساب التحليلي الخاص بهذه المركبة للتتبع المالي.',
     )
 
-    capacity_kg = fields.Float(string='الطاقة الاستيعابية (كغ)')
+    capacity_ton = fields.Float(string='الطاقة الاستيعابية (طن)')
 
     notes = fields.Text(string='ملاحظات')
 
