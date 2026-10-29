@@ -23,11 +23,13 @@
         'fleet',
         'maintenance',
         'mrp_maintenance',
+        'rotana_transport_sale'
     ],
     'data': [
         'security/ir.model.access.csv',
         'data/data.xml',
         'views/maintenance_views.xml',
+        'views/fleet_vehicle_view.xml',
     ],
     'installable': True,
     'application': True,

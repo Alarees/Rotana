@@ -40,8 +40,6 @@ class MaintenanceRequest(models.Model):
     parts_total = fields.Monetary(compute='_compute_parts_total', string='إجمالي قطع الغيار')
     picking_ids = fields.One2many(
         'stock.picking', 'maintenance_request_id', string='أذون التسليم', copy=False)
-    analytic_account_id = fields.Many2one(
-        'account.analytic.account', string='الحساب التحليلي', copy=False, readonly=True)
     parts_move_id = fields.Many2one(
         'account.move', string='قيد قطع الغيار', copy=False, readonly=True)
 
@@ -124,7 +122,7 @@ class MaintenanceRequest(models.Model):
                 raise UserError(_('تأكيد قطع الغيار متاح لطلبات صيانة المركبات فقط، اختر المركبة أولاً.'))
             if not request.part_line_ids:
                 raise UserError(_('أضف قطع غيار واحدة على الأقل قبل التأكيد.'))
-            request._create_analytic_account()
+            request._check_analytic_account()
             request._create_parts_picking()
             request.parts_state = 'confirmed'
         return True
@@ -140,24 +138,10 @@ class MaintenanceRequest(models.Model):
             request.parts_state = 'draft'
         return True
 
-    def _get_vehicle_analytic_plan(self):
+    def _check_analytic_account(self):
         self.ensure_one()
-        return (
-            self.company_id.maintenance_analytic_plan_id
-            or self.env.ref('rotana_fleet_maintenance.analytic_plan_vehicles').sudo()
-        )
-
-    def _create_analytic_account(self):
-        self.ensure_one()
-        if self.analytic_account_id:
-            return self.analytic_account_id
-        plan = self._get_vehicle_analytic_plan()
-        self.analytic_account_id = self.env['account.analytic.account'].sudo().create({
-            'name': '%s - %s (#%s)' % (self.fleet_id.display_name, self.name, self.id),
-            'plan_id': plan.id,
-            'company_id': self.company_id.id,
-        })
-        return self.analytic_account_id
+        if not self.fleet_id.analytic_account_id:
+            raise UserError(_('لا يوجد حساب تحليلي مربوط بهذه العربة'))
 
     def _create_parts_picking(self):
         self.ensure_one()
@@ -240,7 +224,7 @@ class MaintenanceRequest(models.Model):
                 if not journal:
                     raise UserError(_('لا يوجد دفتر يومية من النوع "متنوع" للشركة %s.', company.name))
                 label = _('قطع غيار - %s - %s', request.fleet_id.display_name, request.name)
-                analytic = {str(request.analytic_account_id.id): 100.0} if request.analytic_account_id else False
+                analytic = {str(request.fleet_id.analytic_account_id.id): 100.0} if request.fleet_id.analytic_account_id else False
                 line_vals = [Command.create({
                     'name': label,
                     'account_id': account.id,

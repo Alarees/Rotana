@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="fleet_inherit_fleet_maintenance" model="ir.ui.view">
+        <field name="name">fleet.vehicle.view.form.inherit.maintenance</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <field name="plan_to_change_car" position="after">
+                <field name="analytic_account_id"/>
+            </field>
+            <!-- زر عرض الرحلات في الرأس -->
+            <!-- <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_transport_trips"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck">
+                    <span>الرحلات</span>
+                </button>
+                <button name="action_view_analytic_plan"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o">
+                    <span>الخطة التحليلية</span>
+                </button>
+            </xpath> -->
+        </field>
+    </record>
+</odoo>

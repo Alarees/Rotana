@@ -5,4 +5,5 @@ from . import (
     maintenance_part,
     fleet_maintenance,
     stock_picking,
+    fleet_vehicle
 )
