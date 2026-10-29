@@ -43,6 +43,64 @@ class MaintenanceRequest(models.Model):
     parts_move_id = fields.Many2one(
         'account.move', string='قيد قطع الغيار', copy=False, readonly=True)
 
+    # ------------------------------------------------------------------
+    # المنصرفات أثناء الصيانة
+    # ------------------------------------------------------------------
+    expense_ids = fields.One2many(
+        'maintenance.request.expense', 'request_id', string='المنصرفات', copy=False)
+    expenses_total = fields.Monetary(compute='_compute_expenses_total', string='إجمالي المنصرفات')
+    expense_move_ids = fields.Many2many(
+        'account.move', compute='_compute_expense_move_ids', compute_sudo=True, string='فواتير المنصرفات')
+
+    @api.depends('expense_ids.amount')
+    def _compute_expenses_total(self):
+        for request in self:
+            request.expenses_total = sum(request.expense_ids.mapped('amount'))
+
+    @api.depends('expense_ids.move_id')
+    def _compute_expense_move_ids(self):
+        for request in self:
+            request.expense_move_ids = request.expense_ids.move_id
+
+    def action_create_expense_bills(self):
+        """ يحوّل المنصرفات التي لم تُفوتَر إلى فواتير مورّدين (مسودة)،
+        فاتورة لكل مورد، مربوطة بالحساب التحليلي للمركبة. """
+        self.ensure_one()
+        self._check_analytic_account()
+        lines = self.expense_ids.filtered(lambda e: not e.move_id)
+        if not lines:
+            raise UserError(_('لا توجد منصرفات جديدة لإنشاء فاتورة لها.'))
+        missing = lines.filtered(lambda e: not e.partner_id)
+        if missing:
+            raise UserError(_(
+                'حدد المورد للمنصرفات التالية قبل إنشاء الفواتير:\n%s',
+                '\n'.join('- %s' % (e.name or '') for e in missing)))
+        analytic = {str(self.fleet_id.analytic_account_id.id): 100.0}
+        bills = self.env['account.move']
+        for partner in lines.partner_id:
+            partner_lines = lines.filtered(lambda e: e.partner_id == partner)
+            bill = self.env['account.move'].create({
+                'move_type': 'in_invoice',
+                'partner_id': partner.id,
+                'company_id': self.company_id.id,
+                'invoice_date': fields.Date.context_today(self),
+                'invoice_origin': self.name,
+                'invoice_line_ids': [Command.create({
+                    'name': e.name,
+                    'quantity': 1.0,
+                    'price_unit': e.amount,
+                    'analytic_distribution': analytic,
+                }) for e in partner_lines],
+            })
+            partner_lines.move_id = bill
+            bills |= bill
+        action = self.env['ir.actions.actions']._for_xml_id('account.action_move_in_invoice_type')
+        if len(bills) == 1:
+            action.update({'views': [(False, 'form')], 'res_id': bills.id})
+        else:
+            action['domain'] = [('id', 'in', bills.ids)]
+        return action
+
     @api.depends('part_line_ids.subtotal')
     def _compute_parts_total(self):
         for request in self:

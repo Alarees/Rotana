@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <!-- ============================================================
          نموذج طلب الصيانة: المركبة + تبويب قطع الغيار + أزرار التأكيد
          ============================================================ -->
@@ -18,6 +19,7 @@
             <xpath expr="//field[@name='workcenter_id']" position="attributes">
                 <attribute name="invisible">maintenance_for in ('equipment', 'fleet')</attribute>
             </xpath>
+
             <!-- أزرار التأكيد / إلغاء التأكيد -->
             <xpath expr="//field[@name='stage_id']" position="before">
                 <button name="action_confirm_parts" string="تأكيد" type="object" class="btn-primary"
@@ -26,6 +28,14 @@
                         invisible="parts_state != 'confirmed'"
                         confirm="سيتم إلغاء إذن التسليم وإعادة الطلب إلى المسودة. هل أنت متأكد؟"/>
             </xpath>
+
+            <!-- زر إنشاء فواتير المنصرفات (للمحاسبين فقط) -->
+            <xpath expr="//field[@name='stage_id']" position="before">
+                <button name="action_create_expense_bills" string="إنشاء فواتير المنصرفات" type="object"
+                        groups="account.group_account_invoice"
+                        invisible="maintenance_for != 'fleet' or archive"/>
+            </xpath>
+
             <!-- تبويب قطع الغيار -->
             <xpath expr="//notebook" position="inside">
                 <page string="قطع الغيار" name="spare_parts" invisible="maintenance_for != 'fleet'">
@@ -57,9 +67,23 @@
                         </list>
                     </field>
                 </page>
+                <page string="المنصرفات" name="expenses" invisible="maintenance_for != 'fleet'">
+                    <field name="expense_ids">
+                        <list editable="bottom" decoration-info="not is_invoiced">
+                            <field name="partner_id" groups="account.group_account_invoice"
+                                   readonly="is_invoiced"/>
+                            <field name="name" readonly="is_invoiced"/>
+                            <field name="amount" sum="الإجمالي" readonly="is_invoiced"/>
+                            <field name="is_invoiced" column_invisible="1" widget="boolean" groups="account.group_account_invoice"/>
+                            <field name="move_id" groups="account.group_account_invoice"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>
+
     <!-- ============================================================
          شاشة الكتالوج (مبنية على نفس كتالوج product / industry_fsm_sale)
          ============================================================ -->
@@ -78,6 +102,7 @@
             </xpath>
         </field>
     </record>
+
     <!-- بحث الكتالوج: قائمة جانبية للمخزن والفئة (كل المنتجات المخزنية بلا تقييد بفئة) -->
     <record id="maintenance_part_product_catalog_search_view" model="ir.ui.view">
         <field name="name">maintenance.part.product.catalog.search</field>
@@ -93,6 +118,7 @@
             </xpath>
         </field>
     </record>
+
     <!-- ============================================================
          إعدادات الشركة: الخطة التحليلية والحساب والدفتر
          ============================================================ -->
@@ -112,4 +138,5 @@
             </xpath>
         </field>
     </record>
+
 </odoo>
