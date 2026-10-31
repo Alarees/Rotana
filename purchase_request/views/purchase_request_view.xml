@@ -9,45 +9,15 @@
             <form string="Purchase Request">
                 <header>
                     <button
-                        name="button_draft"
-                        string="Reset"
-                        invisible="state not in ('to_approve','approved','rejected','in_progress','done')"
-                        type="object"
-                        groups="purchase_request.group_purchase_request_manager"
-                    />
-                    <button
                         name="button_to_approve"
-                        invisible="state not in ('draft')"
+                        invisible="state != 'draft'"
                         string="Request approval"
                         type="object"
                         class="oe_highlight"
                     />
                     <button
-                        name="button_approved"
-                        invisible="state not in ('to_approve')"
-                        string="Approve"
-                        type="object"
-                        class="oe_highlight"
-                        groups="purchase_request.group_purchase_request_manager"
-                    />
-                    <button
-                        name="button_in_progress"
-                        invisible="state not in ('approved')"
-                        string="In Progress"
-                        type="object"
-                        groups="purchase_request.group_purchase_request_manager"
-                    />
-                    <button
-                        name="button_done"
-                        invisible="state not in ('approved','in_progress')"
-                        string="Done"
-                        type="object"
-                        class="oe_highlight"
-                        groups="purchase_request.group_purchase_request_manager"
-                    />
-                    <button
                         name="action_create_vendor_bill"
-                        invisible="state not in ('approved','in_progress','done') or bill_count > 0"
+                        invisible="state != 'approved' or bill_count > 0"
                         string="Create Vendor Bill"
                         type="object"
                         class="oe_highlight"
@@ -55,15 +25,22 @@
                     />
                     <button
                         name="button_rejected"
-                        invisible="state not in ('to_approve', 'approved','in_progress')"
+                        invisible="state not in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager')"
                         string="Reject"
+                        type="object"
+                        groups="purchase_request.group_pr_dept_manager,purchase_request.group_pr_accounts_head,purchase_request.group_pr_internal_auditor,purchase_request.group_pr_general_manager"
+                    />
+                    <button
+                        name="button_draft"
+                        string="Reset"
+                        invisible="state not in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager', 'approved', 'rejected')"
                         type="object"
                         groups="purchase_request.group_purchase_request_manager"
                     />
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,to_approve,approved,in_progress,done"
+                        statusbar_visible="draft,dept_manager,accounts_head,internal_audit,general_manager,approved"
                     />
                 </header>
                 <sheet>
@@ -83,42 +60,108 @@
                             />
                         </button>
                     </div>
-                    <div class="oe_edit_only">
-                        <label for="name" class="oe_inline" />
-                    </div>
                     <h1>
                         <field name="is_editable" invisible="1" />
-                        <field name="is_name_editable" invisible="1" />
                         <field name="bill_count" invisible="1" />
-                        <field
-                            name="name"
-                            class="oe_inline"
-                            readonly="is_name_editable == False"
-                        />
+                        <field name="name" class="oe_inline" readonly="1" />
                     </h1>
+                    <group
+                        name="approvals"
+                        col="4"
+                        invisible="state == 'draft'"
+                    >
+                        <group string="Department Manager">
+                            <button
+                                name="button_approve_dept_manager"
+                                string="Approve"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'dept_manager'"
+                                groups="purchase_request.group_pr_dept_manager"
+                            />
+                            <field
+                                name="dept_manager_user_id"
+                                invisible="not dept_manager_user_id"
+                                options="{'no_open': True}"
+                            />
+                            <field
+                                name="dept_manager_date"
+                                invisible="not dept_manager_date"
+                            />
+                        </group>
+                        <group string="Head of Accounts">
+                            <button
+                                name="button_approve_accounts_head"
+                                string="Approve"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'accounts_head'"
+                                groups="purchase_request.group_pr_accounts_head"
+                            />
+                            <field
+                                name="accounts_head_user_id"
+                                invisible="not accounts_head_user_id"
+                                options="{'no_open': True}"
+                            />
+                            <field
+                                name="accounts_head_date"
+                                invisible="not accounts_head_date"
+                            />
+                        </group>
+                        <group string="Internal Auditor">
+                            <button
+                                name="button_approve_internal_audit"
+                                string="Approve"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'internal_audit'"
+                                groups="purchase_request.group_pr_internal_auditor"
+                            />
+                            <field
+                                name="internal_audit_user_id"
+                                invisible="not internal_audit_user_id"
+                                options="{'no_open': True}"
+                            />
+                            <field
+                                name="internal_audit_date"
+                                invisible="not internal_audit_date"
+                            />
+                        </group>
+                        <group string="General Manager">
+                            <button
+                                name="button_approve_general_manager"
+                                string="Approve"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'general_manager'"
+                                groups="purchase_request.group_pr_general_manager"
+                            />
+                            <field
+                                name="general_manager_user_id"
+                                invisible="not general_manager_user_id"
+                                options="{'no_open': True}"
+                            />
+                            <field
+                                name="general_manager_date"
+                                invisible="not general_manager_date"
+                            />
+                        </group>
+                    </group>
                     <group>
                         <group>
                             <field
                                 name="requested_by"
                                 readonly="is_editable == False"
                             />
-                            <field name="assigned_to" readonly="is_editable == False" />
                             <field
                                 name="vendor_id"
-                                readonly="state in ('done', 'rejected')"
+                                readonly="state == 'rejected'"
                                 context="{'res_partner_search_mode': 'supplier'}"
                             />
                         </group>
                         <group>
-                            <field
-                                name="origin"
-                                class="oe_inline"
-                                readonly="is_editable == False"
-                            />
-                            <field name="description" readonly="is_editable == False" />
-                        </group>
-                        <group>
                             <field name="date_start" readonly="is_editable == False" />
+                            <field name="description" readonly="is_editable == False" />
                             <field name="company_id" invisible="1" />
                             <field
                                 name="company_id"
@@ -170,7 +213,7 @@
         <field name="arch" type="xml">
             <list
                 decoration-bf="message_needaction==True"
-                decoration-info="state in ('draft','to_approve')"
+                decoration-info="state not in ('draft', 'approved', 'rejected')"
                 decoration-muted="state in ('rejected')"
                 name="Purchase Request"
             >
@@ -184,15 +227,14 @@
                     widget="selection"
                 />
                 <field name="activity_ids" widget="list_activity" optional="show" />
-                <field name="origin" />
                 <field name="currency_id" column_invisible="1" />
                 <field name="amount_total" optional="show" />
                 <field
                     name="state"
                     widget="badge"
-                    decoration-success="state in ('done', 'approved', 'in_progress')"
+                    decoration-success="state == 'approved'"
                     decoration-muted="state == 'draft'"
-                    decoration-warning="state == 'to_approve'"
+                    decoration-warning="state in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager')"
                     decoration-danger="state == 'rejected'"
                 />
             </list>
@@ -205,51 +247,28 @@
             <search string="Search Purchase Request">
                 <field name="name" string="Purchase Request" />
                 <separator />
-                <field name="origin" />
                 <field name="description" />
                 <field name="state" />
-                <filter
-                    name="unassigned"
-                    string="Unassigned"
-                    domain="[('assigned_to','=', False)]"
-                    help="Unassigned Request"
-                />
                 <separator />
                 <filter
                     name="state_draft"
                     string="Draft"
                     domain="[('state','=','draft')]"
-                    help="Request is to be approved"
                 />
                 <filter
-                    name="state_to_approve"
-                    string="To Approve"
-                    domain="[('state','=','to_approve')]"
-                    help="Request is to be approved"
+                    name="state_pending"
+                    string="Waiting for Approval"
+                    domain="[('state','in',('dept_manager','accounts_head','internal_audit','general_manager'))]"
                 />
                 <filter
                     name="state_approved"
                     string="Approved"
                     domain="[('state','=','approved')]"
-                    help="Request is approved"
-                />
-                <filter
-                    name="state_in_progress"
-                    string="In Progress"
-                    domain="[('state','=','in_progress')]"
-                    help="Request is in progress"
                 />
                 <filter
                     name="state_rejected"
                     string="Rejected"
                     domain="[('state','=','rejected')]"
-                    help="Request is rejected"
-                />
-                <filter
-                    name="state_done"
-                    string="Done"
-                    domain="[('state','=','done')]"
-                    help="Request is done"
                 />
                 <separator />
                 <filter
@@ -258,17 +277,11 @@
                     domain="[('message_needaction','=',True)]"
                 />
                 <filter
-                    name="assigned_to_me"
-                    domain="[('assigned_to','=', uid)]"
-                    help="Assigned to me"
-                />
-                <filter
                     name="my_requests"
                     domain="[('requested_by','=', uid)]"
                     help="My requests"
                 />
                 <field name="requested_by" />
-                <field name="assigned_to" />
                 <filter
                     invisible="1"
                     string="Late Activities"
@@ -294,20 +307,6 @@
                         icon="fa-user"
                         domain="[]"
                         context="{'group_by':'requested_by'}"
-                    />
-                    <filter
-                        name="assigned_to"
-                        string="Assigned to"
-                        icon="fa-user"
-                        domain="[]"
-                        context="{'group_by':'assigned_to'}"
-                    />
-                    <filter
-                        name="source"
-                        string="Source"
-                        icon="fa-caret-square-o-left"
-                        domain="[]"
-                        context="{'group_by':'origin'}"
                     />
                     <filter
                         name="start_date"
@@ -355,9 +354,9 @@
                             <field
                                 name="state"
                                 widget="badge"
-                                decoration-success="state in ('done', 'approved', 'in_progress')"
+                                decoration-success="state == 'approved'"
                                 decoration-muted="state == 'draft'"
-                                decoration-warning="state == 'to_approve'"
+                                decoration-warning="state in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager')"
                                 decoration-danger="state == 'rejected'"
                                 class="ms-auto"
                             />

@@ -6,12 +6,22 @@ from odoo.exceptions import UserError
 
 _STATES = [
     ("draft", "Draft"),
-    ("to_approve", "To be approved"),
+    ("dept_manager", "Department Manager"),
+    ("accounts_head", "Head of Accounts"),
+    ("internal_audit", "Internal Auditor"),
+    ("general_manager", "General Manager"),
     ("approved", "Approved"),
-    ("in_progress", "In progress"),
-    ("done", "Done"),
     ("rejected", "Rejected"),
 ]
+
+# Approval chain, in order: (state, xml id of the group allowed to approve).
+_APPROVAL_CHAIN = [
+    ("dept_manager", "group_pr_dept_manager"),
+    ("accounts_head", "group_pr_accounts_head"),
+    ("internal_audit", "group_pr_internal_auditor"),
+    ("general_manager", "group_pr_general_manager"),
+]
+_PENDING_STATES = [state for state, _group in _APPROVAL_CHAIN]
 
 
 class PurchaseRequest(models.Model):
@@ -36,16 +46,7 @@ class PurchaseRequest(models.Model):
     @api.depends("state")
     def _compute_is_editable(self):
         for rec in self:
-            if rec.state in (
-                "to_approve",
-                "approved",
-                "rejected",
-                "in_progress",
-                "done",
-            ):
-                rec.is_editable = False
-            else:
-                rec.is_editable = True
+            rec.is_editable = rec.state == "draft"
 
     name = fields.Char(
         string="Request Reference",
@@ -53,10 +54,6 @@ class PurchaseRequest(models.Model):
         default=lambda self: self.env._("New"),
         tracking=True,
     )
-    is_name_editable = fields.Boolean(
-        default=lambda self: self.env.user.has_group("base.group_no_one"),
-    )
-    origin = fields.Char(string="Source Document")
     date_start = fields.Date(
         string="Creation date",
         help="Date when the user initiated the request.",
@@ -69,19 +66,6 @@ class PurchaseRequest(models.Model):
         copy=False,
         tracking=True,
         default=lambda self: self._get_default_requested_by(),
-        index=True,
-    )
-    assigned_to = fields.Many2one(
-        comodel_name="res.users",
-        string="Approver",
-        tracking=True,
-        domain=lambda self: [
-            (
-                "group_ids",
-                "in",
-                self.env.ref("purchase_request.group_purchase_request_manager").id,
-            )
-        ],
         index=True,
     )
     description = fields.Text()
@@ -115,13 +99,32 @@ class PurchaseRequest(models.Model):
         copy=False,
         default="draft",
     )
+    dept_manager_user_id = fields.Many2one(
+        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+    )
+    dept_manager_date = fields.Datetime(
+        string="Approval Date", readonly=True, copy=False
+    )
+    accounts_head_user_id = fields.Many2one(
+        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+    )
+    accounts_head_date = fields.Datetime(
+        string="Approval Date", readonly=True, copy=False
+    )
+    internal_audit_user_id = fields.Many2one(
+        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+    )
+    internal_audit_date = fields.Datetime(
+        string="Approval Date", readonly=True, copy=False
+    )
+    general_manager_user_id = fields.Many2one(
+        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+    )
+    general_manager_date = fields.Datetime(
+        string="Approval Date", readonly=True, copy=False
+    )
     is_editable = fields.Boolean(compute="_compute_is_editable", readonly=True)
     to_approve_allowed = fields.Boolean(compute="_compute_to_approve_allowed")
-    line_count = fields.Integer(
-        string="Purchase Request Line count",
-        compute="_compute_line_count",
-        readonly=True,
-    )
     currency_id = fields.Many2one(related="company_id.currency_id", readonly=True)
     amount_total = fields.Monetary(
         string="Total",
@@ -158,11 +161,6 @@ class PurchaseRequest(models.Model):
         for rec in self:
             rec.bill_count = len(rec._get_active_bills())
 
-    @api.depends("line_ids")
-    def _compute_line_count(self):
-        for rec in self:
-            rec.line_count = len(rec.mapped("line_ids"))
-
     @api.depends("state", "line_ids.product_qty", "line_ids.cancelled")
     def _compute_to_approve_allowed(self):
         for rec in self:
@@ -176,30 +174,12 @@ class PurchaseRequest(models.Model):
         default.update({"state": "draft", "name": self._get_default_name()})
         return super().copy(default)
 
-    @api.model
-    def _get_partner_id(self, request):
-        user_id = request.assigned_to or self.env.user
-        return user_id.partner_id.id
-
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("name", self.env._("New")) == self.env._("New"):
                 vals["name"] = self._get_default_name()
-        requests = super().create(vals_list)
-        for vals, request in zip(vals_list, requests, strict=True):
-            if vals.get("assigned_to"):
-                partner_id = self._get_partner_id(request)
-                request.message_subscribe(partner_ids=[partner_id])
-        return requests
-
-    def write(self, vals):
-        res = super().write(vals)
-        for request in self:
-            if vals.get("assigned_to"):
-                partner_id = self._get_partner_id(request)
-                request.message_subscribe(partner_ids=[partner_id])
-        return res
+        return super().create(vals_list)
 
     def _can_be_deleted(self):
         self.ensure_one()
@@ -215,26 +195,69 @@ class PurchaseRequest(models.Model):
                     )
                 )
 
+    def _clear_approvals(self):
+        vals = {}
+        for state, _group in _APPROVAL_CHAIN:
+            vals[f"{state}_user_id"] = False
+            vals[f"{state}_date"] = False
+        return vals
+
     def button_draft(self):
         self.mapped("line_ids").do_uncancel()
-        return self.write({"state": "draft"})
+        return self.write({"state": "draft", **self._clear_approvals()})
 
     def button_to_approve(self):
         self.to_approve_allowed_check()
-        return self.write({"state": "to_approve"})
+        return self.write({"state": _PENDING_STATES[0]})
 
-    def button_approved(self):
-        return self.write({"state": "approved"})
+    def _approve_stage(self, stage):
+        """Record the current user and time for ``stage`` and move the request
+        to the next stage (or to ``approved`` after the last one)."""
+        stages = _PENDING_STATES
+        group = dict(_APPROVAL_CHAIN)[stage]
+        if not self.env.user.has_group(f"purchase_request.{group}"):
+            raise UserError(
+                self.env._("You are not allowed to approve at this stage.")
+            )
+        for rec in self:
+            if rec.state != stage:
+                raise UserError(
+                    self.env._(
+                        "The request %(name)s is not waiting for this approval.",
+                        name=rec.name,
+                    )
+                )
+            index = stages.index(stage)
+            next_state = stages[index + 1] if index + 1 < len(stages) else "approved"
+            rec.write(
+                {
+                    f"{stage}_user_id": self.env.uid,
+                    f"{stage}_date": fields.Datetime.now(),
+                    "state": next_state,
+                }
+            )
+        return True
+
+    def button_approve_dept_manager(self):
+        return self._approve_stage("dept_manager")
+
+    def button_approve_accounts_head(self):
+        return self._approve_stage("accounts_head")
+
+    def button_approve_internal_audit(self):
+        return self._approve_stage("internal_audit")
+
+    def button_approve_general_manager(self):
+        return self._approve_stage("general_manager")
 
     def button_rejected(self):
+        if not any(
+            self.env.user.has_group(f"purchase_request.{group}")
+            for _state, group in _APPROVAL_CHAIN
+        ):
+            raise UserError(self.env._("You are not allowed to reject requests."))
         self.mapped("line_ids").do_cancel()
         return self.write({"state": "rejected"})
-
-    def button_in_progress(self):
-        return self.write({"state": "in_progress"})
-
-    def button_done(self):
-        return self.write({"state": "done"})
 
     def check_auto_reject(self):
         """When all lines are cancelled the purchase request should be
@@ -279,7 +302,7 @@ class PurchaseRequest(models.Model):
 
     def action_create_vendor_bill(self):
         self.ensure_one()
-        if self.state not in ("approved", "in_progress", "done"):
+        if self.state != "approved":
             raise UserError(
                 self.env._(
                     "You can only create a vendor bill for an approved "

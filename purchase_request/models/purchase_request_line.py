@@ -32,16 +32,7 @@ class PurchaseRequestLine(models.Model):
         string="Requested by",
         store=True,
     )
-    assigned_to = fields.Many2one(
-        comodel_name="res.users",
-        related="request_id.assigned_to",
-        string="Assigned to",
-        store=True,
-    )
     date_start = fields.Date(related="request_id.date_start", store=True)
-    origin = fields.Char(
-        related="request_id.origin", string="Source Document", store=True
-    )
     date_required = fields.Date(
         string="Request Date",
         required=True,

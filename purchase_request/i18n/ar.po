@@ -1433,3 +1433,45 @@ msgstr ""
 
 #~ msgid "Group By..."
 #~ msgstr "تجميع حسب..."
+
+msgid "Department Manager"
+msgstr "مدير الإدارة"
+
+msgid "Head of Accounts"
+msgstr "رئيس الحسابات"
+
+msgid "Internal Auditor"
+msgstr "المراجع الداخلي"
+
+msgid "General Manager"
+msgstr "المدير العام"
+
+msgid "Approved by"
+msgstr "وافق عليه"
+
+msgid "Approval Date"
+msgstr "وقت الموافقة"
+
+msgid "Waiting for Approval"
+msgstr "بانتظار الموافقة"
+
+msgid "You are not allowed to approve at this stage."
+msgstr "غير مصرح لك بالموافقة في هذه المرحلة."
+
+msgid "The request %(name)s is not waiting for this approval."
+msgstr "الطلب %(name)s ليس في مرحلة هذه الموافقة."
+
+msgid "You are not allowed to reject requests."
+msgstr "غير مصرح لك برفض الطلبات."
+
+msgid "Purchase Request: Department Manager"
+msgstr "طلب شراء: مدير الإدارة"
+
+msgid "Purchase Request: Head of Accounts"
+msgstr "طلب شراء: رئيس الحسابات"
+
+msgid "Purchase Request: Internal Auditor"
+msgstr "طلب شراء: المراجع الداخلي"
+
+msgid "Purchase Request: General Manager"
+msgstr "طلب شراء: المدير العام"

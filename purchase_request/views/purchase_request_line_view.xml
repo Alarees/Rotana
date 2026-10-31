@@ -13,7 +13,6 @@
             >
                 <field name="request_id" />
                 <field name="requested_by" widget="many2one_avatar_user" />
-                <field name="assigned_to" widget="many2one_avatar_user" />
                 <field name="date_required" />
                 <field name="description" />
                 <field name="product_qty" />
@@ -48,9 +47,7 @@
                     </h1>
                     <group name="main">
                         <group name="info">
-                            <field name="origin" />
                             <field name="requested_by" />
-                            <field name="assigned_to" />
                             <field name="date_start" />
                             <field
                                 name="company_id"
@@ -87,7 +84,6 @@
                 <field name="request_id" />
                 <field name="description" />
                 <field name="requested_by" />
-                <field name="assigned_to" />
                 <field name="date_start" />
                 <field name="date_required" />
                 <field
@@ -98,12 +94,6 @@
                     name="uncancelled"
                     string="Uncancelled"
                     domain="[('cancelled','=', False)]"
-                />
-                <filter
-                    name="assigned_to_me"
-                    string="Assigned to me"
-                    domain="[('assigned_to','=', uid)]"
-                    help="Assigned to me"
                 />
                 <filter
                     name="my_requests"
@@ -117,12 +107,6 @@
                         string="Requested by"
                         domain="[]"
                         context="{'group_by':'requested_by'}"
-                    />
-                    <filter
-                        name="assigned_to"
-                        string="Assigned to"
-                        domain="[]"
-                        context="{'group_by':'assigned_to'}"
                     />
                     <filter
                         name="request"

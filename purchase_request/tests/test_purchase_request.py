@@ -28,29 +28,67 @@ class TestPurchaseRequest(TransactionCase):
     def test_purchase_request_status(self):
         """Tests Purchase Request status workflow."""
         pr = self.purchase_request
-        pr.write({"assigned_to": SUPERUSER_ID})
         self.assertTrue(pr.is_editable)
         self.assertEqual(pr.state, "draft")
         pr.button_to_approve()
-        self.assertEqual(pr.state, "to_approve")
+        self.assertEqual(pr.state, "dept_manager")
         self.assertFalse(pr.is_editable)
         with self.assertRaisesRegex(UserError, "which is not draft"):
             pr.unlink()
-        pr.button_approved()
-        self.assertEqual(pr.state, "approved")
-        pr.button_in_progress()
-        self.assertEqual(pr.state, "in_progress")
-        pr.button_done()
-        self.assertEqual(pr.state, "done")
+        # approve through the whole chain, user and time are recorded
+        self._add_approver_groups()
+        for stage, nxt in (
+            ("dept_manager", "accounts_head"),
+            ("accounts_head", "internal_audit"),
+            ("internal_audit", "general_manager"),
+            ("general_manager", "approved"),
+        ):
+            getattr(pr, f"button_approve_{stage}")()
+            self.assertEqual(pr.state, nxt)
+            self.assertEqual(pr[f"{stage}_user_id"], self.env.user)
+            self.assertTrue(pr[f"{stage}_date"])
         self.assertFalse(pr.is_editable)
         pr.button_draft()
         self.assertEqual(pr.state, "draft")
+        self.assertFalse(pr.dept_manager_user_id)
+        self.assertFalse(pr.general_manager_date)
         self.assertTrue(pr.is_editable)
         pr.unlink()
+
+    def _add_approver_groups(self):
+        self.env.user.group_ids = [
+            (4, self.env.ref(f"purchase_request.{xmlid}").id)
+            for xmlid in (
+                "group_pr_dept_manager",
+                "group_pr_accounts_head",
+                "group_pr_internal_auditor",
+                "group_pr_general_manager",
+            )
+        ]
+
+    def test_approval_order_and_rights(self):
+        pr = self.purchase_request
+        pr.button_to_approve()
+        user = self.env["res.users"].create(
+            {
+                "name": "Approver",
+                "login": "pr_accounts_approver",
+                "group_ids": [
+                    (4, self.env.ref("purchase_request.group_pr_accounts_head").id)
+                ],
+            }
+        )
+        # right group but the request is not at this stage yet
+        with self.assertRaises(UserError):
+            pr.with_user(user).button_approve_accounts_head()
+        # request at the first stage can't be approved by a missing group
+        with self.assertRaises(UserError):
+            pr.with_user(user).button_approve_dept_manager()
 
     def test_reject_cancels_lines(self):
         pr = self.purchase_request
         pr.button_to_approve()
+        self._add_approver_groups()
         pr.button_rejected()
         self.assertEqual(pr.state, "rejected")
         self.assertTrue(pr.line_ids.cancelled)
@@ -92,7 +130,7 @@ class TestPurchaseRequest(TransactionCase):
             pr.button_to_approve()
         pr.line_ids.write({"product_qty": 4})
         pr.button_to_approve()
-        self.assertEqual(pr.state, "to_approve")
+        self.assertEqual(pr.state, "dept_manager")
 
     def test_line_count(self):
         self.assertEqual(self.purchase_request.line_count, 1)
@@ -160,7 +198,7 @@ class TestPurchaseRequestVendorBill(AccountTestInvoicingCommon):
 
     def test_create_vendor_bill(self):
         self.request.button_to_approve()
-        self.request.button_approved()
+        self.request.state = "approved"
         self.line2.do_cancel()
         action = self.request.action_create_vendor_bill()
         bill = self.env["account.move"].browse(action["res_id"])
