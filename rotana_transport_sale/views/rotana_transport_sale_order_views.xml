@@ -114,11 +114,99 @@
             </list>
         </field>
     </record>
+    <!-- كانبان أوامر بيع النقل: بطاقة عريضة لكل أمر (بدون تجميع) -->
+    <record id="view_rotana_transport_sale_order_kanban" model="ir.ui.view">
+        <field name="name">rotana.transport.sale.order.kanban</field>
+        <field name="model">sale.order</field>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <kanban class="o_transport_order_kanban"
+                    default_order="date_order desc, id desc"
+                    quick_create="0"
+                    records_draggable="0"
+                    group_create="false">
+                <field name="state"/>
+                <field name="total_weight_to_transport"/>
+                <field name="total_transported_weight"/>
+                <templates>
+                    <t t-name="menu" class="d-flex flex-column">
+                        <button name="action_view_transport_trips" type="object"
+                                class="btn" string="عرض الرحلات"/>
+                        <button name="action_open_trip_wizard" type="object"
+                                class="btn" string="إنشاء رحلات"
+                                invisible="state == 'cancel'"
+                                groups="rotana_transport_sale.group_rotana_transport_user"/>
+                    </t>
+                    <t t-name="card" class="o_transport_order_card cursor-pointer w-100 px-3 py-1 d-flex flex-row flex-wrap align-items-center gap-3">
+                        <div t-attf-class="#{record.state.raw_value == 'sale' ? 'bg-success' : (record.state.raw_value == 'cancel' ? 'bg-danger' : 'bg-info')}"
+                             style="position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: 4px;"/>
+                        <div class="o_cell d-flex flex-column" style="flex: 1.6 1 12rem; min-width: 0;">
+                            <div class="fs-3 text-truncate">
+                                <field name="name"/>
+                            </div>
+                            <div class="small fw-medium d-flex gap-2 align-items-center">
+                                <field name="date_order" widget="date"/>
+                                <span class="badge rounded-pill border">
+                                    <field name="transport_trip_count"/> رحلات
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 1.4 1 9rem; min-width: 0;">
+                            <div class="fs-4 text-truncate">
+                                <field name="partner_id"/>
+                            </div>
+                            <div class="small fw-medium text-muted">العميل</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 1 1 7rem; min-width: 0;">
+                            <div class="fs-4 text-truncate">
+                                <field name="transport_location_from_id"/>
+                            </div>
+                            <div class="small fw-medium text-muted">من</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 1 1 7rem; min-width: 0;">
+                            <div class="fs-4 text-truncate">
+                                <field name="transport_location_to_id"/>
+                            </div>
+                            <div class="small fw-medium text-muted">إلى</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
+                            <div class="fs-3 text-truncate">
+                                <field name="total_weight_to_transport"/>
+                            </div>
+                            <div class="small fw-medium text-muted">المطلوب نقله (طن)</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
+                            <div class="fs-3 text-truncate">
+                                <field name="total_transported_weight"/>
+                            </div>
+                            <div class="small fw-medium text-muted">المنقول (طن)</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
+                            <div class="fs-3 text-truncate">
+                                <field name="total_discharged_quantity"/>
+                            </div>
+                            <div class="small fw-medium text-muted">المفرغ (طن)</div>
+                        </div>
+                        <div class="o_cell d-flex flex-column gap-1" style="flex: 1 1 7rem; min-width: 0;">
+                            <field name="state" widget="badge"
+                                   decoration-info="state in ('draft', 'sent')"
+                                   decoration-success="state == 'sale'"
+                                   decoration-danger="state == 'cancel'"/>
+                            <field name="total_transported_weight" widget="progressbar"
+                                   options="{'current_value': 'total_transported_weight', 'max_value': 'total_weight_to_transport', 'editable': false}"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
     <record id="action_rotana_transport_sale_orders" model="ir.actions.act_window">
         <field name="name">أوامر بيع النقل</field>
         <field name="res_model">sale.order</field>
-        <field name="view_mode">list,form</field>
-        <field name="view_id" ref="view_rotana_transport_sale_order_tree"/>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_rotana_transport_sale_order_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_rotana_transport_sale_order_tree')})]"/>
         <field name="domain">[('is_transport_order', '=', True)]</field>
         <field name="context">{'default_is_transport_order': True, 'search_default_is_transport_order': 1}</field>
         <field name="help" type="html">

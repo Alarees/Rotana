@@ -1,0 +1,16 @@
+// كانبان أوامر بيع النقل: بطاقة بعرض الشاشة. تخطيط الأعمدة مكتوب داخل الواجهة نفسها،
+// وهذا الملف يخفي عناصر التعبئة فقط ويضبط عرض البطاقة.
+.o_transport_order_kanban {
+    // class الكانبان يُطبَّق على الحاوية العليا، والمصيِّر (renderer) داخلها
+    .o_kanban_renderer {
+        .o_kanban_record {
+            flex: 1 0 100%;
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .o_kanban_ghost {
+            display: none !important;
+        }
+    }
+}

@@ -46,6 +46,7 @@
         'web.assets_backend': [
             'rotana_transport_sale/static/src/dashboard/**/*',
             'rotana_transport_sale/static/src/scss/trip_note_timeline.scss',
+            'rotana_transport_sale/static/src/scss/transport_order_kanban.scss',
         ],
     },
     'external_dependencies': {'python': ['xlsxwriter']},

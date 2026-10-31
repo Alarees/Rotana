@@ -1,6 +1,6 @@
 // خط زمني أفقي لملاحظات الرحلة: الأحدث أولاً، ويتجه مع اتجاه اللغة (من اليمين في العربية)
 .o_trip_note_kanban {
-    &.o_kanban_renderer {
+    .o_kanban_renderer {
         flex-wrap: nowrap !important;
         overflow-x: auto;
         overflow-y: hidden;
