@@ -10,10 +10,6 @@
 
             <!-- خلفية متحركة -->
             <div class="rmd-bg" aria-hidden="true">
-                <span class="rmd-blob rmd-blob-1"/>
-                <span class="rmd-blob rmd-blob-2"/>
-                <span class="rmd-blob rmd-blob-3"/>
-                <span class="rmd-blob rmd-blob-4"/>
                 <div class="rmd-grid"/>
             </div>
 
@@ -79,6 +75,11 @@
                         </div>
                     </div>
 
+                    <div class="rmd-toggle rmd-view-toggle" title="العرض الموحّد يجمع مبيعات الشركة الأم مع فروعها">
+                        <button t-att-class="{'active': state.consolidated}" t-on-click="() => this.setConsolidated(true)"><i class="fa fa-sitemap"/> موحّد</button>
+                        <button t-att-class="{'active': !state.consolidated}" t-on-click="() => this.setConsolidated(false)"><i class="fa fa-building-o"/> مستقل</button>
+                    </div>
+
                     <div class="rmd-presets">
                         <t t-foreach="presets" t-as="preset" t-key="preset.id">
                             <button class="rmd-chip"
@@ -137,7 +138,7 @@
                                 <small>الأعلى مبيعاً</small>
                                 <t t-if="topCompany and topCompany.total > 0">
                                     <strong class="rmd-kpi-name" t-esc="topCompany.name"/>
-                                    <em><span t-esc="topCompany.share"/>% من الإجمالي</em>
+                                    <em><span t-esc="topShare"/>% من الإجمالي</em>
                                 </t>
                                 <t t-else="">
                                     <strong class="rmd-kpi-name">—</strong>
@@ -157,6 +158,7 @@
                                     <h3 t-esc="c.name"/>
                                     <span class="rmd-badge" t-att-class="growthClass(c.growth)" t-esc="growthText(c.growth)"/>
                                 </header>
+                                <div class="rmd-tag" t-if="c.is_parent"><i class="fa fa-sitemap"/> موحّد · يشمل <span t-esc="c.branches"/> فرع</div>
                                 <div class="rmd-company-total"><CountUp value="c.total" format="moneyFormat"/></div>
                                 <div class="rmd-company-meta">
                                     <span><i class="fa fa-file-text-o"/> <span t-esc="c.orders"/> أمر</span>
@@ -179,7 +181,7 @@
                     <section class="rmd-charts" t-if="hasData">
                         <article class="rmd-card rmd-chart-card wide">
                             <header>
-                                <h3>مقارنة المبيعات بين الشركات</h3>
+                                <h3>مقارنة مبيعات كل شركة بذاتها</h3>
                                 <div class="rmd-toggle">
                                     <button t-att-class="{'active': state.chartMode === 'line'}" t-on-click="() => this.setChartMode('line')"><i class="fa fa-area-chart"/> خطوط</button>
                                     <button t-att-class="{'active': state.chartMode === 'column'}" t-on-click="() => this.setChartMode('column')"><i class="fa fa-bar-chart"/> أعمدة</button>
@@ -188,7 +190,7 @@
                             <div class="rmd-chart rmd-chart-compare"/>
                         </article>
                         <article class="rmd-card rmd-chart-card">
-                            <header><h3>حصة كل شركة</h3></header>
+                            <header><h3>حصة كل شركة (بذاتها)</h3></header>
                             <div class="rmd-chart rmd-chart-share"/>
                         </article>
                     </section>
@@ -201,7 +203,7 @@
                 <t t-if="state.drawer.open">
                     <header class="rmd-drawer-head" t-att-style="'--c:' + colorOf(state.drawer.company.id)">
                         <span class="rmd-dot big"/>
-                        <h2 t-esc="state.drawer.company.name"/>
+                        <h2><span t-esc="state.drawer.company.name"/></h2>
                         <button class="rmd-close" t-on-click="closeDrawer"><i class="fa fa-times"/></button>
                     </header>
 
@@ -210,6 +212,7 @@
                     </div>
 
                     <div class="rmd-drawer-body" t-if="state.drawer.data" t-att-style="'--c:' + colorOf(state.drawer.company.id)">
+                        <div class="rmd-tag" t-if="state.drawer.data.company.branches > 0"><i class="fa fa-sitemap"/> موحّد · يشمل <span t-esc="state.drawer.data.company.branches"/> فرع</div>
                         <div class="rmd-mini-grid">
                             <div class="rmd-mini">
                                 <small>المبيعات</small>

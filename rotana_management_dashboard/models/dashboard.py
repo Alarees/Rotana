@@ -18,6 +18,7 @@ class RotanaManagementDashboard(models.AbstractModel):
 
     - المبيعات = أوامر البيع المؤكدة (sale.order بالحالة sale).
     - المبالغ = amount_total (شاملة الضريبة) محوّلة إلى عملة الشركة الحالية للمستخدم.
+    - العرض الموحّد: الشركة الأم تُظهر مبيعاتها + مبيعات كل فروعها (دون تكرار في الإجماليات).
     - القراءة بـ sudo بعد التحقق من الصلاحية وتقييد الشركات بشركات المستخدم المسموحة.
     """
     _name = 'rotana.management.dashboard'
@@ -78,6 +79,43 @@ class RotanaManagementDashboard(models.AbstractModel):
 
         return get
 
+    @staticmethod
+    def _children_map(companies):
+        """خريطة {id الشركة الأم: [ids الفروع المباشرة]} ضمن الشركات المسموحة فقط."""
+        allowed_ids = set(companies.ids)
+        children = defaultdict(list)
+        for company in companies:
+            parent = company.parent_id
+            if parent and parent.id in allowed_ids:
+                children[parent.id].append(company.id)
+        return children
+
+    @staticmethod
+    def _descendants(children, company_id):
+        result, stack = [], list(children.get(company_id, []))
+        while stack:
+            cid = stack.pop()
+            result.append(cid)
+            stack.extend(children.get(cid, []))
+        return result
+
+    def _scope(self, company_ids, consolidated):
+        """الشركات المطلوبة (+ فروعها في العرض الموحّد). يرجع (scope, children)."""
+        allowed = self.env.user.company_ids.sorted('id')
+        selected = self._allowed_companies(company_ids)
+        children = self._children_map(allowed)
+        scope_ids = set(selected.ids)
+        if consolidated:
+            for cid in selected.ids:
+                scope_ids.update(self._descendants(children, cid))
+        return allowed.filtered(lambda c: c.id in scope_ids), children, allowed
+
+    @staticmethod
+    def _sum_stats(stats, ids):
+        total = sum((stats.get(i) or {}).get('total', 0.0) for i in ids)
+        orders = sum((stats.get(i) or {}).get('orders', 0) for i in ids)
+        return total, orders
+
     def _orders_domain(self, companies, start, end):
         return [
             ('state', '=', 'sale'),
@@ -130,10 +168,11 @@ class RotanaManagementDashboard(models.AbstractModel):
 
     # ------------------------------------------------------------- public API
     @api.model
-    def get_sales_overview(self, date_from, date_to, company_ids=None):
+    def get_sales_overview(self, date_from, date_to, company_ids=None, consolidated=True):
+        """consolidated=True: بطاقة الشركة الأم تجمع مبيعاتها مع كل فروعها.
+        الإجماليات العامة والرسوم (own_*) لا تكرر الحساب أبداً."""
         self._check_dashboard_access()
-        all_companies = self.env.user.company_ids.sorted('id')
-        companies = self._allowed_companies(company_ids).sorted('id')
+        scope, children, all_companies = self._scope(company_ids, consolidated)
 
         d_from, d_to, start, end = self._parse_dates(date_from, date_to)
         granularity = 'day' if ((d_to - d_from).days + 1) <= MAX_DAILY_DAYS else 'month'
@@ -142,32 +181,45 @@ class RotanaManagementDashboard(models.AbstractModel):
         target_currency = self.env.company.currency_id
         rate = self._rate_getter(target_currency, d_to)
 
-        current, series = self._aggregate(companies, start, end, rate, granularity)
-        previous, _unused = self._aggregate(companies, start - (end - start), start, rate)
+        current, series = self._aggregate(scope, start, end, rate, granularity)
+        previous, _unused = self._aggregate(scope, start - (end - start), start, rate)
 
-        grand_total = sum(v['total'] for v in current.values())
-        grand_orders = sum(v['orders'] for v in current.values())
-        prev_total = sum(v['total'] for v in previous.values())
+        # الإجماليات = مبيعات كل شركة بذاتها (بدون تكرار)
+        grand_total, grand_orders = self._sum_stats(current, scope.ids)
+        prev_total, _o = self._sum_stats(previous, scope.ids)
 
+        scope_ids = set(scope.ids)
         rows = []
-        for company in companies:
-            cur = current.get(company.id) or {'total': 0.0, 'orders': 0}
-            prev = previous.get(company.id) or {'total': 0.0, 'orders': 0}
+        for company in scope:
+            if consolidated:
+                ids = [company.id] + [i for i in self._descendants(children, company.id) if i in scope_ids]
+            else:
+                ids = [company.id]
+            total, orders = self._sum_stats(current, ids)
+            prev, _o = self._sum_stats(previous, ids)
+            own_total, own_orders = self._sum_stats(current, [company.id])
             rows.append({
                 'id': company.id,
                 'name': company.name,
-                'total': round(cur['total'], 2),
-                'orders': cur['orders'],
-                'avg': round(cur['total'] / cur['orders'], 2) if cur['orders'] else 0.0,
-                'share': round(cur['total'] / grand_total * 100.0, 1) if grand_total else 0.0,
-                'prev_total': round(prev['total'], 2),
-                'growth': self._growth(cur['total'], prev['total']),
-                'series': [round(series[company.id].get(b, 0.0), 2) for b in buckets],
+                'is_parent': len(ids) > 1,
+                'branches': len(ids) - 1,
+                'total': round(total, 2),
+                'orders': orders,
+                'avg': round(total / orders, 2) if orders else 0.0,
+                'share': round(total / grand_total * 100.0, 1) if grand_total else 0.0,
+                'prev_total': round(prev, 2),
+                'growth': self._growth(total, prev),
+                'series': [round(sum(series[i].get(b, 0.0) for i in ids), 2) for b in buckets],
+                # مبيعات الشركة بذاتها فقط (للمخطط الدائري ومخطط المقارنة)
+                'own_total': round(own_total, 2),
+                'own_orders': own_orders,
+                'own_series': [round(series[company.id].get(b, 0.0), 2) for b in buckets],
             })
 
         return {
             'currency': self._currency_info(target_currency),
             'all_companies': [{'id': c.id, 'name': c.name} for c in all_companies],
+            'consolidated': bool(consolidated),
             'companies': rows,
             'granularity': granularity,
             'buckets': [b.isoformat() for b in buckets],
@@ -181,9 +233,10 @@ class RotanaManagementDashboard(models.AbstractModel):
         }
 
     @api.model
-    def get_company_details(self, company_id, date_from, date_to):
+    def get_company_details(self, company_id, date_from, date_to, consolidated=True):
         self._check_dashboard_access()
-        company = self._allowed_companies([company_id])
+        scope, children, _all = self._scope([company_id], consolidated)
+        company = scope.filtered(lambda c: c.id == company_id)
         if not company:
             raise AccessError(_("لا تملك صلاحية على هذه الشركة."))
 
@@ -194,19 +247,19 @@ class RotanaManagementDashboard(models.AbstractModel):
         target_currency = self.env.company.currency_id
         rate = self._rate_getter(target_currency, d_to)
 
-        current, series = self._aggregate(company, start, end, rate, granularity)
-        previous, _unused = self._aggregate(company, start - (end - start), start, rate)
-        cur = current.get(company.id) or {'total': 0.0, 'orders': 0}
-        prev = previous.get(company.id) or {'total': 0.0, 'orders': 0}
+        current, series = self._aggregate(scope, start, end, rate, granularity)
+        previous, _unused = self._aggregate(scope, start - (end - start), start, rate)
+        total, orders = self._sum_stats(current, scope.ids)
+        prev, _o = self._sum_stats(previous, scope.ids)
 
         Order = self.env['sale.order'].sudo()
-        domain = self._orders_domain(company, start, end)
+        domain = self._orders_domain(scope, start, end)
 
         def top(rows, name_fn):
             acc = {}
-            for rec, currency, amount, count in rows:
+            for comp, rec, currency, amount, count in rows:
                 item = acc.setdefault(rec.id or 0, {'name': name_fn(rec), 'value': 0.0, 'count': 0})
-                item['value'] += (amount or 0.0) * rate(currency, company)
+                item['value'] += (amount or 0.0) * rate(currency, comp)
                 item['count'] += count
             items = sorted(acc.values(), key=lambda i: i['value'], reverse=True)[:TOP_N]
             for item in items:
@@ -217,34 +270,34 @@ class RotanaManagementDashboard(models.AbstractModel):
             return rec.display_name if rec else _("غير محدد")
 
         customers = top(Order._read_group(
-            domain, ['partner_id', 'currency_id'], ['amount_total:sum', '__count']), name_of)
+            domain, ['company_id', 'partner_id', 'currency_id'], ['amount_total:sum', '__count']), name_of)
         salespeople = top(Order._read_group(
-            domain, ['user_id', 'currency_id'], ['amount_total:sum', '__count']), name_of)
+            domain, ['company_id', 'user_id', 'currency_id'], ['amount_total:sum', '__count']), name_of)
 
         Line = self.env['sale.order.line'].sudo()
         line_domain = [
             ('order_id.state', '=', 'sale'),
-            ('order_id.company_id', '=', company.id),
+            ('order_id.company_id', 'in', scope.ids),
             ('order_id.date_order', '>=', start),
             ('order_id.date_order', '<', end),
             ('display_type', '=', False),
         ]
         products = top(Line._read_group(
-            line_domain, ['product_id', 'currency_id'], ['price_total:sum', '__count']),
+            line_domain, ['company_id', 'product_id', 'currency_id'], ['price_total:sum', '__count']),
             lambda rec: rec.display_name if rec else _("بدون منتج"))
 
         return {
-            'company': {'id': company.id, 'name': company.name},
+            'company': {'id': company.id, 'name': company.name, 'branches': len(scope) - 1},
             'currency': self._currency_info(target_currency),
             'granularity': granularity,
             'buckets': [b.isoformat() for b in buckets],
-            'series': [round(series[company.id].get(b, 0.0), 2) for b in buckets],
+            'series': [round(sum(series[i].get(b, 0.0) for i in scope.ids), 2) for b in buckets],
             'totals': {
-                'total': round(cur['total'], 2),
-                'orders': cur['orders'],
-                'avg': round(cur['total'] / cur['orders'], 2) if cur['orders'] else 0.0,
-                'prev_total': round(prev['total'], 2),
-                'growth': self._growth(cur['total'], prev['total']),
+                'total': round(total, 2),
+                'orders': orders,
+                'avg': round(total / orders, 2) if orders else 0.0,
+                'prev_total': round(prev, 2),
+                'growth': self._growth(total, prev),
             },
             'products': products,
             'customers': customers,

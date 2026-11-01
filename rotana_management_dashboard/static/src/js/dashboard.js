@@ -16,6 +16,7 @@ import { loadJS } from "@web/core/assets";
 
 /* ------------------------------------------------------------------ config */
 const AMCHARTS_BUNDLE = "/rotana_management_dashboard/static/lib/amcharts5/amcharts5.bundle.min.js";
+const FONT_FAMILY = "IBM Plex Sans Arabic, Tahoma, sans-serif";
 const BUS_CHANNEL = "rotana_management_dashboard";
 const BUS_EVENT = "rotana_dashboard_sales_updated";
 const FALLBACK_REFRESH_MS = 60000;   // تحديث احتياطي إن تعطل bus
@@ -170,6 +171,7 @@ class RotanaManagementDashboard extends Component {
             dateFrom: ymd(from),
             dateTo: ymd(to),
             selectedCompanies: [],     // فارغ = كل الشركات
+            consolidated: true,        // موحّد: الشركة الأم تشمل فروعها
             companyMenu: false,
             chartMode: "line",
             data: null,
@@ -255,7 +257,7 @@ class RotanaManagementDashboard extends Component {
             const data = await this.orm.call(
                 "rotana.management.dashboard",
                 "get_sales_overview",
-                [this.state.dateFrom, this.state.dateTo, this.companyIdsParam]
+                [this.state.dateFrom, this.state.dateTo, this.companyIdsParam, this.state.consolidated]
             );
             if (this._dead || seq !== this._seq) {
                 return;
@@ -290,7 +292,7 @@ class RotanaManagementDashboard extends Component {
             const data = await this.orm.call(
                 "rotana.management.dashboard",
                 "get_company_details",
-                [company.id, this.state.dateFrom, this.state.dateTo]
+                [company.id, this.state.dateFrom, this.state.dateTo, this.state.consolidated]
             );
             if (!this._dead && drawer.open && drawer.company && drawer.company.id === company.id) {
                 drawer.data = data;
@@ -376,6 +378,14 @@ class RotanaManagementDashboard extends Component {
         this.loadData();
     }
 
+    setConsolidated(value) {
+        if (this.state.consolidated === value) {
+            return;
+        }
+        this.state.consolidated = value;
+        this.loadData();
+    }
+
     setChartMode(mode) {
         this.state.chartMode = mode;
     }
@@ -424,7 +434,13 @@ class RotanaManagementDashboard extends Component {
 
     get topCompany() {
         const rows = (this.state.data && this.state.data.companies) || [];
-        return rows.reduce((best, c) => (!best || c.total > best.total ? c : best), null);
+        return rows.reduce((best, c) => (!best || c.own_total > best.own_total ? c : best), null);
+    }
+
+    get topShare() {
+        const top = this.topCompany;
+        const total = this.state.data && this.state.data.totals.total;
+        return top && total ? ((top.own_total / total) * 100).toFixed(1) : 0;
     }
 
     get hasData() {
@@ -524,9 +540,13 @@ class RotanaManagementDashboard extends Component {
     _newRoot(el) {
         const am5 = window.am5;
         const root = am5.Root.new(el);
+        const fontTheme = window.am5.Theme.new(root);
+        fontTheme.rule("Label").setAll({ fontFamily: FONT_FAMILY, fontSize: 13.5 });
+        fontTheme.rule("Legend").setAll({ fontFamily: FONT_FAMILY });
         root.setThemes([
             window.am5themes_Animated.new(root),
             window.am5themes_Dark.new(root),
+            fontTheme,
         ]);
         root.numberFormatter.set("numberFormat", "#,###");
         return root;
@@ -568,7 +588,7 @@ class RotanaManagementDashboard extends Component {
             data.companies.forEach((c) => {
                 const s = existing.series[c.id];
                 if (s) {
-                    s.data.setAll(this._points(data.buckets, c.series));
+                    s.data.setAll(this._points(data.buckets, c.own_series));
                 }
             });
             return;
@@ -629,7 +649,7 @@ class RotanaManagementDashboard extends Component {
                     })
                 );
             }
-            series.data.setAll(this._points(data.buckets, c.series));
+            series.data.setAll(this._points(data.buckets, c.own_series));
             seriesMap[c.id] = series;
         });
 
@@ -646,10 +666,10 @@ class RotanaManagementDashboard extends Component {
         const am5percent = window.am5percent;
         const data = this.state.data;
         const items = data.companies
-            .filter((c) => c.total > 0)
+            .filter((c) => c.own_total > 0)
             .map((c) => ({
                 name: c.name,
-                value: c.total,
+                value: c.own_total,
                 sliceSettings: { fill: am5.color(this.colorOf(c.id)) },
             }));
         const key = items.map((i) => i.name).join("|");
