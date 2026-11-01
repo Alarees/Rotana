@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- مجموعة الوصول للوحة الإدارة. مديرو النظام (base.group_system) لديهم وصول دائماً. -->
+    <record id="group_rotana_dashboard_manager" model="res.groups">
+        <field name="name">لوحة الإدارة - Management Dashboard</field>
+        <field name="comment">يسمح بفتح لوحة الإدارة ورؤية مبيعات كل الشركات المسموحة للمستخدم.</field>
+    </record>
+</odoo>

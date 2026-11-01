@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_rotana_management_dashboard" model="ir.actions.client">
+        <field name="name">لوحة الإدارة</field>
+        <field name="tag">rotana_management_dashboard.main</field>
+    </record>
+
+    <menuitem id="menu_rotana_management_dashboard"
+              name="لوحة الإدارة"
+              action="action_rotana_management_dashboard"
+              sequence="1"
+              groups="group_rotana_dashboard_manager,base.group_system"
+              web_icon="rotana_management_dashboard,static/description/icon.png"/>
+</odoo>
