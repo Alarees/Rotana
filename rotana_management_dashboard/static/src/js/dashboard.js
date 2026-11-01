@@ -21,7 +21,6 @@ const BUS_CHANNEL = "rotana_management_dashboard";
 const BUS_EVENT = "rotana_dashboard_sales_updated";
 const FALLBACK_REFRESH_MS = 60000;   // تحديث احتياطي إن تعطل bus
 const BUS_DEBOUNCE_MS = 1500;
-const TV_ROTATE_MS = 25000;         // وضع العرض: تبديل الشاشات كل 25 ثانية
 const WEEK_START = 0;                // 0 = الأحد ، 6 = السبت
 
 // الأقسام: لإضافة قسم جديد أضف عنصراً هنا ثم ابنِ محتواه في القالب (dashboard.xml)
@@ -176,9 +175,6 @@ class RotanaManagementDashboard extends Component {
             consolidated: false,       // الافتراضي: مستقل (موحّد = الشركة الأم تشمل فروعها)
             branches: null,            // بيانات شاشة تفاصيل الفروع
             branchLog: false,          // مقياس لوغاريتمي لمخطط الفروع
-            flash: {},                 // خلايا لوحة التداول الوامضة
-            newIds: [],                // أحداث جديدة في الشريط الحي
-            tv: false,                 // وضع العرض
             companyMenu: false,
             chartMode: "line",
             data: null,
@@ -189,17 +185,6 @@ class RotanaManagementDashboard extends Component {
         useExternalListener(window, "click", () => {
             if (this.state.companyMenu) {
                 this.state.companyMenu = false;
-            }
-        });
-
-        useExternalListener(window, "keydown", (ev) => {
-            if (ev.key === "Escape" && this.state.tv) {
-                this.stopTv();
-            }
-        });
-        useExternalListener(document, "fullscreenchange", () => {
-            if (!document.fullscreenElement && this.state.tv) {
-                this.stopTv();
             }
         });
 
@@ -226,9 +211,6 @@ class RotanaManagementDashboard extends Component {
             this._dead = true;
             clearInterval(this._poll);
             clearTimeout(this._debounce);
-            clearTimeout(this._flashTimer);
-            clearTimeout(this._newTimer);
-            clearInterval(this._tvTimer);
             if (typeof this._unsub === "function") {
                 this._unsub();
             }
@@ -282,7 +264,6 @@ class RotanaManagementDashboard extends Component {
             this.state.loading = true;
         }
         try {
-            const prev = this.state.branches;
             const data = await this.orm.call(
                 "rotana.management.dashboard",
                 "get_branches_overview",
@@ -290,9 +271,6 @@ class RotanaManagementDashboard extends Component {
             );
             if (this._dead || seq !== this._seq) {
                 return;
-            }
-            if (silent && prev) {
-                this.computeFlash(prev, data);
             }
             this.state.branches = data;
             this.state.error = null;
@@ -309,36 +287,6 @@ class RotanaManagementDashboard extends Component {
                 this.state.refreshing = false;
             }
         }
-    }
-
-    computeFlash(prev, data) {
-        // ومضة خضراء/حمراء عند تغير القيمة (للمديونيات: الزيادة = سيئة = حمراء)
-        const old = new Map(prev.companies.map((c) => [c.id, c]));
-        const flash = {};
-        for (const c of data.companies) {
-            const o = old.get(c.id);
-            if (!o) {
-                continue;
-            }
-            [["sales", 1], ["debt", -1], ["paid", 1]].forEach(([field, polarity]) => {
-                const diff = c[field] - o[field];
-                if (Math.abs(diff) > 0.005) {
-                    flash[`${c.id}:${field}`] = diff * polarity > 0 ? "good" : "bad";
-                }
-            });
-        }
-        this.state.flash = flash;
-        clearTimeout(this._flashTimer);
-        this._flashTimer = setTimeout(() => {
-            this.state.flash = {};
-        }, 1700);
-
-        const known = new Set(prev.feed.map((e) => e.id));
-        this.state.newIds = data.feed.filter((e) => !known.has(e.id)).map((e) => e.id);
-        clearTimeout(this._newTimer);
-        this._newTimer = setTimeout(() => {
-            this.state.newIds = [];
-        }, 6000);
     }
 
     async loadSales(silent = false) {
@@ -412,36 +360,6 @@ class RotanaManagementDashboard extends Component {
         this.state.section = section.id;
         const has = section.id === "branches" ? this.state.branches : this.state.data;
         this.loadData(!!has);
-    }
-
-    rotateSection() {
-        const idx = SECTIONS.findIndex((s) => s.id === this.state.section);
-        this.selectSection(SECTIONS[(idx + 1) % SECTIONS.length]);
-    }
-
-    /* وضع العرض (شاشة مجلس الإدارة) */
-    async toggleTv() {
-        if (this.state.tv) {
-            return this.stopTv();
-        }
-        this.state.tv = true;
-        this.state.companyMenu = false;
-        this.closeDrawer();
-        clearInterval(this._tvTimer);
-        this._tvTimer = setInterval(() => this.rotateSection(), TV_ROTATE_MS);
-        try {
-            await document.documentElement.requestFullscreen();
-        } catch (e) {
-            /* الشاشة الكاملة غير متاحة: يبقى وضع العرض داخل النافذة */
-        }
-    }
-
-    stopTv() {
-        this.state.tv = false;
-        clearInterval(this._tvTimer);
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
-        }
     }
 
     /* عند تغيير الفلاتر نُفرغ بيانات القسم الآخر كي لا تظهر أرقام قديمة */
@@ -576,37 +494,6 @@ class RotanaManagementDashboard extends Component {
     get sortedBranches() {
         const rows = (this.state.branches && this.state.branches.companies) || [];
         return [...rows].sort((a, b) => b.sales - a.sales);
-    }
-
-    flashClass(id, field) {
-        const f = this.state.flash[`${id}:${field}`];
-        return f ? `flash-${f}` : "";
-    }
-
-    isNewEvent(id) {
-        return this.state.newIds.includes(id);
-    }
-
-    debtClass(g) {
-        const c = this.growthClass(g);
-        return c === "up" ? "down" : c === "down" ? "up" : c;
-    }
-
-    timeAgo(ts) {
-        if (!ts) {
-            return "";
-        }
-        const diff = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
-        if (diff < 60) {
-            return "الآن";
-        }
-        if (diff < 3600) {
-            return `قبل ${Math.floor(diff / 60)} د`;
-        }
-        if (diff < 86400) {
-            return `قبل ${Math.floor(diff / 3600)} س`;
-        }
-        return `قبل ${Math.floor(diff / 86400)} يوم`;
     }
 
     setBranchLog(value) {

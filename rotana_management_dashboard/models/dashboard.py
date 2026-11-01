@@ -337,38 +337,6 @@ class RotanaManagementDashboard(models.AbstractModel):
             paid[company.id] += ((credit or 0.0) - (debit or 0.0)) * rate(company.currency_id, company)
         return sales, debt, paid
 
-    def _recent_activity(self, companies, rate, limit=12):
-        """آخر أوامر البيع المؤكدة وآخر السدادات (للشريط الحي)."""
-        events = []
-        Order = self.env['sale.order'].sudo()
-        for order in Order.search(
-                [('state', '=', 'sale'), ('company_id', 'in', companies.ids)],
-                order='date_order desc, id desc', limit=limit):
-            events.append({
-                'id': 's%d' % order.id,
-                'type': 'sale',
-                'company': order.company_id.name,
-                'partner': order.partner_id.display_name or '',
-                'ref': order.name,
-                'amount': round(order.amount_total * rate(order.currency_id, order.company_id), 2),
-                'ts': order.date_order.isoformat() + 'Z' if order.date_order else '',
-            })
-        Line = self.env['account.move.line'].sudo()
-        domain = self._ar_domain(companies) + [
-            ('move_id.move_type', '=', 'entry'), ('credit', '>', 0)]
-        for line in Line.search(domain, order='create_date desc, id desc', limit=limit):
-            events.append({
-                'id': 'p%d' % line.id,
-                'type': 'payment',
-                'company': line.company_id.name,
-                'partner': line.partner_id.display_name or '',
-                'ref': line.move_id.name or '',
-                'amount': round(line.credit * rate(line.company_id.currency_id, line.company_id), 2),
-                'ts': line.create_date.isoformat() + 'Z' if line.create_date else '',
-            })
-        events.sort(key=lambda e: e['ts'], reverse=True)
-        return events[:limit]
-
     @api.model
     def get_branches_overview(self, date_from, date_to, company_ids=None):
         self._check_dashboard_access()
@@ -426,5 +394,4 @@ class RotanaManagementDashboard(models.AbstractModel):
                 'paid_growth': self._growth(tot_p, prev_p),
                 'collection_rate': round(tot_p / tot_s * 100.0, 1) if tot_s else None,
             },
-            'feed': self._recent_activity(companies, rate),
         }
