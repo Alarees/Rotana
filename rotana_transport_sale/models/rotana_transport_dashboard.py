@@ -19,14 +19,14 @@ FLEET_GROUP = 'fleet.fleet_group_user'
 
 class RotanaTransportDashboard(models.AbstractModel):
     _name = 'rotana.transport.dashboard'
-    _description = 'داشبورد النقل'
+    _description = 'Transport Dashboard'
 
     # ------------------------------------------------------------------
     # أدوات مساعدة
     # ------------------------------------------------------------------
     def _check_group(self, group):
         if not self.env.user.has_group(group):
-            raise AccessError(_('ليست لديك صلاحية الوصول إلى هذه الصفحة.'))
+            raise AccessError(_('You do not have permission to access this page.'))
 
     @api.model
     def _trip_domain(self, filters):
@@ -96,15 +96,15 @@ class RotanaTransportDashboard(models.AbstractModel):
     @api.model
     def _trips_columns(self):
         return [
-            {'key': 'manifest', 'label': _('المانيفستو'), 'type': 'text'},
-            {'key': 'date', 'label': _('التاريخ'), 'type': 'text'},
-            {'key': 'vehicle', 'label': _('العربة'), 'type': 'text'},
-            {'key': 'location_from', 'label': _('من'), 'type': 'text'},
-            {'key': 'location_to', 'label': _('إلى'), 'type': 'text'},
-            {'key': 'transported', 'label': _('الوزن المنقول'), 'type': 'float'},
-            {'key': 'discharged', 'label': _('الوزن المفرغ'), 'type': 'float'},
-            {'key': 'shortage', 'label': _('كمية العجز'), 'type': 'shortage'},
-            {'key': 'state_label', 'label': _('الحالة'), 'type': 'state'},
+            {'key': 'manifest', 'label': _('Manifest'), 'type': 'text'},
+            {'key': 'date', 'label': _('Date'), 'type': 'text'},
+            {'key': 'vehicle', 'label': _('Vehicle'), 'type': 'text'},
+            {'key': 'location_from', 'label': _('From'), 'type': 'text'},
+            {'key': 'location_to', 'label': _('To'), 'type': 'text'},
+            {'key': 'transported', 'label': _('Transported Weight'), 'type': 'float'},
+            {'key': 'discharged', 'label': _('Discharged Weight'), 'type': 'float'},
+            {'key': 'shortage', 'label': _('Shortage Quantity'), 'type': 'shortage'},
+            {'key': 'state_label', 'label': _('Status'), 'type': 'state'},
         ]
 
     @api.model
@@ -261,26 +261,26 @@ class RotanaTransportDashboard(models.AbstractModel):
             }
 
         money_cols = [
-            {'key': 'debit', 'label': _('إجمالي المدين'), 'type': 'float'},
-            {'key': 'credit', 'label': _('إجمالي الدائن'), 'type': 'float'},
-            {'key': 'profit', 'label': _('الربح'), 'type': 'profit'},
+            {'key': 'debit', 'label': _('Total Debit'), 'type': 'float'},
+            {'key': 'credit', 'label': _('Total Credit'), 'type': 'float'},
+            {'key': 'profit', 'label': _('Profit'), 'type': 'profit'},
         ]
         return {
             'diagnostics': self_diag,
             'trips': pack(trip_rows, [
-                {'key': 'name', 'label': _('الرحلة'), 'type': 'text'},
-                {'key': 'vehicle', 'label': _('العربة'), 'type': 'text'},
-                {'key': 'sale', 'label': _('أمر البيع'), 'type': 'text'},
+                {'key': 'name', 'label': _('Trip'), 'type': 'text'},
+                {'key': 'vehicle', 'label': _('Vehicle'), 'type': 'text'},
+                {'key': 'sale', 'label': _('Sales Order'), 'type': 'text'},
             ] + money_cols),
             'sales': pack(sale_rows, [
-                {'key': 'name', 'label': _('أمر البيع'), 'type': 'text'},
-                {'key': 'partner', 'label': _('العميل'), 'type': 'text'},
-                {'key': 'trips', 'label': _('عدد الرحلات'), 'type': 'int'},
+                {'key': 'name', 'label': _('Sales Order'), 'type': 'text'},
+                {'key': 'partner', 'label': _('Customer'), 'type': 'text'},
+                {'key': 'trips', 'label': _('Number of Trips'), 'type': 'int'},
             ] + money_cols),
             'vehicles': pack(vehicle_rows, [
-                {'key': 'name', 'label': _('المركبة'), 'type': 'text'},
-                {'key': 'plan', 'label': _('الخطة التحليلية'), 'type': 'text'},
-                {'key': 'trips', 'label': _('عدد الرحلات'), 'type': 'int'},
+                {'key': 'name', 'label': _('Vehicle'), 'type': 'text'},
+                {'key': 'plan', 'label': _('Analytic Plan'), 'type': 'text'},
+                {'key': 'trips', 'label': _('Number of Trips'), 'type': 'int'},
             ] + money_cols),
         }
 
@@ -320,7 +320,7 @@ class RotanaTransportDashboard(models.AbstractModel):
             })
             rec = locations.setdefault(loc_id, {
                 'id': loc_id,
-                'name': loc.name if loc else _('بدون موقع'),
+                'name': loc.name if loc else _('No Location'),
                 'total': 0,
                 'states': {},
             })
@@ -348,30 +348,30 @@ class RotanaTransportDashboard(models.AbstractModel):
         if section == 'trips':
             self._check_group(TRIP_GROUP)
             data = self.get_trips_data(filters)
-            title = _('داشبورد النقل - الرحلات')
+            title = _('Transport Dashboard - Trips')
         elif section in ('acc_trips', 'acc_sales', 'acc_vehicles'):
             self._check_group(ACCOUNT_GROUP)
             key = section.split('_', 1)[1]
             data = self._accounts_sections(filters)[key]
             title = {
-                'trips': _('داشبورد النقل - حسابات الرحلات'),
-                'sales': _('داشبورد النقل - حسابات المبيعات'),
-                'vehicles': _('داشبورد النقل - حسابات المركبات'),
+                'trips': _('Transport Dashboard - Trip Accounts'),
+                'sales': _('Transport Dashboard - Sales Accounts'),
+                'vehicles': _('Transport Dashboard - Vehicle Accounts'),
             }[key]
         else:
-            raise AccessError(_('قسم غير معروف.'))
+            raise AccessError(_('Unknown section.'))
 
         columns = data['columns']
         rows = [[r.get(c['key']) for c in columns] for r in data['rows']]
         totals = data['totals']
         total_row = None
         if totals:
-            total_row = [(_('الإجمالي') if i == 0 else totals.get(c['key'], '')) for i, c in enumerate(columns)]
+            total_row = [(_('Total') if i == 0 else totals.get(c['key'], '')) for i, c in enumerate(columns)]
         parts = []
         if filters.get('date_from'):
-            parts.append(_('من تاريخ: %s', filters['date_from']))
+            parts.append(_('From date: %s', filters['date_from']))
         if filters.get('date_to'):
-            parts.append(_('إلى تاريخ: %s', filters['date_to']))
+            parts.append(_('To date: %s', filters['date_to']))
         return {
             'title': title,
             'columns': [c['label'] for c in columns],
@@ -384,7 +384,7 @@ class RotanaTransportDashboard(models.AbstractModel):
 
 class ReportRotanaTransportDashboard(models.AbstractModel):
     _name = 'report.rotana_transport_sale.report_dashboard'
-    _description = 'تقرير PDF لداشبورد النقل'
+    _description = 'Transport Dashboard PDF Report'
 
     @api.model
     def _get_report_values(self, docids, data=None):

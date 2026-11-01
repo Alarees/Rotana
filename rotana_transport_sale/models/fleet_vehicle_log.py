@@ -1,38 +1,38 @@
 from odoo import api, fields, models
 
 STATE = [
-    ('ready', 'جاهز'),
-    ('booked', 'محجوز'),
-    ('on_trip', 'في رحلة'),
-    ('on_maintenance', 'في الصيانة'),
+    ('ready', 'Ready'),
+    ('booked', 'Booked'),
+    ('on_trip', 'On Trip'),
+    ('on_maintenance', 'Under Maintenance'),
 ]
 
 
 class FleetVehicleLog(models.Model):
     _name = 'fleet.vehicle.log'
-    _description = 'سجل حركات المركبة'
+    _description = 'Vehicle Movement Log'
     _order = 'date desc, id desc'
 
     vehicle_id = fields.Many2one(
         'fleet.vehicle',
-        string='المركبة',
+        string='Vehicle',
         required=True,
         index=True,
         ondelete='cascade',
     )
-    date = fields.Datetime('التاريخ', default=fields.Datetime.now, required=True)
-    state_from = fields.Selection(STATE, string='الحالة من')
-    state_to = fields.Selection(STATE, string='الحالة إلى')
-    location_from = fields.Many2one('rotana.transport.location', string='الموقع من')
-    location_to = fields.Many2one('rotana.transport.location', string='الموقع إلى')
+    date = fields.Datetime('Date', default=fields.Datetime.now, required=True)
+    state_from = fields.Selection(STATE, string='Status From')
+    state_to = fields.Selection(STATE, string='Status To')
+    location_from = fields.Many2one('rotana.transport.location', string='Location From')
+    location_to = fields.Many2one('rotana.transport.location', string='Location To')
     status_ref = fields.Reference(
-        selection=[('rotana.transport.trip', 'رحلة النقل')],
-        string='المرجع الحالي',
-        help='المرجع الحالي للمركبة، مثل الرحلة الحالية التي تشارك فيها.',
+        selection=[('rotana.transport.trip', 'Transport Trip')],
+        string='Current Reference',
+        help="The vehicle's current reference, such as the trip it is currently on.",
     )
     done_by = fields.Many2one(
         'res.users',
-        string='تم بواسطة',
+        string='Done By',
         default=lambda self: self.env.user,
     )
     company_id = fields.Many2one(

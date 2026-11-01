@@ -10,7 +10,7 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
                 <notebook>
-                    <page string="ملاحظات الرحلة" name="trip_notes">
+                    <page string="Trip Notes" name="trip_notes">
                         <field name="note_ids" mode="kanban" nolabel="1" create="0">
                             <kanban class="o_trip_note_kanban" default_order="time desc">
                                 <field name="time"/>
@@ -29,7 +29,7 @@
                                     </t>
                                 </templates>
                             </kanban>
-                            <form string="ملاحظة الرحلة">
+                            <form string="Trip Note">
                                 <sheet>
                                     <group>
                                         <field name="note_id"/>

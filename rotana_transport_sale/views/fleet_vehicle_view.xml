@@ -41,7 +41,7 @@
                             <field name="current_location_id" readonly="1" options="{'no_open': True}"/>
                         </span>
                         <h2>
-                            <field name="note_ids" widget="many2many_tags" placeholder="ملاحظات"/>
+                            <field name="note_ids" widget="many2many_tags" placeholder="Notes"/>
                         </h2>
                     </div>
                 </div>
@@ -56,13 +56,13 @@
                         type="object"
                         class="oe_stat_button"
                         icon="fa-truck">
-                    <span>الرحلات</span>
+                    <span>Trips</span>
                 </button>
                 <button name="action_view_analytic_plan"
                         type="object"
                         class="oe_stat_button"
                         icon="fa-file-text-o">
-                    <span>الخطة التحليلية</span>
+                    <span>Analytic Plan</span>
                 </button>
             </xpath>
         </field>

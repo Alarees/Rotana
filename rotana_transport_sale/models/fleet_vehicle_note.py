@@ -10,9 +10,9 @@ from odoo import _, api, fields, models
 
 class FleetVehicleNote(models.Model):
     _name = 'fleet.vehicle.note'
-    _description = 'ملاحظات مركبة النقل'
+    _description = 'Transport Vehicle Notes'
 
     name = fields.Char(
-        string='التعليق',
+        string='Comment',
         required=True,
     )

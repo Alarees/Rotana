@@ -17,16 +17,16 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 CUSTODY_STATES = [
-    ('draft', 'مسودة'),
-    ('confirmed', 'مؤكدة'),
-    ('paid', 'مدفوعة'),
-    ('done', 'منتهية'),
+    ('draft', 'Draft'),
+    ('confirmed', 'Confirmed'),
+    ('paid', 'Paid'),
+    ('done', 'Done'),
 ]
 
 
 class RotanaTransportTripCustody(models.Model):
     _name = 'rotana.transport.trip.custody'
-    _description = 'عهدة رحلة النقل'
+    _description = 'Transport Trip Custody'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'form_number'
     _order = 'id desc'
@@ -42,7 +42,7 @@ class RotanaTransportTripCustody(models.Model):
         )
     state = fields.Selection(
         CUSTODY_STATES,
-        string='الحالة',
+        string='Status',
         default='draft',
         required=True,
         readonly=True,
@@ -52,7 +52,7 @@ class RotanaTransportTripCustody(models.Model):
     )
     trip_id = fields.Many2one(
         'rotana.transport.trip',
-        string='الرحلة',
+        string='Trip',
         required=True,
         ondelete='restrict',
         tracking=True,
@@ -60,15 +60,15 @@ class RotanaTransportTripCustody(models.Model):
     )
     sale_order_id = fields.Many2one(
         related='trip_id.sale_order_id',
-        string='أمر البيع',
+        string='Sales Order',
     )
     vehicle_id = fields.Many2one(
         related='trip_id.vehicle_id',
-        string='المركبة',
+        string='Vehicle',
     )
     partner_id = fields.Many2one(
         'res.partner',
-        string='السائق',
+        string='Driver',
         compute='_compute_partner_id',
         store=True,
         readonly=True,
@@ -76,69 +76,69 @@ class RotanaTransportTripCustody(models.Model):
         tracking=True,
     )
     date = fields.Date(
-        string='التاريخ',
+        string='Date',
         default=fields.Date.context_today,
         required=True,
     )
     company_id = fields.Many2one(
         'res.company',
-        string='الشركة',
+        string='Company',
         default=lambda self: self.env.company,
         required=True,
         index=True,
     )
     currency_id = fields.Many2one(
         related='company_id.currency_id',
-        string='العملة',
+        string='Currency',
     )
     amount = fields.Monetary(
-        string='مبلغ العهدة',
+        string='Custody Amount',
         required=True,
         tracking=True,
     )
     line_ids = fields.One2many(
         'rotana.transport.trip.custody.line',
         'custody_id',
-        string='سطور التصفية',
+        string='Settlement Lines',
     )
     spent_amount = fields.Monetary(
-        string='إجمالي المصروف',
+        string='Total Spent',
         compute='_compute_amounts',
         store=True,
     )
     difference_amount = fields.Monetary(
-        string='فرق التصفية',
+        string='Settlement Difference',
         compute='_compute_amounts',
         store=True,
-        help='مبلغ العهدة - إجمالي المصروف. الموجب: على السائق، السالب: للسائق.',
+        help='Custody amount minus total spent. Positive: owed by the driver, negative: owed to the driver.',
     )
     paid_amount = fields.Monetary(
-        string='المدفوع للسائق',
+        string='Paid to Driver',
         compute='_compute_paid_amount',
-        help='مجموع دفعات العهدة المرحّلة.',
+        help='Total of posted custody payments.',
     )
     remaining_amount = fields.Monetary(
-        string='المتبقي بعد الدفعات',
+        string='Remaining After Payments',
         compute='_compute_remaining',
-        help='المدفوع - المصروف، بعد خصم دفعيات التسوية المرحّلة.',
+        help='Paid minus spent, after deducting posted settlement payments.',
     )
     settle_direction = fields.Selection(
-        [('inbound', 'على السائق'), ('outbound', 'للسائق')],
-        string='اتجاه التسوية',
+        [('inbound', 'Owed by Driver'), ('outbound', 'Owed to Driver')],
+        string='Settlement Direction',
         compute='_compute_remaining',
     )
     done_move_id = fields.Many2one(
         'account.move',
-        string='قيد التصفية',
+        string='Settlement Entry',
         readonly=True,
         copy=False,
     )
     payment_ids = fields.One2many(
         'account.payment',
         'custody_id',
-        string='الدفعات',
+        string='Payments',
     )
-    notes = fields.Text(string='ملاحظات')
+    notes = fields.Text(string='Notes')
 
     # ==============================
     # الحقول المحسوبة
@@ -201,7 +201,7 @@ class RotanaTransportTripCustody(models.Model):
     def _check_amount(self):
         for custody in self:
             if custody.amount <= 0:
-                raise ValidationError(_('مبلغ العهدة يجب أن يكون أكبر من صفر.'))
+                raise ValidationError(_('The custody amount must be greater than zero.'))
 
     # ==============================
     # دورة الحياة
@@ -220,7 +220,7 @@ class RotanaTransportTripCustody(models.Model):
     def _unlink_except_not_draft(self):
         if any(custody.state != 'draft' for custody in self):
             raise UserError(_(
-                'لا يمكن حذف عهدة غير مسودة. استخدم (إلغاء وإعادة لمسودة) أولاً.'
+                'Only draft custodies can be deleted. Use (Cancel & Reset to Draft) first.'
             ))
 
     # ==============================
@@ -235,19 +235,18 @@ class RotanaTransportTripCustody(models.Model):
         journal = company.custody_journal_id
         if not account or not journal:
             raise UserError(_(
-                'حدّد حساب العهدة ودفتر يومية العهد في إعدادات نقل روتانا (العهد المالية).'
+                'Set the custody account and custody journal in the Rotana Transport settings (Financial Custodies).'
             ))
         if account.account_type not in ('liability_payable', 'asset_receivable'):
             raise UserError(_(
-                'حساب العهدة يجب أن يكون من نوع (دائنة / Payable) أو (مدينة / Receivable) '
-                'ليعمل مع الدفعات والتسوية القياسية.'
+                'The custody account must be of type Payable or Receivable to work with standard payments and reconciliation.'
             ))
         return account, journal
 
     def _get_move_label(self):
         self.ensure_one()
         return _(
-            'عهدة %(form_number)s - رحلة %(trip)s',
+            'Custody %(form_number)s - Trip %(trip)s',
             form_number=self.form_number,
             trip=self.trip_id.manifest_number,
         )
@@ -260,9 +259,9 @@ class RotanaTransportTripCustody(models.Model):
         """تأكيد: تغيير الحالة فقط (القيد المحاسبي هو قيد الدفعة)."""
         for custody in self:
             if custody.form_number == '':
-                raise UserError(_('اضف الارقم المتسلسل للعهدة قبل تأكيدها'))
+                raise UserError(_('Enter the custody serial number before confirming it.'))
             if custody.state != 'draft':
-                raise UserError(_('العهدة %s ليست في حالة مسودة.', custody.form_number))
+                raise UserError(_('Custody %s is not in draft state.', custody.form_number))
             # التحقق المبكر من إعدادات الحساب ودفتر اليومية
             custody._get_custody_settings()
             custody.state = 'confirmed'
@@ -300,7 +299,7 @@ class RotanaTransportTripCustody(models.Model):
         """إنشاء دفعة قياسية للسائق بالمتبقي من العهدة وفتحها لاختيار الدفتر وترحيلها."""
         self.ensure_one()
         if self.state != 'confirmed':
-            raise UserError(_('تسجيل الدفعة متاح للعهدة المؤكدة فقط.'))
+            raise UserError(_('Registering a payment is only available for confirmed custodies.'))
         draft = self.payment_ids.filtered(
             lambda pay: pay.custody_payment_kind == 'advance' and pay.state == 'draft'
         )
@@ -308,7 +307,7 @@ class RotanaTransportTripCustody(models.Model):
             return self._open_payment(draft[:1])
         due = self.amount - self.paid_amount
         if self.currency_id.compare_amounts(due, 0) <= 0:
-            raise UserError(_('لا يوجد مبلغ متبقٍ للدفع على هذه العهدة.'))
+            raise UserError(_('There is no remaining amount to pay on this custody.'))
         return self._open_payment(self._create_custody_payment('advance', 'outbound', due))
 
     def _after_payment_posted(self):
@@ -327,13 +326,13 @@ class RotanaTransportTripCustody(models.Model):
         """إنهاء: قيد (المصروفات مدين موزعة تحليلياً / العهدة دائن) بإجمالي السطور."""
         for custody in self:
             if custody.state != 'paid':
-                raise UserError(_('إنهاء العهدة %s متاح للعهدة المدفوعة فقط.', custody.form_number))
+                raise UserError(_('Finishing custody %s is only available for paid custodies.', custody.form_number))
             if not custody.line_ids:
-                raise UserError(_('أضف سطور المصروفات الفعلية قبل الإنهاء.'))
+                raise UserError(_('Add the actual expense lines before finishing.'))
             analytic = custody.trip_id.account_analytic_id
             if not analytic:
                 raise UserError(_(
-                    'الرحلة %s ليس لها حساب تحليلي (يُنشأ عند تأكيد الرحلة).',
+                    'Trip %s has no analytic account (it is created when the trip is confirmed).',
                     custody.trip_id.manifest_number,
                 ))
             account, journal = custody._get_custody_settings()
@@ -345,7 +344,7 @@ class RotanaTransportTripCustody(models.Model):
                 )._get_product_accounts()['expense']
                 if not expense:
                     raise UserError(_(
-                        'لا يوجد حساب مصروف للمنتج %s (على المنتج أو فئته).',
+                        'No expense account is set for product %s (on the product or its category).',
                         line.product_id.display_name,
                     ))
                 move_lines.append(Command.create({
@@ -380,7 +379,7 @@ class RotanaTransportTripCustody(models.Model):
         """دفعية فرق التصفية: للسائق (إن زاد المصروف) أو عليه (إن زادت العهدة)."""
         self.ensure_one()
         if self.state != 'done' or not self.settle_direction:
-            raise UserError(_('لا يوجد فرق تصفية مفتوح لهذه العهدة.'))
+            raise UserError(_('There is no open settlement difference for this custody.'))
         draft = self.payment_ids.filtered(
             lambda pay: pay.custody_payment_kind == 'settlement' and pay.state == 'draft'
         )
@@ -424,22 +423,22 @@ class RotanaTransportTripCustody(models.Model):
         for custody in self:
             if custody.state not in ('draft', 'confirmed', 'paid'):
                 raise UserError(_(
-                    'إلغاء العهدة %s متاح في حالة مسودة أو مؤكدة فقط.',
+                    'Cancelling custody %s is only available in draft or confirmed state.',
                     custody.form_number,
                 ))
             payments = custody.payment_ids
             if payments:
-                names = '، '.join(payments.mapped('display_name'))
+                names = ', '.join(payments.mapped('display_name'))
                 # 1) إعادة الدفعة وقيدها إلى مسودة بالطريقة القياسية
                 payments.action_draft()
                 # 2) حذف الدفعة يحذف قيدها (وهو مسودة الآن)
                 payments.unlink()
                 custody.message_post(body=_(
-                    'تم حذف الدفعات وقيود اليومية المرتبطة بها: %s', names
+                    'Deleted the payments and their journal entries: %s', names
                 ))
             if custody.state != 'draft':
                 custody.state = 'draft'
-                custody.message_post(body=_('تمت إعادة العهدة إلى مسودة.'))
+                custody.message_post(body=_('The custody was reset to draft.'))
         return True    # ==============================
     # الأزرار الذكية
     # ==============================
@@ -457,7 +456,7 @@ class RotanaTransportTripCustody(models.Model):
     def action_view_moves(self):
         self.ensure_one()
         return {
-            'name': _('القيود'),
+            'name': _('Journal Entries'),
             'type': 'ir.actions.act_window',
             'res_model': 'account.move',
             'view_mode': 'list,form',
@@ -467,7 +466,7 @@ class RotanaTransportTripCustody(models.Model):
     def action_view_payments(self):
         self.ensure_one()
         return {
-            'name': _('الدفعات'),
+            'name': _('Payments'),
             'type': 'ir.actions.act_window',
             'res_model': 'account.payment',
             'view_mode': 'list,form',
@@ -477,34 +476,34 @@ class RotanaTransportTripCustody(models.Model):
 
 class RotanaTransportTripCustodyLine(models.Model):
     _name = 'rotana.transport.trip.custody.line'
-    _description = 'سطر مصروفات العهدة'
+    _description = 'Custody Expense Line'
     _order = 'sequence, id'
 
     sequence = fields.Integer(default=10)
     custody_id = fields.Many2one(
         'rotana.transport.trip.custody',
-        string='العهدة',
+        string='Custody',
         required=True,
         ondelete='cascade',
         index=True,
     )
     product_id = fields.Many2one(
         'product.product',
-        string='المنتج',
+        string='Product',
         required=True,
     )
     name = fields.Char(
-        string='الوصف',
+        string='Description',
         compute='_compute_name',
         store=True,
         readonly=False,
     )
     currency_id = fields.Many2one(
         related='custody_id.currency_id',
-        string='العملة',
+        string='Currency',
     )
     amount = fields.Monetary(
-        string='المبلغ المصروف',
+        string='Amount Spent',
         required=True,
     )
 
@@ -517,12 +516,12 @@ class RotanaTransportTripCustodyLine(models.Model):
     def _check_amount(self):
         for line in self:
             if line.amount <= 0:
-                raise ValidationError(_('مبلغ السطر يجب أن يكون أكبر من صفر.'))
+                raise ValidationError(_('The line amount must be greater than zero.'))
 
     def _check_custody_editable(self):
         if any(line.custody_id.state != 'paid' for line in self):
             raise UserError(_(
-                'سطور التصفية تُدخل وتُعدَّل في حالة (مدفوعة) فقط.'
+                'Settlement lines can only be entered or edited in the (Paid) state.'
             ))
 
     @api.model_create_multi
@@ -546,11 +545,11 @@ class RotanaTransportTrip(models.Model):
     custody_ids = fields.One2many(
         'rotana.transport.trip.custody',
         'trip_id',
-        string='العهد',
+        string='Custodies',
         groups='account.group_account_user',
     )
     custody_count = fields.Integer(
-        string='عدد العهد',
+        string='Custody Count',
         compute='_compute_custody_count',
         groups='account.group_account_user',
     )
@@ -563,7 +562,7 @@ class RotanaTransportTrip(models.Model):
     def action_view_custody(self):
         self.ensure_one()
         return {
-            'name': _('العهد'),
+            'name': _('Custodies'),
             'type': 'ir.actions.act_window',
             'res_model': 'rotana.transport.trip.custody',
             'view_mode': 'list,form',

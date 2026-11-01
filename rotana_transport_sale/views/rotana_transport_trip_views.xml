@@ -7,18 +7,18 @@
         <field name="name">rotana.transport.trip.form</field>
         <field name="model">rotana.transport.trip</field>
         <field name="arch" type="xml">
-            <form string="رحلة النقل">
+            <form string="Transport Trip">
                 <header>
-                    <button name="action_confirm" string="تأكيد" type="object"
+                    <button name="action_confirm" string="Confirm" type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
-                    <button name="action_start_transit" string="بدء الرحلة" type="object"
+                    <button name="action_start_transit" string="Start Trip" type="object"
                             class="btn-primary"
                             invisible="state != 'confirmed' or not manifest_number"/>
-                    <button name="action_done" string="إكمال الرحلة" type="object"
+                    <button name="action_done" string="Complete Trip" type="object"
                             class="btn-success"
                             invisible="state != 'in_transit'"/>
-                    <button name="action_reset_to_draft" string="إعادة إلى مسودة" type="object"
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
                             groups="rotana_transport_sale.group_rotana_transport_manager"
                             invisible="state == 'done'"/>
                     <field name="state" widget="statusbar"
@@ -31,14 +31,14 @@
                         type="object"
                         class="oe_stat_button"
                         icon="fa-file-text-o">
-                            <span>امر البيع</span>
+                            <span>Sales Order</span>
                         </button>
                         <button name="action_view_account_analytic"
                         type="object"
                         class="oe_stat_button"
                         invisible="not account_analytic_id"
                         icon="fa-file-text-o">
-                            <span>الحساب التحليلي</span>
+                            <span>Analytic Account</span>
                         </button>
                     </div>
                     <div class="oe_title">
@@ -54,35 +54,35 @@
                         class="btn-primary btn-big"
                         invisible="state == 'draft' and not manifest_number or manifest_number"
                         icon="fa-barcode">
-                                    <span>توليد المانفيستو</span>
+                                    <span>Generate Manifest</span>
                                 </button>
                             </div>
                         </div>
                     </div>
                     <group>
-                        <group string="المسار" readonly="state == 'done'">
+                        <group string="Route" readonly="state == 'done'">
                             <field name="planned_date"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="actual_start_date"/>
                             <field name="actual_end_date"/>
                         </group>
-                        <group string="المواقع" readonly="1">
+                        <group string="Locations" readonly="1">
                             <field name="location_from_id"/>
                             <field name="location_to_id"/>
                         </group>
                     </group>
                     <group>
-                        <group string="الموارد" readonly="1">
+                        <group string="Resources" readonly="1">
                             <field name="vehicle_id"/>
                             <field name="driver_id"/>
                         </group>
-                        <group string="الوزن وكفاءة النقل">
+                        <group string="Weight &amp; Transport Efficiency">
                             <field name="transported_weight" readonly="state != 'draft'"/>
                             <field name="discharged_quantity" readonly="state != 'in_transit'"/>
                             <field name="transport_efficiency" readonly="1" widget="progressbar"/>
                         </group>
                     </group>
-                    <group string="ملاحظات">
+                    <group string="Notes">
                         <field name="notes" nolabel="1" colspan="2"/>
                     </group>
                 </sheet>
@@ -95,7 +95,7 @@
         <field name="name">rotana.transport.trip.list</field>
         <field name="model">rotana.transport.trip</field>
         <field name="arch" type="xml">
-            <list string="رحلات النقل"
+            <list string="Transport Trips"
                 create="0"
                 decoration-info="state == 'draft'"
                 decoration-warning="state == 'confirmed'"
@@ -160,39 +160,39 @@
         <field name="name">rotana.transport.trip.search</field>
         <field name="model">rotana.transport.trip</field>
         <field name="arch" type="xml">
-            <search string="بحث في الرحلات">
-                <field name="manifest_number" string="المرجع"/>
-                <field name="sale_order_id" string="أمر البيع"/>
-                <field name="vehicle_id" string="المركبة"/>
-                <field name="driver_id" string="السائق"/>
-                <field name="location_from_id" string="من"/>
-                <field name="location_to_id" string="إلى"/>
+            <search string="Search Trips">
+                <field name="manifest_number" string="Reference"/>
+                <field name="sale_order_id" string="Sales Order"/>
+                <field name="vehicle_id" string="Vehicle"/>
+                <field name="driver_id" string="Driver"/>
+                <field name="location_from_id" string="From"/>
+                <field name="location_to_id" string="To"/>
                 <separator/>
-                <filter string="مسودة" name="draft" domain="[('state','=','draft')]"/>
-                <filter string="مؤكدة" name="confirmed" domain="[('state','=','confirmed')]"/>
-                <filter string="في الطريق" name="in_transit" domain="[('state','=','in_transit')]"/>
-                <filter string="مكتملة" name="done" domain="[('state','=','done')]"/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmed" name="confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="In Transit" name="in_transit" domain="[('state','=','in_transit')]"/>
+                <filter string="Completed" name="done" domain="[('state','=','done')]"/>
                 <group>
-                    <filter string="الحالة" name="group_by_state" context="{'group_by': 'state'}"/>
-                    <filter string="المركبة" name="group_by_vehicle" context="{'group_by': 'vehicle_id'}"/>
-                    <filter string="السائق" name="group_by_driver" context="{'group_by': 'driver_id'}"/>
-                    <filter string="التاريخ" name="group_by_date" context="{'group_by': 'planned_date'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Vehicle" name="group_by_vehicle" context="{'group_by': 'vehicle_id'}"/>
+                    <filter string="Driver" name="group_by_driver" context="{'group_by': 'driver_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'planned_date'}"/>
                 </group>
             </search>
         </field>
     </record>
     <!-- إجراء الرحلات -->
     <record id="action_rotana_transport_trip" model="ir.actions.act_window">
-        <field name="name">رحلات النقل</field>
+        <field name="name">Transport Trips</field>
         <field name="res_model">rotana.transport.trip</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_rotana_transport_trip_search"/>
         <field name="context">{'create': False, 'edit': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                لا توجد رحلات بعد!
+                No trips yet!
             </p>
-            <p>الرحلات تُنشأ تلقائياً عند تأكيد أوامر بيع النقل.</p>
+            <p>Trips are created automatically when transport sales orders are confirmed.</p>
         </field>
     </record>
 </odoo>

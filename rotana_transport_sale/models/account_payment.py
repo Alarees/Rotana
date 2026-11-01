@@ -7,17 +7,17 @@ class AccountPayment(models.Model):
 
     custody_id = fields.Many2one(
         'rotana.transport.trip.custody',
-        string='عهدة النقل',
+        string='Transport Custody',
         copy=False,
         index=True,
         ondelete='set null',
     )
     custody_payment_kind = fields.Selection(
         [
-            ('advance', 'دفعة العهدة'),
-            ('settlement', 'تسوية فرق العهدة'),
+            ('advance', 'Custody Payment'),
+            ('settlement', 'Custody Difference Settlement'),
         ],
-        string='نوع دفعة العهدة',
+        string='Custody Payment Type',
         copy=False,
     )
 

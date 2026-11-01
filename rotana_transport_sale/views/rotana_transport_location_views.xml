@@ -7,26 +7,26 @@
         <field name="name">rotana.transport.location.form</field>
         <field name="model">rotana.transport.location</field>
         <field name="arch" type="xml">
-            <form string="موقع النقل">
+            <form string="Transport Location">
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="اسم الموقع"/>
+                            <field name="name" placeholder="Location Name"/>
                         </h1>
                     </div>
                     <group>
-                        <group string="المعلومات الأساسية">
+                        <group string="Basic Information">
                             <field name="partner_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
-                        <group string="العنوان">
+                        <group string="Address">
                             <field name="street"/>
                             <field name="city"/>
                             <field name="state_id"/>
                             <field name="country_id"/>
                         </group>
                     </group>
-                    <group string="ملاحظات">
+                    <group string="Notes">
                         <field name="notes" nolabel="1" colspan="2"/>
                     </group>
                 </sheet>
@@ -39,7 +39,7 @@
         <field name="name">rotana.transport.location.list</field>
         <field name="model">rotana.transport.location</field>
         <field name="arch" type="xml">
-            <list string="مواقع النقل">
+            <list string="Transport Locations">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="city"/>
@@ -53,28 +53,28 @@
         <field name="name">rotana.transport.location.search</field>
         <field name="model">rotana.transport.location</field>
         <field name="arch" type="xml">
-            <search string="بحث في المواقع">
-                <field name="name" string="الموقع"/>
-                <field name="partner_id" string="العميل"/>
-                <field name="city" string="المدينة"/>
+            <search string="Search Locations">
+                <field name="name" string="Location"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="city" string="City"/>
                 <separator/>
-                <filter string="نشط" name="active" domain="[('active','=',True)]"/>
-                <filter string="غير نشط" name="inactive" domain="[('active','=',False)]"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+                <filter string="Inactive" name="inactive" domain="[('active','=',False)]"/>
             </search>
         </field>
     </record>
 
     <!-- إجراء المواقع -->
     <record id="action_rotana_transport_location" model="ir.actions.act_window">
-        <field name="name">مواقع النقل</field>
+        <field name="name">Transport Locations</field>
         <field name="res_model">rotana.transport.location</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_rotana_transport_location_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                أضف أول موقع نقل!
+                Add your first transport location!
             </p>
-            <p>مواقع الانطلاق والوصول المستخدمة في رحلات النقل.</p>
+            <p>Departure and arrival locations used in transport trips.</p>
         </field>
     </record>
 </odoo>

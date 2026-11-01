@@ -20,11 +20,11 @@ class RotanaTransportSaleOrder(models.Model):
     # =======================================
 
     is_transport_order = fields.Boolean(
-        string='أمر نقل',
+        string='Transport Order',
         default=False,
         copy=False,
         tracking=True,
-        help='فعِّل هذا الخيار لتحويل أمر البيع إلى أمر خدمة نقل.',
+        help='Enable this option to turn the sales order into a transport service order.',
     )
 
     # =======================================
@@ -33,37 +33,37 @@ class RotanaTransportSaleOrder(models.Model):
 
     transport_location_from_id = fields.Many2one(
         'rotana.transport.location',
-        string='من',
+        string='From',
         index=True,
         tracking=True,
     )
 
     transport_location_to_id = fields.Many2one(
         'rotana.transport.location',
-        string='إلى',
+        string='To',
         index=True,
         tracking=True,
     )
 
     transport_trip_count = fields.Integer(
-        string='عدد الرحلات',
+        string='Number of Trips',
         compute='_compute_transport_trip_count',
     )
 
     total_transported_weight = fields.Float(
-        string='إجمالي الوزن المنقول',
+        string='Total Transported Weight',
         compute='_compute_total_transported_weight',
         store=True,
     )
 
     total_weight_to_transport = fields.Float(
-        string='إجمالي الوزن المطلوب نقله',
+        string='Total Weight to Transport',
         compute='_compute_total_weight_to_transport',
         store=True,
     )
 
     total_discharged_quantity = fields.Float(
-        string='إجمالي الكمية المفرغة',
+        string='Total Discharged Quantity',
         compute='_compute_total_discharged_quantity',
         store=True,
     )
@@ -77,11 +77,11 @@ class RotanaTransportSaleOrder(models.Model):
     trip_ids = fields.One2many(
         'rotana.transport.trip',
         'sale_order_id',
-        string='الرحلات'
+        string='Trips'
         )
 
     analytic_account_count = fields.Integer(
-        string='عدد الحسابات التحليلية',
+        string='Number of Analytic Accounts',
         compute='_compute_analytic_account_count',
     )
 
@@ -108,7 +108,7 @@ class RotanaTransportSaleOrder(models.Model):
                 trip.transported_weight for trip in order.trip_ids.filtered(lambda t: t.state != 'draft')
             )
             if transported > order.total_weight_to_transport :
-                raise UserError(_('لا يمكن أن يكون الوزن المنقول أكبر من الوزن المراد نقله'))
+                raise UserError(_('The transported weight cannot exceed the weight to be transported.'))
             order.total_transported_weight = transported
 
     @api.depends('order_line.product_uom_qty')
@@ -178,10 +178,10 @@ class RotanaTransportSaleOrder(models.Model):
         """فتح كانبان لاختيار المركبات (بالسحب) ثم إنشاء رحلة لكل مركبة."""
         self.ensure_one()
         if not self.is_transport_order:
-            raise UserError(_('هذا الأمر ليس أمر نقل.'))
+            raise UserError(_('This order is not a transport order.'))
         if not (self.transport_location_from_id and self.transport_location_to_id):
             raise UserError(_(
-                'حدّد موقعي الانطلاق (من) والوصول (إلى) في أمر البيع قبل إنشاء الرحلات.'
+                'Set the departure (From) and arrival (To) locations on the sales order before creating trips.'
             ))
 
         wizard = self.env['rotana.transport.trip.wizard'].create({
@@ -194,7 +194,7 @@ class RotanaTransportSaleOrder(models.Model):
         ])
         return {
             'type': 'ir.actions.act_window',
-            'name': _('اختيار المركبات - %s', self.name),
+            'name': _('Select Vehicles - %s', self.name),
             'res_model': 'rotana.transport.trip.wizard.line',
             'view_mode': 'kanban',
             'domain': [('wizard_id', '=', wizard.id)],
@@ -217,7 +217,7 @@ class RotanaTransportSaleOrder(models.Model):
         total = self.total_weight_to_transport
         transported = self.total_transported_weight
         if transported < total:
-            raise UserError(_('لا يمكن انشاء فاتورة قبل اكتمال الوزن المنقول'))
+            raise UserError(_('You cannot create an invoice before the transported weight is complete.'))
         if not self.is_transport_order or total <= 0:
             return {}
         shares = {}
@@ -254,7 +254,7 @@ class RotanaTransportSaleOrder(models.Model):
         active_id = self.env.context.get('active_id')
         return {
             'type': 'ir.actions.act_window',
-            'name': _('رحلات النقل'),
+            'name': _('Transport Trips'),
             'res_model': 'rotana.transport.trip',
             'views': [(False, 'list'), (False, 'form')],
             # 'view_mode': 'list,form',
@@ -266,7 +266,7 @@ class RotanaTransportSaleOrder(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('الحساب التحليلي'),
+            'name': _('Analytic Account'),
             'res_model': 'account.analytic.account',
             'views': [(False, 'list'), (False, 'form')],
             # 'view_mode': 'list,form',

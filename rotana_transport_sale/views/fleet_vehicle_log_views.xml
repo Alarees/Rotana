@@ -7,7 +7,7 @@
         <field name="name">fleet.vehicle.log.list</field>
         <field name="model">fleet.vehicle.log</field>
         <field name="arch" type="xml">
-            <list string="سجل حركات المركبات" create="0" edit="0" delete="0">
+            <list string="Vehicle Movement Log" create="0" edit="0" delete="0">
                 <field name="date"/>
                 <field name="vehicle_id"/>
                 <field name="state_from" widget="badge"/>
@@ -29,17 +29,17 @@
         <field name="name">fleet.vehicle.log.form</field>
         <field name="model">fleet.vehicle.log</field>
         <field name="arch" type="xml">
-            <form string="حركة مركبة" create="0" edit="0" delete="0">
+            <form string="Vehicle Movement" create="0" edit="0" delete="0">
                 <sheet>
                     <group>
-                        <group string="الحركة">
+                        <group string="Movement">
                             <field name="vehicle_id"/>
                             <field name="date"/>
                             <field name="status_ref"/>
                             <field name="done_by"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
-                        <group string="التغيير">
+                        <group string="Change">
                             <field name="state_from"/>
                             <field name="state_to"/>
                             <field name="location_from"/>
@@ -55,30 +55,30 @@
         <field name="name">fleet.vehicle.log.search</field>
         <field name="model">fleet.vehicle.log</field>
         <field name="arch" type="xml">
-            <search string="بحث في سجل الحركات">
+            <search string="Search Movement Log">
                 <field name="vehicle_id"/>
                 <field name="location_from"/>
                 <field name="location_to"/>
                 <field name="done_by"/>
                 <separator/>
-                <filter string="اليوم" name="today"
+                <filter string="Today" name="today"
                         domain="[('date', '>=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
-                <filter string="جاهز" name="to_ready" domain="[('state_to', '=', 'ready')]"/>
-                <filter string="محجوز" name="to_booked" domain="[('state_to', '=', 'booked')]"/>
-                <filter string="في رحلة" name="to_on_trip" domain="[('state_to', '=', 'on_trip')]"/>
-                <filter string="في الصيانة" name="to_on_maintenance" domain="[('state_to', '=', 'on_maintenance')]"/>
+                <filter string="Ready" name="to_ready" domain="[('state_to', '=', 'ready')]"/>
+                <filter string="Booked" name="to_booked" domain="[('state_to', '=', 'booked')]"/>
+                <filter string="On Trip" name="to_on_trip" domain="[('state_to', '=', 'on_trip')]"/>
+                <filter string="Under Maintenance" name="to_on_maintenance" domain="[('state_to', '=', 'on_maintenance')]"/>
                 <group>
-                    <filter string="المركبة" name="group_vehicle" context="{'group_by': 'vehicle_id'}"/>
-                    <filter string="الحالة الجديدة" name="group_state_to" context="{'group_by': 'state_to'}"/>
-                    <filter string="المستخدم" name="group_user" context="{'group_by': 'done_by'}"/>
-                    <filter string="التاريخ" name="group_date" context="{'group_by': 'date:day'}"/>
+                    <filter string="Vehicle" name="group_vehicle" context="{'group_by': 'vehicle_id'}"/>
+                    <filter string="New Status" name="group_state_to" context="{'group_by': 'state_to'}"/>
+                    <filter string="User" name="group_user" context="{'group_by': 'done_by'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'date:day'}"/>
                 </group>
             </search>
         </field>
     </record>
 
     <record id="action_fleet_vehicle_log" model="ir.actions.act_window">
-        <field name="name">سجل حركات المركبات</field>
+        <field name="name">Vehicle Movement Log</field>
         <field name="res_model">fleet.vehicle.log</field>
         <field name="view_mode">list,form</field>
     </record>

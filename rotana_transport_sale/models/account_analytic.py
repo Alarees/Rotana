@@ -5,7 +5,7 @@ class AccountAnalyticAccount(models.Model):
 
     sale_order_id = fields.Many2one(
         'sale.order',
-        string='أمر البيع',
+        string='Sales Order',
         index=True,
-        help='أمر البيع المرتبط بهذا الحساب التحليلي.',
+        help='Sales order linked to this analytic account.',
     )

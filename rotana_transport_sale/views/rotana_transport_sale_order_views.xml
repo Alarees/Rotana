@@ -12,7 +12,7 @@
             <xpath expr="//header" position="inside">
                 <button name="action_open_trip_wizard"
                         type="object"
-                        string="إنشاء رحلات"
+                        string="Create Trips"
                         class="btn-primary"
                         groups="rotana_transport_sale.group_rotana_transport_user"
                         invisible="not is_transport_order or state in ('draft', 'cancel')"/>
@@ -24,14 +24,14 @@
                         class="oe_stat_button"
                         icon="fa-truck"
                         invisible="not is_transport_order or transport_trip_count == 0">
-                    <field name="transport_trip_count" widget="statinfo" string="الرحلات"/>
+                    <field name="transport_trip_count" widget="statinfo" string="Trips"/>
                 </button>
                 <button name="action_view_account_analytic"
                         type="object"
                         class="oe_stat_button"
                         icon="fa-calculator"
                         invisible="not is_transport_order or analytic_account_count == 0">
-                    <field name="analytic_account_count" widget="statinfo" string="الحسابات التحليلية"/>
+                    <field name="analytic_account_count" widget="statinfo" string="Analytic Accounts"/>
                 </button>
             </xpath>
             <!-- قسم بيانات النقل بعد مجموعة المعلومات الأساسية -->
@@ -46,22 +46,22 @@
             <!-- إضافة حقل الوزن المنقول في سطور أمر البيع -->
             <field name="payment_term_id" position="after">
                 <field name="total_weight_to_transport"
-                       string="إجمالي الوزن المراد نقله"
+                       string="Total Weight to Transport"
                        readonly="1"
                        invisible="not is_transport_order"/>
                 <field name="total_transported_weight"
-                       string="إجمالي الوزن المنقول"
+                       string="Total Transported Weight"
                        readonly="1"
                        invisible="not is_transport_order"/>
                 <field name="total_discharged_quantity"
-                       string="إجمالي الكمية المفرغة"
+                       string="Total Discharged Quantity"
                        readonly="1"
                        invisible="not is_transport_order"/>
             </field>
             <xpath expr="//page[@name='order_lines']" position="after">
-                <page name="transport_trips" string="الرحلات" invisible="not is_transport_order or state == 'draft'">
+                <page name="transport_trips" string="Trips" invisible="not is_transport_order or state == 'draft'">
                     <field name="trip_ids" nolabel="1">
-                        <list string="الرحلات" editable="bottom" create="true" delete="true">
+                        <list string="Trips" editable="bottom" create="true" delete="true">
                             <field name="vehicle_id" />
                             <field name="driver_id" />
                             <field name="transported_weight" />
@@ -71,7 +71,7 @@
                        decoration-warning="state == 'confirmed'"
                        decoration-primary="state == 'in_transit'"
                        decoration-success="state == 'done'"/>
-                            <button name="action_view_transport_trips" type="object" class="btn-primary" icon="fa-eye" string="عرض"  />
+                            <button name="action_view_transport_trips" type="object" class="btn-primary" icon="fa-eye" string="View"  />
                         </list>
                     </field>
                 </page>
@@ -80,7 +80,7 @@
             <!-- <xpath expr="//field[@name='order_line']/list//field[@name='product_id']" position="after">
                 <field name="transport_vehicle_analytic_account_id"
                        optional="show"
-                       string="الحساب التحليلي للمركبة"
+                       string="Vehicle Analytic Account"
                        invisible="not parent.is_transport_order"/>
             </xpath> -->
         </field>
@@ -91,7 +91,7 @@
         <field name="model">sale.order</field>
         <field name="mode">primary</field>
         <field name="arch" type="xml">
-            <list string="أوامر بيع النقل"
+            <list string="Transport Sales Orders"
               decoration-muted="state == 'cancel'"
               decoration-info="state in ('draft', 'sent')"
               decoration-success="state == 'sale'"
@@ -105,7 +105,7 @@
                 <field name="total_weight_to_transport" optional="show"/>
                 <field name="total_transported_weight" widget="progressbar" optional="show"
                    options="{'current_value': 'total_transported_weight', 'max_value': 'total_weight_to_transport', 'editable': false}"/>
-                <field name="amount_total" sum="الإجمالي" widget="monetary"/>
+                <field name="amount_total" sum="Total" widget="monetary"/>
                 <field name="state" widget="badge"
                    decoration-info="state in ('draft', 'sent')"
                    decoration-success="state == 'sale'"
@@ -131,9 +131,9 @@
                 <templates>
                     <t t-name="menu" class="d-flex flex-column">
                         <button name="action_view_transport_trips" type="object"
-                                class="btn" string="عرض الرحلات"/>
+                                class="btn" string="View Trips"/>
                         <button name="action_open_trip_wizard" type="object"
-                                class="btn" string="إنشاء رحلات"
+                                class="btn" string="Create Trips"
                                 invisible="state == 'cancel'"
                                 groups="rotana_transport_sale.group_rotana_transport_user"/>
                     </t>
@@ -147,7 +147,7 @@
                             <div class="small fw-medium d-flex gap-2 align-items-center">
                                 <field name="date_order" widget="date"/>
                                 <span class="badge rounded-pill border">
-                                    <field name="transport_trip_count"/> رحلات
+                                    <field name="transport_trip_count"/> trips
                                 </span>
                             </div>
                         </div>
@@ -155,37 +155,37 @@
                             <div class="fs-4 text-truncate">
                                 <field name="partner_id"/>
                             </div>
-                            <div class="small fw-medium text-muted">العميل</div>
+                            <div class="small fw-medium text-muted">Customer</div>
                         </div>
                         <div class="o_cell d-flex flex-column" style="flex: 1 1 7rem; min-width: 0;">
                             <div class="fs-4 text-truncate">
                                 <field name="transport_location_from_id"/>
                             </div>
-                            <div class="small fw-medium text-muted">من</div>
+                            <div class="small fw-medium text-muted">From</div>
                         </div>
                         <div class="o_cell d-flex flex-column" style="flex: 1 1 7rem; min-width: 0;">
                             <div class="fs-4 text-truncate">
                                 <field name="transport_location_to_id"/>
                             </div>
-                            <div class="small fw-medium text-muted">إلى</div>
+                            <div class="small fw-medium text-muted">To</div>
                         </div>
                         <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
                             <div class="fs-3 text-truncate">
                                 <field name="total_weight_to_transport"/>
                             </div>
-                            <div class="small fw-medium text-muted">المطلوب نقله (طن)</div>
+                            <div class="small fw-medium text-muted">To Transport (Tons)</div>
                         </div>
                         <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
                             <div class="fs-3 text-truncate">
                                 <field name="total_transported_weight"/>
                             </div>
-                            <div class="small fw-medium text-muted">المنقول (طن)</div>
+                            <div class="small fw-medium text-muted">Transported (Tons)</div>
                         </div>
                         <div class="o_cell d-flex flex-column" style="flex: 0.8 1 5rem; min-width: 0;">
                             <div class="fs-3 text-truncate">
                                 <field name="total_discharged_quantity"/>
                             </div>
-                            <div class="small fw-medium text-muted">المفرغ (طن)</div>
+                            <div class="small fw-medium text-muted">Discharged (Tons)</div>
                         </div>
                         <div class="o_cell d-flex flex-column gap-1" style="flex: 1 1 7rem; min-width: 0;">
                             <field name="state" widget="badge"
@@ -201,7 +201,7 @@
         </field>
     </record>
     <record id="action_rotana_transport_sale_orders" model="ir.actions.act_window">
-        <field name="name">أوامر بيع النقل</field>
+        <field name="name">Transport Sales Orders</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="view_ids" eval="[(5, 0, 0),
@@ -210,7 +210,7 @@
         <field name="domain">[('is_transport_order', '=', True)]</field>
         <field name="context">{'default_is_transport_order': True, 'search_default_is_transport_order': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">أنشئ أول أمر بيع نقل!</p>
+            <p class="o_view_nocontent_smiling_face">Create your first transport sales order!</p>
         </field>
     </record>
     <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">

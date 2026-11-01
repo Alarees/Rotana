@@ -16,11 +16,11 @@
                             <field name="allowable_deficit"/>
                         </setting>
                     </block>
-                    <block title="العهد المالية" name="custody_settings_container">
-                        <setting id="custody_account_id" help="حساب العهد (Custody Payable) من نوع دائنة أو مدينة، تُقيَّد عليه عهد السائقين.">
+                    <block title="Financial Custodies" name="custody_settings_container">
+                        <setting id="custody_account_id" help="Custody account (Custody Payable), of type Payable or Receivable, on which driver custodies are recorded.">
                             <field name="custody_account_id"/>
                         </setting>
-                        <setting id="custody_journal_id" help="دفتر اليومية الذي تُنشأ فيه قيود العهد.">
+                        <setting id="custody_journal_id" help="Journal in which custody entries are created.">
                             <field name="custody_journal_id"/>
                         </setting>
                     </block>

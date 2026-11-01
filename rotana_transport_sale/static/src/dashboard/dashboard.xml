@@ -6,9 +6,9 @@
             <header class="o_rt_appbar">
                 <div class="o_rt_title">
                     <i t-attf-class="fa #{page === 'accounts' ? 'fa-money' : 'fa-truck'}"/>
-                    <span t-if="page === 'trips'">داشبورد الرحلات</span>
-                    <span t-elif="page === 'vehicles'">داشبورد المركبات</span>
-                    <span t-else="">داشبورد الحسابات</span>
+                    <span t-if="page === 'trips'">Trips Dashboard</span>
+                    <span t-elif="page === 'vehicles'">Vehicles Dashboard</span>
+                    <span t-else="">Accounts Dashboard</span>
                 </div>
                 <div class="o_rt_actions" t-if="page !== 'vehicles'">
                     <button class="o_rt_btn o_rt_btn_tonal" t-on-click="() => this.exportTable('xlsx')" t-att-disabled="state.loading">
@@ -23,11 +23,11 @@
             <!-- ======= الفلاتر ======= -->
             <section class="o_rt_card o_rt_filters" t-if="page !== 'vehicles'">
                 <label class="o_rt_field">
-                    <span>من تاريخ</span>
+                    <span>From Date</span>
                     <input type="date" t-att-value="state.filters.date_from" t-on-change="(ev) => this.onDateChange('date_from', ev)"/>
                 </label>
                 <label class="o_rt_field">
-                    <span>إلى تاريخ</span>
+                    <span>To Date</span>
                     <input type="date" t-att-value="state.filters.date_to" t-on-change="(ev) => this.onDateChange('date_to', ev)"/>
                 </label>
                 <t t-foreach="multiFilters" t-as="mf" t-key="mf.key">
@@ -40,11 +40,11 @@
                                     <i class="fa fa-times" t-on-click.stop="() => this.toggleOption(mf, opt.id)"/>
                                 </span>
                             </t>
-                            <span t-if="!state.filters[mf.key].length" class="o_rt_placeholder">الكل</span>
+                            <span t-if="!state.filters[mf.key].length" class="o_rt_placeholder">All</span>
                             <i class="fa fa-caret-down o_rt_caret"/>
                         </div>
                         <div t-if="state.open === mf.key" class="o_rt_dropdown">
-                            <input type="search" class="o_rt_search" placeholder="بحث..." t-att-value="state.search" t-on-input="onSearch"/>
+                            <input type="search" class="o_rt_search" placeholder="Search..." t-att-value="state.search" t-on-input="onSearch"/>
                             <ul>
                                 <t t-foreach="optionsFor(mf)" t-as="opt" t-key="opt.id">
                                     <li t-att-class="{'o_rt_selected': isSelected(mf, opt.id)}" t-on-click="() => this.toggleOption(mf, opt.id)">
@@ -57,41 +57,41 @@
                     </div>
                 </t>
                 <button t-if="hasFilters" class="o_rt_btn o_rt_btn_text" t-on-click="resetFilters">
-                    <i class="fa fa-undo"/> إعادة تعيين
+                    <i class="fa fa-undo"/> Reset
                 </button>
             </section>
             <div t-if="state.open" class="o_rt_scrim" t-on-click="closeDropdown"/>
 
-            <div t-if="state.loading" class="o_rt_loading"><i class="fa fa-circle-o-notch fa-spin"/> جارٍ التحميل...</div>
+            <div t-if="state.loading" class="o_rt_loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading...</div>
 
             <t t-elif="page === 'vehicles'">
                 <nav class="o_rt_tabs">
                     <button t-att-class="{'o_rt_active': state.vtab === 'overview'}" t-on-click="() => state.vtab = 'overview'">
-                        <i class="fa fa-th-large"/> الحالات
+                        <i class="fa fa-th-large"/> Statuses
                     </button>
                     <button t-att-class="{'o_rt_active': state.vtab === 'locations'}" t-on-click="() => state.vtab = 'locations'">
-                        <i class="fa fa-map-marker"/> حسب الموقع
+                        <i class="fa fa-map-marker"/> By Location
                     </button>
                 </nav>
 
                 <t t-if="state.vtab === 'overview'">
                     <section class="o_rt_kpis">
-                        <div class="o_rt_kpi o_rt_k_primary"><span>إجمالي المركبات</span><b t-esc="fmtInt(state.data.total)"/></div>
+                        <div class="o_rt_kpi o_rt_k_primary"><span>Total Vehicles</span><b t-esc="fmtInt(state.data.total)"/></div>
                         <t t-foreach="state.data.states" t-as="st" t-key="st.key">
                             <div t-attf-class="o_rt_kpi o_rt_vs_#{st.key}"><span t-esc="st.label"/><b t-esc="fmtInt(st.count)"/></div>
                         </t>
                     </section>
                     <section class="o_rt_charts">
                         <div class="o_rt_card o_rt_chart_wide">
-                            <h4>حالات المركبات في كل موقع</h4>
+                            <h4>Vehicle Statuses by Location</h4>
                             <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
                         </div>
                         <div class="o_rt_card">
-                            <h4>توزيع المركبات حسب الحالة</h4>
+                            <h4>Vehicles by Status</h4>
                             <div class="o_rt_canvas"><canvas id="o_rt_chart_2"/></div>
                         </div>
                     </section>
-                    <h4 class="o_rt_section_title">المواقع</h4>
+                    <h4 class="o_rt_section_title">Locations</h4>
                     <section class="o_rt_loc_grid">
                         <t t-foreach="state.data.locations" t-as="loc" t-key="loc.id">
                             <div class="o_rt_card o_rt_loc_card" t-on-click="() => this.openLocation(loc.id)">
@@ -116,7 +116,7 @@
                     <aside class="o_rt_card o_rt_loc_list">
                         <ul>
                             <li t-att-class="{'o_rt_selected': state.locId === null}" t-on-click="() => this.selectLocation(null)">
-                                <span>كل المواقع</span><b t-esc="fmtInt(state.data.total)"/>
+                                <span>All Locations</span><b t-esc="fmtInt(state.data.total)"/>
                             </li>
                             <t t-foreach="state.data.locations" t-as="loc" t-key="loc.id">
                                 <li t-att-class="{'o_rt_selected': state.locId === loc.id}" t-on-click="() => this.selectLocation(loc.id)">
@@ -137,7 +137,7 @@
                             <div class="o_rt_table_wrap">
                                 <table class="o_rt_table">
                                     <thead>
-                                        <tr><th>رقم الوحدة</th><th>السائق</th><th>الحالة</th></tr>
+                                        <tr><th>Unit Number</th><th>Driver</th><th>Status</th></tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="vehicleRows" t-as="row" t-key="row.res_id">
@@ -147,7 +147,7 @@
                                                 <td><span t-attf-class="o_rt_badge o_rt_s_#{row.state}" t-esc="row.state_label"/></td>
                                             </tr>
                                         </t>
-                                        <tr t-if="!vehicleRows.length"><td colspan="3" class="o_rt_empty">لا توجد مركبات</td></tr>
+                                        <tr t-if="!vehicleRows.length"><td colspan="3" class="o_rt_empty">No vehicles</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -159,20 +159,20 @@
             <t t-elif="page === 'trips'">
                 <!-- ======= KPIs الرحلات ======= -->
                 <section class="o_rt_kpis">
-                    <div class="o_rt_kpi"><span>عدد الرحلات</span><b t-esc="fmtInt(state.data.kpis.count)"/></div>
-                    <div class="o_rt_kpi o_rt_k_primary"><span>الوزن المنقول</span><b t-esc="fmt(state.data.kpis.transported)"/></div>
-                    <div class="o_rt_kpi o_rt_k_teal"><span>الوزن المفرغ</span><b t-esc="fmt(state.data.kpis.discharged)"/></div>
-                    <div class="o_rt_kpi o_rt_k_red"><span>إجمالي العجز</span><b t-esc="fmt(state.data.kpis.shortage)"/></div>
-                    <div class="o_rt_kpi o_rt_k_red"><span>نسبة العجز</span><b><t t-esc="fmt(state.data.kpis.shortage_pct)"/>%</b></div>
+                    <div class="o_rt_kpi"><span>Number of Trips</span><b t-esc="fmtInt(state.data.kpis.count)"/></div>
+                    <div class="o_rt_kpi o_rt_k_primary"><span>Transported Weight</span><b t-esc="fmt(state.data.kpis.transported)"/></div>
+                    <div class="o_rt_kpi o_rt_k_teal"><span>Discharged Weight</span><b t-esc="fmt(state.data.kpis.discharged)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>Total Shortage</span><b t-esc="fmt(state.data.kpis.shortage)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>Shortage Ratio</span><b><t t-esc="fmt(state.data.kpis.shortage_pct)"/>%</b></div>
                 </section>
                 <!-- ======= الرسوم ======= -->
                 <section class="o_rt_charts">
                     <div class="o_rt_card o_rt_chart_wide">
-                        <h4>المنقول والمفرغ والعجز حسب العربة (أعلى 10 عجزاً)</h4>
+                        <h4>Transported, Discharged and Shortage by Vehicle (Top 10 by Shortage)</h4>
                         <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
                     </div>
                     <div class="o_rt_card">
-                        <h4>الرحلات حسب الحالة</h4>
+                        <h4>Trips by Status</h4>
                         <div class="o_rt_canvas"><canvas id="o_rt_chart_2"/></div>
                     </div>
                 </section>
@@ -182,15 +182,15 @@
             <t t-else="">
                 <!-- ======= تنبيهات التشخيص ======= -->
                 <div t-if="!state.data.diagnostics.trips" class="o_rt_notice">
-                    <i class="fa fa-info-circle"/> لا توجد رحلات ضمن الفلاتر الحالية.
+                    <i class="fa fa-info-circle"/> No trips match the current filters.
                 </div>
                 <div t-if="state.data.diagnostics.without_account" class="o_rt_notice">
                     <i class="fa fa-info-circle"/>
-                    <t t-esc="state.data.diagnostics.without_account"/> رحلة بلا حساب تحليلي (يُنشأ الحساب عند تأكيد الرحلة)، وتظهر بقيم صفرية.
+                    <t t-esc="state.data.diagnostics.without_account"/> Trip without an analytic account (the account is created when the trip is confirmed); shown with zero values.
                 </div>
                 <div t-if="state.data.diagnostics.trips &gt; state.data.diagnostics.without_account and !state.data.diagnostics.lines" class="o_rt_notice o_rt_notice_warn">
                     <i class="fa fa-exclamation-triangle"/>
-                    لا توجد قيود تحليلية على حسابات الرحلات. تظهر الأرقام بعد ترحيل فاتورة أو قيد (مثل إنهاء العهدة) بتوزيع تحليلي على حساب الرحلة.
+                    There are no analytic entries on trip accounts. Figures appear after posting an invoice or entry (such as finishing a custody) with an analytic distribution on the trip account.
                 </div>
                 <!-- ======= تبويبات الحسابات ======= -->
                 <nav class="o_rt_tabs">
@@ -201,14 +201,14 @@
                     </t>
                 </nav>
                 <section class="o_rt_kpis">
-                    <div class="o_rt_kpi"><span>عدد السجلات</span><b t-esc="fmtInt(section.rows.length)"/></div>
-                    <div class="o_rt_kpi o_rt_k_red"><span>إجمالي المدين</span><b><t t-esc="fmt(section.totals.debit)"/> <small t-esc="currency"/></b></div>
-                    <div class="o_rt_kpi o_rt_k_teal"><span>إجمالي الدائن</span><b><t t-esc="fmt(section.totals.credit)"/> <small t-esc="currency"/></b></div>
-                    <div t-attf-class="o_rt_kpi #{section.totals.profit &lt; 0 ? 'o_rt_k_red' : 'o_rt_k_primary'}"><span>الربح</span><b><t t-esc="fmt(section.totals.profit)"/> <small t-esc="currency"/></b></div>
+                    <div class="o_rt_kpi"><span>Number of Records</span><b t-esc="fmtInt(section.rows.length)"/></div>
+                    <div class="o_rt_kpi o_rt_k_red"><span>Total Debit</span><b><t t-esc="fmt(section.totals.debit)"/> <small t-esc="currency"/></b></div>
+                    <div class="o_rt_kpi o_rt_k_teal"><span>Total Credit</span><b><t t-esc="fmt(section.totals.credit)"/> <small t-esc="currency"/></b></div>
+                    <div t-attf-class="o_rt_kpi #{section.totals.profit &lt; 0 ? 'o_rt_k_red' : 'o_rt_k_primary'}"><span>Profit</span><b><t t-esc="fmt(section.totals.profit)"/> <small t-esc="currency"/></b></div>
                 </section>
                 <section class="o_rt_charts">
                     <div class="o_rt_card o_rt_chart_full">
-                        <h4>المدين والدائن والربح (أعلى 10 حسب قيمة الربح)</h4>
+                        <h4>Debit, Credit and Profit (Top 10 by Profit)</h4>
                         <div class="o_rt_canvas"><canvas id="o_rt_chart_1"/></div>
                     </div>
                 </section>
@@ -239,13 +239,13 @@
                                 </t>
                             </tr>
                         </t>
-                        <tr t-if="!section.rows.length"><td t-att-colspan="section.columns.length" class="o_rt_empty">لا توجد بيانات ضمن الفلاتر الحالية</td></tr>
+                        <tr t-if="!section.rows.length"><td t-att-colspan="section.columns.length" class="o_rt_empty">No data for the current filters</td></tr>
                     </tbody>
                     <tfoot t-if="section.rows.length">
                         <tr>
                             <t t-foreach="section.columns" t-as="col" t-key="col.key">
                                 <td t-att-class="totalClass(col)">
-                                    <t t-if="col_index === 0">الإجمالي</t>
+                                    <t t-if="col_index === 0">Total</t>
                                     <t t-else="" t-esc="totalText(col)"/>
                                 </td>
                             </t>

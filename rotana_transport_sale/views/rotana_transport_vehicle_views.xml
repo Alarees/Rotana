@@ -7,29 +7,29 @@
         <field name="name">rotana.transport.vehicle.form</field>
         <field name="model">rotana.transport.vehicle</field>
         <field name="arch" type="xml">
-            <form string="مركبة النقل">
+            <form string="Transport Vehicle">
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="اسم المركبة"/>
+                            <field name="name" placeholder="Vehicle Name"/>
                         </h1>
                         <h2>
-                            <field name="license_plate" placeholder="رقم اللوحة"/>
+                            <field name="license_plate" placeholder="License Plate"/>
                         </h2>
                     </div>
                     <group>
-                        <group string="المعلومات الأساسية">
+                        <group string="Basic Information">
                             <field name="vehicle_type"/>
                             <field name="capacity_ton"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
-                        <group string="الموقع والتكامل">
+                        <group string="Location &amp; Integration">
                             <field name="current_location_id"/>
                             <field name="fleet_vehicle_id"/>
                             <field name="analytic_account_id"/>
                         </group>
                     </group>
-                    <group string="ملاحظات">
+                    <group string="Notes">
                         <field name="notes" nolabel="1" colspan="2"/>
                     </group>
                 </sheet>
@@ -42,7 +42,7 @@
         <field name="name">rotana.transport.vehicle.list</field>
         <field name="model">rotana.transport.vehicle</field>
         <field name="arch" type="xml">
-            <list string="مركبات النقل">
+            <list string="Transport Vehicles">
                 <field name="name"/>
                 <field name="license_plate"/>
                 <field name="vehicle_type"/>
@@ -57,15 +57,15 @@
         <field name="name">rotana.transport.vehicle.search</field>
         <field name="model">rotana.transport.vehicle</field>
         <field name="arch" type="xml">
-            <search string="بحث في المركبات">
-                <field name="name" string="اسم المركبة"/>
-                <field name="license_plate" string="اللوحة"/>
-                <field name="current_location_id" string="الموقع الحالي"/>
+            <search string="Search Vehicles">
+                <field name="name" string="Vehicle Name"/>
+                <field name="license_plate" string="License Plate"/>
+                <field name="current_location_id" string="Current Location"/>
                 <separator/>
-                <filter string="نشط" name="active" domain="[('active','=',True)]"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
                 <group>
-                    <filter string="النوع" name="group_by_type" context="{'group_by': 'vehicle_type'}"/>
-                    <filter string="الموقع الحالي" name="group_by_location" context="{'group_by': 'current_location_id'}"/>
+                    <filter string="Type" name="group_by_type" context="{'group_by': 'vehicle_type'}"/>
+                    <filter string="Current Location" name="group_by_location" context="{'group_by': 'current_location_id'}"/>
                 </group>
             </search>
         </field>
@@ -73,13 +73,13 @@
 
     <!-- إجراء المركبات -->
     <record id="action_rotana_transport_vehicle" model="ir.actions.act_window">
-        <field name="name">مركبات النقل</field>
+        <field name="name">Transport Vehicles</field>
         <field name="res_model">rotana.transport.vehicle</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_rotana_transport_vehicle_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                أضف أول مركبة!
+                Add your first vehicle!
             </p>
         </field>
     </record>

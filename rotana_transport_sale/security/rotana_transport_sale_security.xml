@@ -10,7 +10,7 @@
 
         <!-- مجموعة المستخدم -->
         <record id="group_rotana_transport_user" model="res.groups">
-            <field name="name">مستخدم النقل</field>
+            <field name="name">Transport User</field>
             <field name="privilege_id" ref="privilege_rotana_transport"/>
             <field name="sequence">10</field>
             <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
@@ -18,7 +18,7 @@
 
         <!-- مجموعة المدير -->
         <record id="group_rotana_transport_manager" model="res.groups">
-            <field name="name">مدير النقل</field>
+            <field name="name">Transport Manager</field>
             <field name="privilege_id" ref="privilege_rotana_transport"/>
             <field name="sequence">20</field>
             <field name="implied_ids" eval="[Command.link(ref('rotana_transport_sale.group_rotana_transport_user'))]"/>
@@ -27,14 +27,14 @@
 
         <!-- سجل حركات المركبات: حسب الشركة -->
         <record id="rule_fleet_vehicle_log_company" model="ir.rule">
-            <field name="name">سجل حركات المركبات: الشركات المسموحة</field>
+            <field name="name">Vehicle Movement Log: Allowed Companies</field>
             <field name="model_id" ref="model_fleet_vehicle_log"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 
         <!-- العهد المالية: حسب الشركة -->
         <record id="rule_rotana_transport_trip_custody_company" model="ir.rule">
-            <field name="name">العهد المالية: الشركات المسموحة</field>
+            <field name="name">Financial Custodies: Allowed Companies</field>
             <field name="model_id" ref="model_rotana_transport_trip_custody"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>

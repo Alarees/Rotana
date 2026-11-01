@@ -3,7 +3,7 @@
     <data>
         <!-- تسلسل اوامر بيع النقل -->
         <record id="seq_rotana_transport_sale" model="ir.sequence">
-            <field name="name">امر بيع النقل - روتانا</field>
+            <field name="name">Rotana Transport Sales Order</field>
             <field name="code">rotana.transport.sale</field>
             <field name="prefix">TO</field>
             <field name="padding">5</field>
@@ -12,7 +12,7 @@
 
         <!-- تسلسل رحلات النقل -->
         <record id="seq_rotana_transport_trip" model="ir.sequence">
-            <field name="name">رحلة النقل - روتانا</field>
+            <field name="name">Rotana Transport Trip</field>
             <field name="code">rotana.transport.trip</field>
             <field name="prefix">MNFS</field>
             <field name="padding">5</field>
@@ -21,7 +21,7 @@
 
         <!-- تسلسل العهد المالية -->
         <record id="seq_rotana_transport_trip_custody" model="ir.sequence">
-            <field name="name">عهدة رحلة النقل - روتانا</field>
+            <field name="name">Rotana Transport Trip Custody</field>
             <field name="code">rotana.transport.trip.custody</field>
             <field name="prefix">CUS/%(year)s/</field>
             <field name="padding">5</field>

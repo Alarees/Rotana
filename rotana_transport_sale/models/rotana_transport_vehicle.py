@@ -10,66 +10,66 @@ from odoo import _, api, fields, models
 
 class RotanaTransportVehicle(models.Model):
     _name = 'rotana.transport.vehicle'
-    _description = 'مركبة النقل'
+    _description = 'Transport Vehicle'
     _order = 'name'
     _rec_names_search = ['name', 'license_plate']
 
     name = fields.Char(
-        string='اسم المركبة',
+        string='Vehicle Name',
         required=True,
         index=True,
     )
 
     license_plate = fields.Char(
-        string='رقم اللوحة',
+        string='License Plate',
         required=True,
         index=True,
     )
 
     vehicle_type = fields.Selection(
         selection=[
-            ('truck', 'شاحنة'),
-            ('trailer', 'مقطورة'),
-            ('van', 'فان'),
-            ('pickup', 'بيك أب'),
-            ('bus', 'حافلة'),
-            ('other', 'أخرى'),
+            ('truck', 'Truck'),
+            ('trailer', 'Trailer'),
+            ('van', 'Van'),
+            ('pickup', 'Pickup'),
+            ('bus', 'Bus'),
+            ('other', 'Other'),
         ],
-        string='نوع المركبة',
+        string='Vehicle Type',
         default='truck',
         required=True,
     )
 
     current_location_id = fields.Many2one(
         'rotana.transport.location',
-        string='الموقع الحالي',
+        string='Current Location',
         index=True,
-        help='الموقع الحالي للمركبة. يُحدَّث تلقائياً عند اكتمال الرحلة.',
+        help='Current location of the vehicle. Updated automatically when a trip is completed.',
     )
 
     fleet_vehicle_id = fields.Many2one(
         'fleet.vehicle',
-        string='مركبة الأسطول',
+        string='Fleet Vehicle',
         index=True,
-        help='الربط مع مديول الأسطول إذا كان مُفعَّلاً.',
+        help='Link to the Fleet module if it is enabled.',
     )
 
     analytic_account_id = fields.Many2one(
         'account.analytic.account',
-        string='الحساب التحليلي',
+        string='Analytic Account',
         index=True,
-        help='الحساب التحليلي الخاص بهذه المركبة للتتبع المالي.',
+        help="This vehicle's analytic account for financial tracking.",
     )
 
-    capacity_ton = fields.Float(string='الطاقة الاستيعابية (طن)')
+    capacity_ton = fields.Float(string='Capacity (Tons)')
 
-    notes = fields.Text(string='ملاحظات')
+    notes = fields.Text(string='Notes')
 
     active = fields.Boolean(default=True)
 
     company_id = fields.Many2one(
         'res.company',
-        string='الشركة',
+        string='Company',
         default=lambda self: self.env.company,
         required=True,
         index=True,
@@ -77,7 +77,7 @@ class RotanaTransportVehicle(models.Model):
 
     _license_plate_company_unique = models.Constraint(
         'UNIQUE(license_plate, company_id)',
-        'رقم لوحة المركبة يجب أن يكون فريداً لكل شركة.',
+        'The vehicle license plate must be unique per company.',
     )
 
     @api.depends('name', 'license_plate')

@@ -9,16 +9,16 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 TRIP_STATES = [
-    ('draft', 'مسودة'),
-    ('confirmed', 'مؤكدة'),
-    ('in_transit', 'في الطريق'),
-    ('done', 'مكتملة'),
+    ('draft', 'Draft'),
+    ('confirmed', 'Confirmed'),
+    ('in_transit', 'In Transit'),
+    ('done', 'Completed'),
 ]
 
 
 class RotanaTransportTrip(models.Model):
     _name = 'rotana.transport.trip'
-    _description = 'رحلة النقل'
+    _description = 'Transport Trip'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc, id desc'
     _rec_name = 'manifest_number'
@@ -28,9 +28,9 @@ class RotanaTransportTrip(models.Model):
 
 
     manifest_number = fields.Char(
-        string='رقم المانيفستو',
+        string='Manifest Number',
         copy=False,
-        help='رقم المانيفستو المخصص لأمر النقل.',
+        help='Manifest number assigned to the transport order.',
         # default=lambda self: _('جديد'),
         # required=True,
         readonly=True,
@@ -40,11 +40,11 @@ class RotanaTransportTrip(models.Model):
 
     sale_order_id = fields.Many2one(
         'sale.order',
-        string='أمر البيع')
+        string='Sales Order')
 
     state = fields.Selection(
         selection=TRIP_STATES,
-        string='الحالة',
+        string='Status',
         default='draft',
         required=True,
         copy=False,
@@ -55,7 +55,7 @@ class RotanaTransportTrip(models.Model):
     # الموارد
     vehicle_id = fields.Many2one(
         'fleet.vehicle',
-        string='المركبة',
+        string='Vehicle',
         index=True,
         tracking=True,
         required=True,
@@ -72,7 +72,7 @@ class RotanaTransportTrip(models.Model):
     location_from_id = fields.Many2one(
         'rotana.transport.location',
         related='sale_order_id.transport_location_from_id',
-        string='من (الموقع)',
+        string='From (Location)',
         index=True,
         tracking=True,
         required=True,
@@ -81,7 +81,7 @@ class RotanaTransportTrip(models.Model):
     location_to_id = fields.Many2one(
         'rotana.transport.location',
         related='sale_order_id.transport_location_to_id',
-        string='إلى (الموقع)',
+        string='To (Location)',
         index=True,
         tracking=True,
         required=True,
@@ -89,47 +89,47 @@ class RotanaTransportTrip(models.Model):
 
     # التواريخ
     planned_date = fields.Date(
-        string='تاريخ الرحلة المخطط',
+        string='Planned Trip Date',
         tracking=True,
     )
 
     actual_start_date = fields.Datetime(
-        string='تاريخ الانطلاق الفعلي',
+        string='Actual Departure Date',
         tracking=True,
     )
 
     actual_end_date = fields.Datetime(
-        string='تاريخ الوصول الفعلي',
+        string='Actual Arrival Date',
         tracking=True,
     )
 
     transported_weight = fields.Float(
-        string='الوزن المنقول',
+        string='Transported Weight',
         store=True,
     )
     
     allowable_deficit = fields.Float(
-        string='الحد المسموح به من النقص',
+        string='Allowable Deficit',
         default=_defalut_allowable_deficit,
-        help='الحد المسموح به من النقص في الوزن أثناء النقل.',
+        help='Allowable weight deficit during transport.',
         store=True,
     )
 
     transport_efficiency= fields.Float(
         compute='_compute_transport_efficiency',
-        string='كفاءة النقل',
+        string='Transport Efficiency',
         readonly=True,
         store=True)
 
     discharged_quantity = fields.Float(
-        string='الكمية المفرغة',
+        string='Discharged Quantity',
         store=True)
 
-    notes = fields.Text(string='ملاحظات')
+    notes = fields.Text(string='Notes')
 
     company_id = fields.Many2one(
         'res.company',
-        string='الشركة',
+        string='Company',
         required=True,
         default=lambda self: self.env.company,
         index=True,
@@ -137,7 +137,7 @@ class RotanaTransportTrip(models.Model):
 
     account_analytic_id = fields.Many2one(
         'account.analytic.account',
-        string='الحساب التحليلي',
+        string='Analytic Account',
         store=True,
         readonly=True,
     )
@@ -153,16 +153,16 @@ class RotanaTransportTrip(models.Model):
         for vals in vals_list:
             sale_order = self.env['sale.order'].browse(vals.get('sale_order_id'))
             if sale_order.total_transported_weight >= sale_order.total_weight_to_transport :
-                raise UserError(_('لا يمكن إنشاء الرحلة، الوزن المنقول مكتمل'))
+                raise UserError(_('You cannot create the trip: the transported weight is already complete.'))
             if sale_order.state in ('draft', 'cancel'):
-                raise ValidationError('لا يمكن إنشاء رحلة لأمر بيع غير مؤكد')
+                raise ValidationError('You cannot create a trip for an unconfirmed sales order.')
         return super().create(vals_list)
 
     def unlink(self):
         for rec in self:
             if rec.state != 'draft':
                 raise UserError(_(
-                    'لا يمكن حذف الرحلة %(name)s إلا بعد اعادتها لحالة مسودة',
+                    'Trip %(name)s can only be deleted after it is reset to draft.',
                     name=rec.manifest_number,
                 ))
         return super().unlink()
@@ -171,7 +171,7 @@ class RotanaTransportTrip(models.Model):
     def _onchange_discharged_quantity(self):
         for trip in self:
             if trip.discharged_quantity > trip.transported_weight :
-                raise UserError(_('لا يمكن أن يكون الوزن المفرغ أكبر من الوزن المنقول'))
+                raise UserError(_('The discharged weight cannot exceed the transported weight.'))
 
     def _create_vehicle_log(self, state_to, to_destination=False):
         """تسجيل حركة في سجل مركبة الرحلة (وهو يحدّث حالة المركبة وموقعها).
@@ -215,12 +215,12 @@ class RotanaTransportTrip(models.Model):
         for trip in self:
             if trip.state != 'draft':
                 raise UserError(_(
-                    'لا يمكن تأكيد الرحلة %(name)s لأنها ليست في حالة مسودة.',
+                    'Trip %(name)s cannot be confirmed because it is not in draft state.',
                     name=trip.manifest_number,
                 ))
             if trip.transported_weight <= 0.0:
                 raise UserError(_(
-                    'لا يمكن تأكيد الرحلة %(name)s, الرجاء ادخال الوزن المنقول',
+                    'Trip %(name)s cannot be confirmed. Please enter the transported weight.',
                     name=trip.manifest_number,
                 ))
             trip.write({'state': 'confirmed'})
@@ -236,7 +236,7 @@ class RotanaTransportTrip(models.Model):
         for trip in self:
             if trip.state != 'confirmed':
                 raise UserError(_(
-                    'يجب تأكيد الرحلة %(name)s قبل بدء التنقل.',
+                    'Trip %(name)s must be confirmed before starting transit.',
                     name=trip.manifest_number,
                 ))
             vals = {'state': 'in_transit'}
@@ -255,11 +255,11 @@ class RotanaTransportTrip(models.Model):
         for trip in self:
             if trip.state != 'in_transit':
                 raise UserError(_(
-                    'يجب أن تكون الرحلة %(name)s في الطريق قبل إكمالها.',
+                    'Trip %(name)s must be in transit before it can be completed.',
                     name=trip.manifest_number,
                 ))
             if trip.discharged_quantity <= 0.0:
-                raise UserError(_('الرجاء ادخال الوزن المفرغ للرحلة قبل اكمالها'))
+                raise UserError(_('Please enter the discharged weight for the trip before completing it.'))
             vals = {'state': 'done'}
             if not trip.actual_end_date:
                 vals['actual_end_date'] = fields.Datetime.now()
@@ -279,7 +279,7 @@ class RotanaTransportTrip(models.Model):
         self.ensure_one()
         if self.state == 'done':
             raise UserError(_(
-                'لا يمكن إعادة الرحلة المكتملة إلى مسودة.'
+                'A completed trip cannot be reset to draft.'
             ))
         if self.state == 'draft':
             return True
@@ -320,7 +320,7 @@ class RotanaTransportTrip(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('رحلات النقل'),
+            'name': _('Transport Trips'),
             'res_model': 'rotana.transport.trip',
             'views': [(False, 'form')],
             # 'view_mode': 'list,form',

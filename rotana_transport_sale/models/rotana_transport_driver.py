@@ -5,46 +5,46 @@ from odoo import _, api, fields, models
 
 class RotanaTransportDriver(models.Model):
     _name = 'rotana.transport.driver'
-    _description = 'سائق النقل'
+    _description = 'Transport Driver'
     _order = 'name'
     _rec_names_search = ['name', 'license_number']
 
     name = fields.Char(
-        string='اسم السائق',
+        string='Driver Name',
         required=True,
         index=True,
     )
 
     partner_id = fields.Many2one(
         'res.partner',
-        string='جهة الاتصال',
+        string='Contact',
         index=True,
     )
 
     license_number = fields.Char(
-        string='رقم رخصة القيادة',
+        string='Driving License Number',
         index=True,
     )
 
     license_expiry_date = fields.Date(
-        string='تاريخ انتهاء الرخصة',
+        string='License Expiry Date',
     )
 
-    phone = fields.Char(string='رقم الهاتف')
+    phone = fields.Char(string='Phone Number')
 
     is_license_expired = fields.Boolean(
-        string='الرخصة منتهية',
+        string='License Expired',
         compute='_compute_is_license_expired',
         store=True,
     )
 
-    notes = fields.Text(string='ملاحظات')
+    notes = fields.Text(string='Notes')
 
     active = fields.Boolean(default=True)
 
     company_id = fields.Many2one(
         'res.company',
-        string='الشركة',
+        string='Company',
         default=lambda self: self.env.company,
         required=True,
         index=True,

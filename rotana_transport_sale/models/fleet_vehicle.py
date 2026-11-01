@@ -7,38 +7,38 @@ class FleetVehicle(models.Model):
     unit_number = fields.Char('Unit Number', required=True, copy=False, index=True)
     current_location_id = fields.Many2one(
         'rotana.transport.location',
-        string='الموقع الحالي',
+        string='Current Location',
         index=True,
-        help='الموقع الحالي للمركبة. يُحدَّث تلقائياً عند اكتمال الرحلة.',
+        help='Current location of the vehicle. Updated automatically when a trip is completed.',
     )
     analytic_plan_id = fields.Many2one(
         'account.analytic.plan',
-        string='خطة الحساب التحليلي',
+        string='Analytic Plan',
         index=True,
-        help='خطة الحساب التحليلي الخاصة بهذه المركبة للتتبع المالي.',
+        help="This vehicle's analytic plan for financial tracking.",
         store=True,
         readonly=True
     )
-    capacity_ton = fields.Float(string='الطاقة الاستيعابية (طن)')
+    capacity_ton = fields.Float(string='Capacity (Tons)')
 
     readyness_state = fields.Selection(
-        [('ready', 'جاهز'), ('booked', 'محجوز'), ('on_trip', 'في رحلة'), ('on_maintenance', 'في الصيانة')],
-        string='حالة الجاهزية',
+        [('ready', 'Ready'), ('booked', 'Booked'), ('on_trip', 'On Trip'), ('on_maintenance', 'Under Maintenance')],
+        string='Readiness Status',
         default='ready',
-        help='الحالة الحالية للمركبة فيما يتعلق بالجاهزية للرحلات.',
+        help='Current vehicle status with respect to trip readiness.',
     )
     state_ref = fields.Many2one(
         'fleet.vehicle.log',
         ondelete='set null',
-        string='المرجع الحالي',
-        help='المرجع الحالي للمركبة، مثل الرحلة الحالية التي تشارك فيها.',
+        string='Current Reference',
+        help="The vehicle's current reference, such as the trip it is currently on.",
     )
     note_ids = fields.Many2many(
             'fleet.vehicle.note',
             'fleet_vehicle_note_rel',
             'vehicle_id',
             'note_id',
-            string='ملاحظات',
+            string='Notes',
         )
 
     @api.model_create_multi
@@ -77,7 +77,7 @@ class FleetVehicle(models.Model):
         """تجاوز النسخ الافتراضي لتجنب تكرار رقم الوحدة."""
         if default is None:
             default = {}
-        default['unit_number'] = self.unit_number + ' (نسخة)'
+        default['unit_number'] = self.unit_number + ' (Copy)'
         return super().copy(default=default)
 
     @api.depends('model_id.brand_id.name', 'model_id.name', 'unit_number')
@@ -93,7 +93,7 @@ class FleetVehicle(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('رحلات النقل'),
+            'name': _('Transport Trips'),
             'res_model': 'rotana.transport.trip',
             'view_mode': 'list,form',
             'domain': [('vehicle_id', '=', self.id)],
@@ -106,7 +106,7 @@ class FleetVehicle(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('الحساب التحليلي'),
+            'name': _('Analytic Account'),
             'res_model': 'account.analytic.plan',
             'view_mode': 'form',
             'res_id': self.analytic_plan_id.id,

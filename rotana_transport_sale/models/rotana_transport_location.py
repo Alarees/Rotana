@@ -9,41 +9,41 @@ from odoo import _, fields, models
 
 class RotanaTransportLocation(models.Model):
     _name = 'rotana.transport.location'
-    _description = 'موقع النقل'
+    _description = 'Transport Location'
     _order = 'name'
     _rec_name = 'name'
 
     name = fields.Char(
-        string='اسم الموقع',
+        string='Location Name',
         required=True,
         index=True,
     )
 
     partner_id = fields.Many2one(
         'res.partner',
-        string='العميل / الشريك',
+        string='Customer / Partner',
         index=True,
-        help='العميل أو الشريك المرتبط بهذا الموقع.',
+        help='Customer or partner linked to this location.',
     )
 
-    street = fields.Char(string='الشارع')
-    city = fields.Char(string='المدينة')
+    street = fields.Char(string='Street')
+    city = fields.Char(string='City')
     state_id = fields.Many2one(
         'res.country.state',
-        string='المنطقة / المحافظة',
+        string='State / Province',
     )
     country_id = fields.Many2one(
         'res.country',
-        string='الدولة',
+        string='Country',
     )
 
-    notes = fields.Text(string='ملاحظات')
+    notes = fields.Text(string='Notes')
 
     active = fields.Boolean(default=True)
 
     company_id = fields.Many2one(
         'res.company',
-        string='الشركة',
+        string='Company',
         default=lambda self: self.env.company,
         required=True,
         index=True,

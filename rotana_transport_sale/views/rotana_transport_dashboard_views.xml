@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <record id="action_rotana_transport_dashboard_trips" model="ir.actions.client">
-        <field name="name">داشبورد الرحلات</field>
+        <field name="name">Trips Dashboard</field>
         <field name="tag">rotana_transport_dashboard</field>
         <field name="params" eval="{'page': 'trips'}"/>
     </record>
 
     <record id="action_rotana_transport_dashboard_accounts" model="ir.actions.client">
-        <field name="name">داشبورد الحسابات</field>
+        <field name="name">Accounts Dashboard</field>
         <field name="tag">rotana_transport_dashboard</field>
         <field name="params" eval="{'page': 'accounts'}"/>
     </record>
 
     <record id="action_rotana_transport_dashboard_vehicles" model="ir.actions.client">
-        <field name="name">داشبورد المركبات</field>
+        <field name="name">Vehicles Dashboard</field>
         <field name="tag">rotana_transport_dashboard</field>
         <field name="params" eval="{'page': 'vehicles'}"/>
     </record>
 
     <!-- تحت قائمة المركبات في تطبيق Fleet -->
     <menuitem id="menu_rotana_fleet_dashboard"
-              name="الداشبورد"
+              name="Dashboard"
               parent="fleet.fleet_vehicles"
               sequence="5"
               action="action_rotana_transport_dashboard_vehicles"
               groups="fleet.fleet_group_user"/>
 
     <menuitem id="menu_rotana_transport_dashboard"
-              name="الداشبورد"
+              name="Dashboard"
               parent="menu_rotana_transport_root"
               sequence="5"
               groups="rotana_transport_sale.group_rotana_transport_manager,account.group_account_user"/>
 
     <menuitem id="menu_rotana_transport_dashboard_trips"
-              name="الرحلات"
+              name="Trips"
               parent="menu_rotana_transport_dashboard"
               sequence="10"
               action="action_rotana_transport_dashboard_trips"
               groups="rotana_transport_sale.group_rotana_transport_manager"/>
 
     <menuitem id="menu_rotana_transport_dashboard_accounts"
-              name="الحسابات"
+              name="Accounts"
               parent="menu_rotana_transport_dashboard"
               sequence="20"
               action="action_rotana_transport_dashboard_accounts"

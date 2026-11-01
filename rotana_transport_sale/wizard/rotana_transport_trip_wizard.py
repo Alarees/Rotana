@@ -15,18 +15,18 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 LINE_STATES = [
-    ('unselected', 'غير مختارة'),
-    ('selected', 'مختارة'),
+    ('unselected', 'Unselected'),
+    ('selected', 'Selected'),
 ]
 
 
 class RotanaTransportTripWizard(models.TransientModel):
     _name = 'rotana.transport.trip.wizard'
-    _description = 'ويزرد اختيار المركبات للرحلات'
+    _description = 'Trip Vehicle Selection Wizard'
 
     sale_order_id = fields.Many2one(
         'sale.order',
-        string='أمر البيع',
+        string='Sales Order',
         required=True,
         readonly=True,
         ondelete='cascade',
@@ -34,7 +34,7 @@ class RotanaTransportTripWizard(models.TransientModel):
     line_ids = fields.One2many(
         'rotana.transport.trip.wizard.line',
         'wizard_id',
-        string='المركبات',
+        string='Vehicles',
     )
 
     def action_create_trips(self):
@@ -44,13 +44,13 @@ class RotanaTransportTripWizard(models.TransientModel):
         selected = self.line_ids.filtered(lambda line: line.state == 'selected')
         unselected = self.line_ids - selected
         if not selected and not unselected._has_trips():
-            raise UserError(_('اسحب مركبة واحدة على الأقل إلى عمود (مختارة).'))
+            raise UserError(_('Drag at least one vehicle to the (Selected) column.'))
 
         # حذف رحلات المسودة للمركبات غير المختارة (يُرفض إن وُجدت رحلة غير مسودة)
         deleted_names = unselected._release_trips()
         if deleted_names:
             order.message_post(body=_(
-                'تم حذف %(count)s رحلة مسودة: %(names)s',
+                'Deleted %(count)s draft trip(s): %(names)s',
                 count=len(deleted_names),
                 # names='، '.join(deleted_names),
             ))
@@ -74,7 +74,7 @@ class RotanaTransportTripWizard(models.TransientModel):
                 for line in new_lines
             ])
             order.message_post(body=_(
-                'تم إنشاء %(count)s رحلة: %(names)s',
+                'Created %(count)s trip(s): %(names)s',
                 count=len(trips),
                 names=''
                 # names='، '.join(trips.mapped('manifest_number')),
@@ -92,7 +92,7 @@ class RotanaTransportTripWizard(models.TransientModel):
 
 class RotanaTransportTripWizardLine(models.TransientModel):
     _name = 'rotana.transport.trip.wizard.line'
-    _description = 'سطر مركبة في ويزرد الرحلات'
+    _description = 'Vehicle Line in Trip Wizard'
     _order = 'id'
 
     wizard_id = fields.Many2one(
@@ -103,13 +103,13 @@ class RotanaTransportTripWizardLine(models.TransientModel):
     )
     vehicle_id = fields.Many2one(
         'fleet.vehicle',
-        string='المركبة',
+        string='Vehicle',
         required=True,
         ondelete='cascade',
     )
     state = fields.Selection(
         LINE_STATES,
-        string='الاختيار',
+        string='Selection',
         default='unselected',
         required=True,
         # يُظهر العمودين دائماً حتى لو كان أحدهما فارغاً
@@ -123,7 +123,7 @@ class RotanaTransportTripWizardLine(models.TransientModel):
     current_location_id = fields.Many2one(related='vehicle_id.current_location_id')
     readyness_state = fields.Selection(related='vehicle_id.readyness_state')
     trip_count = fields.Integer(
-        string='رحلات سابقة على الأمر',
+        string='Previous Trips on Order',
         compute='_compute_trip_count',
     )
 
@@ -170,8 +170,8 @@ class RotanaTransportTripWizardLine(models.TransientModel):
         not_draft = trips.filtered(lambda trip: trip.state != 'draft')
         if not_draft:
             raise UserError(_(
-                'لا يمكن إلغاء اختيار المركبة لأن رحلتها ليست في حالة مسودة: %s',
-                '، '.join(not_draft.mapped('manifest_number')),
+                'The vehicle cannot be unselected because its trip is not in draft state: %s',
+                ', '.join(not_draft.mapped('manifest_number')),
             ))
         names = trips.mapped('manifest_number')
         # حذف سجلات الحركة الخاصة بالرحلات وإرجاع حالة المركبات لما قبلها
@@ -206,5 +206,5 @@ class RotanaTransportTripWizardLine(models.TransientModel):
             self.env.context.get('wizard_id')
         ).exists()
         if not wizard:
-            raise UserError(_('انتهت صلاحية الويزرد، أعد فتحه من أمر البيع.'))
+            raise UserError(_('The wizard has expired. Reopen it from the sales order.'))
         return wizard.action_create_trips()

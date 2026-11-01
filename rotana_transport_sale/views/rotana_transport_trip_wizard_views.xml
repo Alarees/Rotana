@@ -19,7 +19,7 @@
                 <header>
                     <button name="action_confirm_selection"
                             type="object"
-                            string="إنشاء الرحلات للمركبات المختارة"
+                            string="Create Trips for Selected Vehicles"
                             class="btn-primary"
                             display="always"/>
                 </header>
@@ -45,10 +45,10 @@
                             <i class="fa fa-map-marker me-1"/><field name="current_location_id"/>
                         </div>
                         <div class="text-muted small">
-                            <i class="fa fa-balance-scale me-1"/><field name="capacity_ton"/> طن
+                            <i class="fa fa-balance-scale me-1"/><field name="capacity_ton"/> Tons
                         </div>
                         <div t-if="record.trip_count.raw_value" class="text-warning small">
-                            <i class="fa fa-truck me-1"/>رحلات سابقة على هذا الأمر: <field name="trip_count"/>
+                            <i class="fa fa-truck me-1"/>Previous trips on this order: <field name="trip_count"/>
                         </div>
                     </t>
                 </templates>
@@ -61,16 +61,16 @@
         <field name="name">rotana.transport.trip.wizard.line.search</field>
         <field name="model">rotana.transport.trip.wizard.line</field>
         <field name="arch" type="xml">
-            <search string="بحث في المركبات">
-                <field name="vehicle_id" string="المركبة"/>
-                <field name="license_plate" string="اللوحة"/>
-                <field name="driver_id" string="السائق"/>
-                <field name="current_location_id" string="الموقع الحالي"/>
+            <search string="Search Vehicles">
+                <field name="vehicle_id" string="Vehicle"/>
+                <field name="license_plate" string="License Plate"/>
+                <field name="driver_id" string="Driver"/>
+                <field name="current_location_id" string="Current Location"/>
                 <separator/>
-                <filter string="جاهزة" name="ready" domain="[('readyness_state', '=', 'ready')]"/>
-                <filter string="محجوزة" name="booked" domain="[('readyness_state', '=', 'booked')]"/>
-                <filter string="في رحلة" name="on_trip" domain="[('readyness_state', '=', 'on_trip')]"/>
-                <filter string="في الصيانة" name="on_maintenance" domain="[('readyness_state', '=', 'on_maintenance')]"/>
+                <filter string="Ready" name="ready" domain="[('readyness_state', '=', 'ready')]"/>
+                <filter string="Booked" name="booked" domain="[('readyness_state', '=', 'booked')]"/>
+                <filter string="On Trip" name="on_trip" domain="[('readyness_state', '=', 'on_trip')]"/>
+                <filter string="Under Maintenance" name="on_maintenance" domain="[('readyness_state', '=', 'on_maintenance')]"/>
             </search>
         </field>
     </record>

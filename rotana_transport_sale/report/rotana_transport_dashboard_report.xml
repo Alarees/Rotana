@@ -13,7 +13,7 @@
     </record>
 
     <record id="action_report_rotana_dashboard" model="ir.actions.report">
-        <field name="name">تقرير داشبورد النقل</field>
+        <field name="name">Transport Dashboard Report</field>
         <field name="model">rotana.transport.dashboard</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">rotana_transport_sale.report_dashboard</field>

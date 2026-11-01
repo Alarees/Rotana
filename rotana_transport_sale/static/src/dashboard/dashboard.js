@@ -52,13 +52,13 @@ export class RotanaTransportDashboard extends Component {
             filters: { date_from: "", date_to: "", trip_ids: [], vehicle_ids: [] },
         });
         this.subTabs = [
-            { key: "trips", label: "الرحلات", icon: "fa-road" },
-            { key: "sales", label: "المبيعات", icon: "fa-shopping-cart" },
-            { key: "vehicles", label: "المركبات", icon: "fa-truck" },
+            { key: "trips", label: "Trips", icon: "fa-road" },
+            { key: "sales", label: "Sales", icon: "fa-shopping-cart" },
+            { key: "vehicles", label: "Vehicles", icon: "fa-truck" },
         ];
         this.multiFilters = [
-            { key: "trip_ids", optKey: "trips", label: "الرحلات" },
-            { key: "vehicle_ids", optKey: "vehicles", label: "المركبات" },
+            { key: "trip_ids", optKey: "trips", label: "Trips" },
+            { key: "vehicle_ids", optKey: "vehicles", label: "Vehicles" },
         ];
 
         onWillStart(async () => {
@@ -330,9 +330,9 @@ export class RotanaTransportDashboard extends Component {
                 data: {
                     labels: vehicles.labels,
                     datasets: [
-                        { label: "المنقول", data: vehicles.transported, backgroundColor: PALETTE.primary, borderRadius: 4 },
-                        { label: "المفرغ", data: vehicles.discharged, backgroundColor: PALETTE.teal, borderRadius: 4 },
-                        { label: "العجز", data: vehicles.shortage, backgroundColor: PALETTE.red, borderRadius: 4 },
+                        { label: "Transported", data: vehicles.transported, backgroundColor: PALETTE.primary, borderRadius: 4 },
+                        { label: "Discharged", data: vehicles.discharged, backgroundColor: PALETTE.teal, borderRadius: 4 },
+                        { label: "Shortage", data: vehicles.shortage, backgroundColor: PALETTE.red, borderRadius: 4 },
                     ],
                 },
             });
@@ -355,11 +355,11 @@ export class RotanaTransportDashboard extends Component {
                 data: {
                     labels: c.labels,
                     datasets: [
-                        { type: "bar", label: "المدين", data: c.debit, backgroundColor: PALETTE.red, borderRadius: 4 },
-                        { type: "bar", label: "الدائن", data: c.credit, backgroundColor: PALETTE.teal, borderRadius: 4 },
+                        { type: "bar", label: "Debit", data: c.debit, backgroundColor: PALETTE.red, borderRadius: 4 },
+                        { type: "bar", label: "Credit", data: c.credit, backgroundColor: PALETTE.teal, borderRadius: 4 },
                         {
                             type: "line",
-                            label: "الربح",
+                            label: "Profit",
                             data: c.profit,
                             borderColor: PALETTE.primary,
                             backgroundColor: PALETTE.primary,

@@ -6,14 +6,14 @@
 
     <!-- القائمة الرئيسية -->
     <menuitem id="menu_rotana_transport_root"
-              name="نقل روتانا"
+              name="Rotana Transport"
               sequence="80"
               web_icon="rotana_transport_sale,static/description/icon.png"
               groups="rotana_transport_sale.group_rotana_transport_user"/>
 
     <!-- أوامر بيع النقل -->
     <menuitem id="menu_rotana_transport_sales"
-              name="المبيعات"
+              name="Sales"
               parent="menu_rotana_transport_root"
               sequence="10"
               action="action_rotana_transport_sale_orders"
@@ -21,20 +21,20 @@
 
     <!-- الرحلات -->
     <menuitem id="menu_rotana_transport_operations"
-              name="العمليات"
+              name="Operations"
               parent="menu_rotana_transport_root"
               sequence="20"
               groups="rotana_transport_sale.group_rotana_transport_user"/>
 
     <menuitem id="menu_rotana_transport_trips"
-              name="الرحلات"
+              name="Trips"
               parent="menu_rotana_transport_operations"
               sequence="10"
               action="action_rotana_transport_trip"
               groups="rotana_transport_sale.group_rotana_transport_user"/>
 
     <menuitem id="menu_fleet_vehicle_log"
-              name="سجل حركات المركبات"
+              name="Vehicle Movement Log"
               parent="menu_rotana_transport_operations"
               sequence="20"
               action="action_fleet_vehicle_log"
@@ -42,34 +42,34 @@
 
     <!-- الإعدادات -->
     <menuitem id="menu_rotana_transport_config"
-              name="الإعدادات"
+              name="Settings"
               parent="menu_rotana_transport_root"
               sequence="90"
               groups="rotana_transport_sale.group_rotana_transport_manager"/>
 
     <menuitem id="menu_rotana_transport_settings"
-              name="التهيئة"
+              name="Configuration"
               parent="menu_rotana_transport_config"
               sequence="10"
               action="action_rotana_transport_sale_config_settings"
               groups="rotana_transport_sale.group_rotana_transport_manager"/>
 
     <menuitem id="menu_rotana_transport_locations"
-              name="المواقع"
+              name="Locations"
               parent="menu_rotana_transport_config"
               sequence="15"
               action="action_rotana_transport_location"
               groups="rotana_transport_sale.group_rotana_transport_manager"/>
 
     <menuitem id="menu_rotana_transport_vehicles"
-              name="المركبات"
+              name="Vehicles"
               parent="menu_rotana_transport_config"
               sequence="20"
               action="action_rotana_transport_vehicle"
               groups="rotana_transport_sale.group_rotana_transport_manager"/>
 
     <menuitem id="menu_rotana_transport_drivers"
-              name="السائقون"
+              name="Drivers"
               parent="menu_rotana_transport_config"
               sequence="30"
               action="action_rotana_transport_driver"
