@@ -13,11 +13,12 @@ Management Dashboard
 - فلاتر: الشركات والتاريخ مع اقتراحات سريعة.
 - رسوم amCharts 5 (محلية داخل المديول) وخلفية متحركة.
 - تحديث حي عبر bus مع تحديث دوري احتياطي.
+- شاشة «تفاصيل الفروع»: مبيعات ومديونيات وسداد العملاء لكل فرع (أعمدة + لوحة تداول حية + شريط متحرك + وضع العرض).
 - أقسام أخرى تُضاف لاحقاً (انظر SECTIONS في dashboard.js).
 """,
     'author': 'Rotana Development - HQ',
     'license': 'LGPL-3',
-    'depends': ['base', 'web', 'bus', 'sale'],
+    'depends': ['base', 'web', 'bus', 'sale', 'account'],
     'data': [
         'security/security.xml',
         'views/menu_views.xml',

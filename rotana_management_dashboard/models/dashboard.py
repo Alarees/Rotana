@@ -18,6 +18,9 @@ class RotanaManagementDashboard(models.AbstractModel):
 
     - المبيعات = أوامر البيع المؤكدة (sale.order بالحالة sale).
     - المبالغ = amount_total (شاملة الضريبة) محوّلة إلى عملة الشركة الحالية للمستخدم.
+    - المديونيات = رصيد حسابات الذمم المدينة (asset_receivable) المرحّلة حتى نهاية الفترة (من القيود، لا من الفواتير).
+    - السداد = صافي دائن حسابات الذمم من القيود العامة (move_type = entry: دفعات/كشوف بنك/تسويات)
+      خلال الفترة، دون اشتراط مطابقة الفواتير.
     - العرض الموحّد: الشركة الأم تُظهر مبيعاتها + مبيعات كل فروعها (دون تكرار في الإجماليات).
     - القراءة بـ sudo بعد التحقق من الصلاحية وتقييد الشركات بشركات المستخدم المسموحة.
     """
@@ -156,7 +159,7 @@ class RotanaManagementDashboard(models.AbstractModel):
     def _growth(current, previous):
         if not previous:
             return None
-        return round((current - previous) / previous * 100.0, 1)
+        return round((current - previous) / abs(previous) * 100.0, 1)
 
     def _currency_info(self, currency):
         return {
@@ -302,4 +305,126 @@ class RotanaManagementDashboard(models.AbstractModel):
             'products': products,
             'customers': customers,
             'salespeople': salespeople,
+        }
+
+    # ------------------------------------------------------------ branches screen
+    def _ar_domain(self, companies):
+        return [
+            ('account_id.account_type', '=', 'asset_receivable'),
+            ('parent_state', '=', 'posted'),
+            ('company_id', 'in', companies.ids),
+        ]
+
+    def _branch_figures(self, companies, d_from, d_to, start, end, rate):
+        """يرجع (sales, debt, paid) لكل شركة بعملة التقرير.
+        sales/paid خلال الفترة، debt رصيد حتى d_to."""
+        Line = self.env['account.move.line'].sudo()
+        sales, _unused = self._aggregate(companies, start, end, rate)
+
+        debt = defaultdict(float)
+        domain = self._ar_domain(companies) + [('date', '<=', d_to)]
+        for company, balance in Line._read_group(domain, ['company_id'], ['balance:sum']):
+            debt[company.id] += (balance or 0.0) * rate(company.currency_id, company)
+
+        paid = defaultdict(float)
+        domain = self._ar_domain(companies) + [
+            ('move_id.move_type', '=', 'entry'),
+            ('date', '>=', d_from),
+            ('date', '<=', d_to),
+        ]
+        for company, credit, debit in Line._read_group(
+                domain, ['company_id'], ['credit:sum', 'debit:sum']):
+            paid[company.id] += ((credit or 0.0) - (debit or 0.0)) * rate(company.currency_id, company)
+        return sales, debt, paid
+
+    def _recent_activity(self, companies, rate, limit=12):
+        """آخر أوامر البيع المؤكدة وآخر السدادات (للشريط الحي)."""
+        events = []
+        Order = self.env['sale.order'].sudo()
+        for order in Order.search(
+                [('state', '=', 'sale'), ('company_id', 'in', companies.ids)],
+                order='date_order desc, id desc', limit=limit):
+            events.append({
+                'id': 's%d' % order.id,
+                'type': 'sale',
+                'company': order.company_id.name,
+                'partner': order.partner_id.display_name or '',
+                'ref': order.name,
+                'amount': round(order.amount_total * rate(order.currency_id, order.company_id), 2),
+                'ts': order.date_order.isoformat() + 'Z' if order.date_order else '',
+            })
+        Line = self.env['account.move.line'].sudo()
+        domain = self._ar_domain(companies) + [
+            ('move_id.move_type', '=', 'entry'), ('credit', '>', 0)]
+        for line in Line.search(domain, order='create_date desc, id desc', limit=limit):
+            events.append({
+                'id': 'p%d' % line.id,
+                'type': 'payment',
+                'company': line.company_id.name,
+                'partner': line.partner_id.display_name or '',
+                'ref': line.move_id.name or '',
+                'amount': round(line.credit * rate(line.company_id.currency_id, line.company_id), 2),
+                'ts': line.create_date.isoformat() + 'Z' if line.create_date else '',
+            })
+        events.sort(key=lambda e: e['ts'], reverse=True)
+        return events[:limit]
+
+    @api.model
+    def get_branches_overview(self, date_from, date_to, company_ids=None):
+        self._check_dashboard_access()
+        all_companies = self.env.user.company_ids.sorted('id')
+        companies = self._allowed_companies(company_ids).sorted('id')
+
+        d_from, d_to, start, end = self._parse_dates(date_from, date_to)
+        days = (d_to - d_from).days + 1
+        prev_to = d_from - timedelta(days=1)
+        prev_from = prev_to - timedelta(days=days - 1)
+        p_from, p_to, p_start, p_end = self._parse_dates(prev_from, prev_to)
+
+        target_currency = self.env.company.currency_id
+        rate = self._rate_getter(target_currency, d_to)
+
+        sales, debt, paid = self._branch_figures(companies, d_from, d_to, start, end, rate)
+        p_sales, p_debt, p_paid = self._branch_figures(companies, p_from, p_to, p_start, p_end, rate)
+
+        rows = []
+        for company in companies:
+            cid = company.id
+            s_val = (sales.get(cid) or {}).get('total', 0.0)
+            s_prev = (p_sales.get(cid) or {}).get('total', 0.0)
+            d_val, d_prev = debt.get(cid, 0.0), p_debt.get(cid, 0.0)
+            p_val, p_prev = paid.get(cid, 0.0), p_paid.get(cid, 0.0)
+            rows.append({
+                'id': cid,
+                'name': company.name,
+                'sales': round(s_val, 2),
+                'debt': round(d_val, 2),
+                'paid': round(p_val, 2),
+                'sales_growth': self._growth(s_val, s_prev),
+                'debt_growth': self._growth(d_val, d_prev),
+                'paid_growth': self._growth(p_val, p_prev),
+                'collection_rate': round(p_val / s_val * 100.0, 1) if s_val else None,
+            })
+
+        tot_s = sum(r['sales'] for r in rows)
+        tot_d = sum(r['debt'] for r in rows)
+        tot_p = sum(r['paid'] for r in rows)
+        prev_s = sum((p_sales.get(c.id) or {}).get('total', 0.0) for c in companies)
+        prev_d = sum(p_debt.get(c.id, 0.0) for c in companies)
+        prev_p = sum(p_paid.get(c.id, 0.0) for c in companies)
+
+        return {
+            'currency': self._currency_info(target_currency),
+            'all_companies': [{'id': c.id, 'name': c.name} for c in all_companies],
+            'companies': rows,
+            'totals': {
+                'sales': round(tot_s, 2),
+                'debt': round(tot_d, 2),
+                'paid': round(tot_p, 2),
+                'sales_growth': self._growth(tot_s, prev_s),
+                'debt_growth': self._growth(tot_d, prev_d),
+                'paid_growth': self._growth(tot_p, prev_p),
+                'collection_rate': round(tot_p / tot_s * 100.0, 1) if tot_s else None,
+            },
+            'feed': self._recent_activity(companies, rate),
         }

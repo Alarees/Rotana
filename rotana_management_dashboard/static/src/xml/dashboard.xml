@@ -6,7 +6,7 @@
     </t>
 
     <t t-name="rotana_management_dashboard.Main">
-        <div class="rmd-root">
+        <div class="rmd-root" t-att-class="{'rmd-tv': state.tv}">
 
             <!-- خلفية متحركة -->
             <div class="rmd-bg" aria-hidden="true">
@@ -43,13 +43,16 @@
 
                 <header class="rmd-header">
                     <div class="rmd-title">
-                        <h1>مبيعات الشركات الفرعية</h1>
-                        <p>أوامر البيع المؤكدة · <span t-esc="rangeLabel"/></p>
+                        <h1 t-esc="sectionTitle"/>
+                        <p><span t-esc="sectionSubtitle"/> · <span t-esc="rangeLabel"/></p>
                     </div>
+                    <div class="rmd-header-actions">
+                    <button class="rmd-btn rmd-tv-btn" t-on-click="toggleTv"><i class="fa fa-television"/> وضع العرض</button>
                     <div class="rmd-live" t-att-class="{'busy': state.refreshing}">
                         <span class="rmd-live-dot"/>
                         <span>بث حي</span>
                         <small t-if="state.lastUpdate" t-esc="lastUpdateLabel"/>
+                    </div>
                     </div>
                 </header>
 
@@ -75,7 +78,7 @@
                         </div>
                     </div>
 
-                    <div class="rmd-toggle rmd-view-toggle" title="العرض الموحّد يجمع مبيعات الشركة الأم مع فروعها">
+                    <div class="rmd-toggle rmd-view-toggle" t-if="state.section === 'sales'" title="العرض الموحّد يجمع مبيعات الشركة الأم مع فروعها">
                         <button t-att-class="{'active': state.consolidated}" t-on-click="() => this.setConsolidated(true)"><i class="fa fa-sitemap"/> موحّد</button>
                         <button t-att-class="{'active': !state.consolidated}" t-on-click="() => this.setConsolidated(false)"><i class="fa fa-building-o"/> مستقل</button>
                     </div>
@@ -99,7 +102,7 @@
                     <i class="fa fa-exclamation-triangle"/> <span t-esc="state.error"/>
                 </div>
 
-                <div class="rmd-loading" t-if="state.loading and !state.data">
+                <div class="rmd-loading" t-if="showLoading">
                     <div class="rmd-spinner"/>
                     <span>جاري تحميل البيانات…</span>
                 </div>
@@ -195,7 +198,148 @@
                         </article>
                     </section>
                 </t>
+
+                <t t-if="state.section === 'branches' and state.branches">
+
+                    <!-- شريط الأسعار المتحرك -->
+                    <div class="rmd-ticker" t-if="state.branches.companies.length">
+                        <div class="rmd-ticker-track">
+                            <t t-foreach="[0, 1]" t-as="dup" t-key="dup">
+                                <div class="rmd-ticker-set">
+                                    <t t-foreach="sortedBranches" t-as="b" t-key="b.id">
+                                        <span class="rmd-tk">
+                                            <strong class="nm" t-esc="b.name"/>
+                                            <span class="seg s"><i class="fa fa-shopping-cart"/> <span t-esc="moneyCompact(b.sales)"/> <em t-att-class="growthClass(b.sales_growth)" t-esc="growthText(b.sales_growth)"/></span>
+                                            <span class="seg d"><i class="fa fa-credit-card"/> <span t-esc="moneyCompact(b.debt)"/> <em t-att-class="debtClass(b.debt_growth)" t-esc="growthText(b.debt_growth)"/></span>
+                                            <span class="seg p"><i class="fa fa-check-circle"/> <span t-esc="moneyCompact(b.paid)"/> <em t-att-class="growthClass(b.paid_growth)" t-esc="growthText(b.paid_growth)"/></span>
+                                        </span>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- بطاقات الإجماليات -->
+                    <section class="rmd-summary">
+                        <article class="rmd-card rmd-kpi" style="--c:#22d3ee">
+                            <div class="rmd-kpi-icon"><i class="fa fa-shopping-cart"/></div>
+                            <div class="rmd-kpi-body">
+                                <small>مبيعات العملاء</small>
+                                <strong><CountUp value="state.branches.totals.sales" format="moneyFormat"/></strong>
+                                <span class="rmd-badge" t-att-class="growthClass(state.branches.totals.sales_growth)" t-esc="growthText(state.branches.totals.sales_growth)"/>
+                            </div>
+                        </article>
+                        <article class="rmd-card rmd-kpi" style="--c:#fb7185">
+                            <div class="rmd-kpi-icon"><i class="fa fa-credit-card"/></div>
+                            <div class="rmd-kpi-body">
+                                <small>مديونيات العملاء (رصيد الذمم)</small>
+                                <strong><CountUp value="state.branches.totals.debt" format="moneyFormat"/></strong>
+                                <span class="rmd-badge" t-att-class="debtClass(state.branches.totals.debt_growth)" t-esc="growthText(state.branches.totals.debt_growth)"/>
+                            </div>
+                        </article>
+                        <article class="rmd-card rmd-kpi" style="--c:#34d399">
+                            <div class="rmd-kpi-icon"><i class="fa fa-check-circle"/></div>
+                            <div class="rmd-kpi-body">
+                                <small>سداد العملاء</small>
+                                <strong><CountUp value="state.branches.totals.paid" format="moneyFormat"/></strong>
+                                <span class="rmd-badge" t-att-class="growthClass(state.branches.totals.paid_growth)" t-esc="growthText(state.branches.totals.paid_growth)"/>
+                            </div>
+                        </article>
+                        <article class="rmd-card rmd-kpi" style="--c:#fbbf24">
+                            <div class="rmd-kpi-icon"><i class="fa fa-percent"/></div>
+                            <div class="rmd-kpi-body">
+                                <small>نسبة السداد إلى المبيعات</small>
+                                <strong>
+                                    <t t-if="state.branches.totals.collection_rate !== null"><span t-esc="state.branches.totals.collection_rate"/>%</t>
+                                    <t t-else="">—</t>
+                                </strong>
+                            </div>
+                        </article>
+                    </section>
+
+                    <!-- الأعمدة المجمّعة: ثلاثة أعمدة لكل فرع -->
+                    <section class="rmd-charts one">
+                        <article class="rmd-card rmd-chart-card">
+                            <header>
+                                <h3>مبيعات · مديونيات · سداد العملاء لكل فرع</h3>
+                                <div class="rmd-toggle">
+                                    <button t-att-class="{'active': !state.branchLog}" t-on-click="() => this.setBranchLog(false)">خطي</button>
+                                    <button t-att-class="{'active': state.branchLog}" t-on-click="() => this.setBranchLog(true)">لوغاريتمي</button>
+                                </div>
+                            </header>
+                            <div class="rmd-chart rmd-chart-branches tall"/>
+                            <p class="rmd-note">المديونيات رصيد حتى نهاية الفترة، أما المبيعات والسداد فحركة خلال الفترة. المقياس اللوغاريتمي يُظهر الفروع الصغيرة بجانب الكبيرة (ولا يعرض القيم السالبة).</p>
+                        </article>
+                    </section>
+
+                    <section class="rmd-branch-grid">
+                        <!-- لوحة التداول -->
+                        <article class="rmd-card rmd-board-card">
+                            <header><h3>لوحة التداول</h3></header>
+                            <div class="rmd-table-wrap">
+                                <table class="rmd-board">
+                                    <thead>
+                                        <tr>
+                                            <th>الفرع</th>
+                                            <th>مبيعات العملاء</th>
+                                            <th>مديونيات العملاء</th>
+                                            <th>سداد العملاء</th>
+                                            <th>نسبة السداد</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="sortedBranches" t-as="b" t-key="b.id">
+                                            <tr>
+                                                <td class="nm"><span class="rmd-dot" t-att-style="'background:' + colorOf(b.id)"/> <span t-esc="b.name"/></td>
+                                                <td t-att-class="flashClass(b.id, 'sales')">
+                                                    <div class="v"><CountUp value="b.sales" format="moneyFormat"/></div>
+                                                    <small t-att-class="growthClass(b.sales_growth)" t-esc="growthText(b.sales_growth)"/>
+                                                </td>
+                                                <td t-att-class="flashClass(b.id, 'debt')">
+                                                    <div class="v"><CountUp value="b.debt" format="moneyFormat"/></div>
+                                                    <small t-att-class="debtClass(b.debt_growth)" t-esc="growthText(b.debt_growth)"/>
+                                                </td>
+                                                <td t-att-class="flashClass(b.id, 'paid')">
+                                                    <div class="v"><CountUp value="b.paid" format="moneyFormat"/></div>
+                                                    <small t-att-class="growthClass(b.paid_growth)" t-esc="growthText(b.paid_growth)"/>
+                                                </td>
+                                                <td>
+                                                    <t t-if="b.collection_rate !== null"><span t-esc="b.collection_rate"/>%</t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+
+                        <!-- آخر العمليات -->
+                        <article class="rmd-card rmd-feed-card">
+                            <header><h3>آخر العمليات</h3></header>
+                            <ul class="rmd-feed">
+                                <t t-foreach="state.branches.feed" t-as="ev" t-key="ev.id">
+                                    <li t-att-class="{'new': isNewEvent(ev.id), 'sale': ev.type === 'sale', 'payment': ev.type === 'payment'}">
+                                        <span class="ic"><i t-attf-class="fa {{ ev.type === 'sale' ? 'fa-shopping-cart' : 'fa-check-circle' }}"/></span>
+                                        <div class="tx">
+                                            <strong t-esc="ev.type === 'sale' ? 'أمر بيع' : 'سداد'"/>
+                                            <span class="co" t-esc="ev.company"/>
+                                            <small t-esc="ev.partner"/>
+                                        </div>
+                                        <div class="am">
+                                            <b t-esc="moneyCompact(ev.amount)"/>
+                                            <small t-esc="timeAgo(ev.ts)"/>
+                                        </div>
+                                    </li>
+                                </t>
+                                <li class="rmd-empty" t-if="!state.branches.feed.length">لا توجد عمليات</li>
+                            </ul>
+                        </article>
+                    </section>
+                </t>
             </main>
+
+            <button class="rmd-tv-exit" t-if="state.tv" t-on-click="stopTv"><i class="fa fa-times"/> خروج من وضع العرض</button>
 
             <!-- لوحة التفاصيل الجانبية -->
             <div class="rmd-overlay" t-if="state.drawer.open" t-on-click="closeDrawer"/>

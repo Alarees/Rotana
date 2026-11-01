@@ -3,6 +3,6 @@
     <!-- مجموعة الوصول للوحة الإدارة. مديرو النظام (base.group_system) لديهم وصول دائماً. -->
     <record id="group_rotana_dashboard_manager" model="res.groups">
         <field name="name">لوحة الإدارة - Management Dashboard</field>
-        <field name="comment">يسمح بفتح لوحة الإدارة ورؤية مبيعات كل الشركات المسموحة للمستخدم.</field>
+        <field name="comment">مجموعة مستقلة لصلاحيات لوحة الإدارة (كل الأقسام: المبيعات وتفاصيل الفروع). تعطي رؤية بيانات الشركات المسموحة للمستخدم فقط.</field>
     </record>
 </odoo>

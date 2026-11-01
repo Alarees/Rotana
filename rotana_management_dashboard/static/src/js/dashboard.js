@@ -21,11 +21,13 @@ const BUS_CHANNEL = "rotana_management_dashboard";
 const BUS_EVENT = "rotana_dashboard_sales_updated";
 const FALLBACK_REFRESH_MS = 60000;   // تحديث احتياطي إن تعطل bus
 const BUS_DEBOUNCE_MS = 1500;
+const TV_ROTATE_MS = 25000;         // وضع العرض: تبديل الشاشات كل 25 ثانية
 const WEEK_START = 0;                // 0 = الأحد ، 6 = السبت
 
 // الأقسام: لإضافة قسم جديد أضف عنصراً هنا ثم ابنِ محتواه في القالب (dashboard.xml)
 const SECTIONS = [
     { id: "sales", label: "المبيعات", icon: "fa-line-chart" },
+    { id: "branches", label: "تفاصيل الفروع", icon: "fa-bar-chart" },
 ];
 
 const PALETTE = [
@@ -171,7 +173,12 @@ class RotanaManagementDashboard extends Component {
             dateFrom: ymd(from),
             dateTo: ymd(to),
             selectedCompanies: [],     // فارغ = كل الشركات
-            consolidated: true,        // موحّد: الشركة الأم تشمل فروعها
+            consolidated: false,       // الافتراضي: مستقل (موحّد = الشركة الأم تشمل فروعها)
+            branches: null,            // بيانات شاشة تفاصيل الفروع
+            branchLog: false,          // مقياس لوغاريتمي لمخطط الفروع
+            flash: {},                 // خلايا لوحة التداول الوامضة
+            newIds: [],                // أحداث جديدة في الشريط الحي
+            tv: false,                 // وضع العرض
             companyMenu: false,
             chartMode: "line",
             data: null,
@@ -182,6 +189,17 @@ class RotanaManagementDashboard extends Component {
         useExternalListener(window, "click", () => {
             if (this.state.companyMenu) {
                 this.state.companyMenu = false;
+            }
+        });
+
+        useExternalListener(window, "keydown", (ev) => {
+            if (ev.key === "Escape" && this.state.tv) {
+                this.stopTv();
+            }
+        });
+        useExternalListener(document, "fullscreenchange", () => {
+            if (!document.fullscreenElement && this.state.tv) {
+                this.stopTv();
             }
         });
 
@@ -208,6 +226,9 @@ class RotanaManagementDashboard extends Component {
             this._dead = true;
             clearInterval(this._poll);
             clearTimeout(this._debounce);
+            clearTimeout(this._flashTimer);
+            clearTimeout(this._newTimer);
+            clearInterval(this._tvTimer);
             if (typeof this._unsub === "function") {
                 this._unsub();
             }
@@ -223,7 +244,7 @@ class RotanaManagementDashboard extends Component {
             () => {
                 this.renderMainCharts();
             },
-            () => [this.state.data, this.state.chartMode, this.state.section]
+            () => [this.state.data, this.state.branches, this.state.branchLog, this.state.chartMode, this.state.section]
         );
         useEffect(
             () => {
@@ -247,6 +268,80 @@ class RotanaManagementDashboard extends Component {
     }
 
     async loadData(silent = false) {
+        if (this.state.section === "branches") {
+            return this.loadBranches(silent);
+        }
+        return this.loadSales(silent);
+    }
+
+    async loadBranches(silent = false) {
+        const seq = ++this._seq;
+        if (silent) {
+            this.state.refreshing = true;
+        } else {
+            this.state.loading = true;
+        }
+        try {
+            const prev = this.state.branches;
+            const data = await this.orm.call(
+                "rotana.management.dashboard",
+                "get_branches_overview",
+                [this.state.dateFrom, this.state.dateTo, this.companyIdsParam]
+            );
+            if (this._dead || seq !== this._seq) {
+                return;
+            }
+            if (silent && prev) {
+                this.computeFlash(prev, data);
+            }
+            this.state.branches = data;
+            this.state.error = null;
+            this.state.lastUpdate = new Date();
+        } catch (e) {
+            if (this._dead || seq !== this._seq) {
+                return;
+            }
+            this.state.error =
+                (e && e.data && e.data.message) || (e && e.message) || "تعذر جلب البيانات";
+        } finally {
+            if (!this._dead && seq === this._seq) {
+                this.state.loading = false;
+                this.state.refreshing = false;
+            }
+        }
+    }
+
+    computeFlash(prev, data) {
+        // ومضة خضراء/حمراء عند تغير القيمة (للمديونيات: الزيادة = سيئة = حمراء)
+        const old = new Map(prev.companies.map((c) => [c.id, c]));
+        const flash = {};
+        for (const c of data.companies) {
+            const o = old.get(c.id);
+            if (!o) {
+                continue;
+            }
+            [["sales", 1], ["debt", -1], ["paid", 1]].forEach(([field, polarity]) => {
+                const diff = c[field] - o[field];
+                if (Math.abs(diff) > 0.005) {
+                    flash[`${c.id}:${field}`] = diff * polarity > 0 ? "good" : "bad";
+                }
+            });
+        }
+        this.state.flash = flash;
+        clearTimeout(this._flashTimer);
+        this._flashTimer = setTimeout(() => {
+            this.state.flash = {};
+        }, 1700);
+
+        const known = new Set(prev.feed.map((e) => e.id));
+        this.state.newIds = data.feed.filter((e) => !known.has(e.id)).map((e) => e.id);
+        clearTimeout(this._newTimer);
+        this._newTimer = setTimeout(() => {
+            this.state.newIds = [];
+        }, 6000);
+    }
+
+    async loadSales(silent = false) {
         const seq = ++this._seq;
         if (silent) {
             this.state.refreshing = true;
@@ -310,7 +405,53 @@ class RotanaManagementDashboard extends Component {
     noop() {}
 
     selectSection(section) {
+        if (this.state.section === section.id) {
+            return;
+        }
+        this.closeDrawer();
         this.state.section = section.id;
+        const has = section.id === "branches" ? this.state.branches : this.state.data;
+        this.loadData(!!has);
+    }
+
+    rotateSection() {
+        const idx = SECTIONS.findIndex((s) => s.id === this.state.section);
+        this.selectSection(SECTIONS[(idx + 1) % SECTIONS.length]);
+    }
+
+    /* وضع العرض (شاشة مجلس الإدارة) */
+    async toggleTv() {
+        if (this.state.tv) {
+            return this.stopTv();
+        }
+        this.state.tv = true;
+        this.state.companyMenu = false;
+        this.closeDrawer();
+        clearInterval(this._tvTimer);
+        this._tvTimer = setInterval(() => this.rotateSection(), TV_ROTATE_MS);
+        try {
+            await document.documentElement.requestFullscreen();
+        } catch (e) {
+            /* الشاشة الكاملة غير متاحة: يبقى وضع العرض داخل النافذة */
+        }
+    }
+
+    stopTv() {
+        this.state.tv = false;
+        clearInterval(this._tvTimer);
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+
+    /* عند تغيير الفلاتر نُفرغ بيانات القسم الآخر كي لا تظهر أرقام قديمة */
+    refilter() {
+        if (this.state.section === "branches") {
+            this.state.data = null;
+        } else {
+            this.state.branches = null;
+        }
+        this.loadData();
     }
 
     goBack() {
@@ -322,7 +463,7 @@ class RotanaManagementDashboard extends Component {
         this.state.preset = id;
         this.state.dateFrom = ymd(from);
         this.state.dateTo = ymd(to);
-        this.loadData();
+        this.refilter();
     }
 
     onDateChange(which, ev) {
@@ -342,7 +483,7 @@ class RotanaManagementDashboard extends Component {
             }
         }
         this.state.preset = "custom";
-        this.loadData();
+        this.refilter();
     }
 
     toggleCompanyMenu(ev) {
@@ -370,12 +511,12 @@ class RotanaManagementDashboard extends Component {
             effective.push(id);
         }
         this.state.selectedCompanies = effective.length === all.length ? [] : effective;
-        this.loadData();
+        this.refilter();
     }
 
     selectAllCompanies() {
         this.state.selectedCompanies = [];
-        this.loadData();
+        this.refilter();
     }
 
     setConsolidated(value) {
@@ -406,7 +547,70 @@ class RotanaManagementDashboard extends Component {
 
     /* ----------------------------------------------------------- view data */
     get allCompanies() {
-        return (this.state.data && this.state.data.all_companies) || [];
+        const d = this.state.data || this.state.branches;
+        return (d && d.all_companies) || [];
+    }
+
+    get currencyInfo() {
+        const d = this.state.data || this.state.branches;
+        return d && d.currency;
+    }
+
+    get showLoading() {
+        const has = this.state.section === "branches" ? this.state.branches : this.state.data;
+        return this.state.loading && !has;
+    }
+
+    get sectionTitle() {
+        return this.state.section === "branches"
+            ? "تفاصيل الفروع"
+            : "مبيعات الشركات الفرعية";
+    }
+
+    get sectionSubtitle() {
+        return this.state.section === "branches"
+            ? "مبيعات وسداد العملاء خلال الفترة · المديونيات حتى نهايتها"
+            : "أوامر البيع المؤكدة";
+    }
+
+    get sortedBranches() {
+        const rows = (this.state.branches && this.state.branches.companies) || [];
+        return [...rows].sort((a, b) => b.sales - a.sales);
+    }
+
+    flashClass(id, field) {
+        const f = this.state.flash[`${id}:${field}`];
+        return f ? `flash-${f}` : "";
+    }
+
+    isNewEvent(id) {
+        return this.state.newIds.includes(id);
+    }
+
+    debtClass(g) {
+        const c = this.growthClass(g);
+        return c === "up" ? "down" : c === "down" ? "up" : c;
+    }
+
+    timeAgo(ts) {
+        if (!ts) {
+            return "";
+        }
+        const diff = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
+        if (diff < 60) {
+            return "الآن";
+        }
+        if (diff < 3600) {
+            return `قبل ${Math.floor(diff / 60)} د`;
+        }
+        if (diff < 86400) {
+            return `قبل ${Math.floor(diff / 3600)} س`;
+        }
+        return `قبل ${Math.floor(diff / 86400)} يوم`;
+    }
+
+    setBranchLog(value) {
+        this.state.branchLog = value;
     }
 
     get companyFilterLabel() {
@@ -454,7 +658,7 @@ class RotanaManagementDashboard extends Component {
     }
 
     money(v) {
-        const cur = this.state.data && this.state.data.currency;
+        const cur = this.currencyInfo;
         const num = formatFull(v);
         if (!cur) {
             return num;
@@ -463,7 +667,7 @@ class RotanaManagementDashboard extends Component {
     }
 
     moneyCompact(v) {
-        const cur = this.state.data && this.state.data.currency;
+        const cur = this.currencyInfo;
         const num = formatCompact(v);
         if (!cur) {
             return num;
@@ -560,6 +764,19 @@ class RotanaManagementDashboard extends Component {
     }
 
     renderMainCharts() {
+        if (this.state.section === "branches") {
+            this.disposeKey("compare");
+            this.disposeKey("share");
+            const b = this.state.branches;
+            const el = document.querySelector(".rmd-chart-branches");
+            if (b && b.companies.length && el) {
+                this.renderBranchChart(el);
+            } else {
+                this.disposeKey("branches");
+            }
+            return;
+        }
+        this.disposeKey("branches");
         if (this.state.section !== "sales" || !this.state.data || !this.hasData) {
             this.disposeKey("compare");
             this.disposeKey("share");
@@ -699,6 +916,116 @@ class RotanaManagementDashboard extends Component {
         series.appear(800, 100);
 
         this.charts.share = { root, el, key, series };
+    }
+
+    renderBranchChart(el) {
+        const am5 = window.am5;
+        const am5xy = window.am5xy;
+        const log = this.state.branchLog;
+        const rows = [...this.state.branches.companies].sort((a, b) => b.sales - a.sales);
+        const data = rows.map((r) => ({ name: r.name, sales: r.sales, debt: r.debt, paid: r.paid }));
+        const key = `${log}|${rows.map((r) => r.id).join(",")}`;
+        const existing = this.charts.branches;
+
+        if (existing && existing.el === el && existing.key === key) {
+            // تحديث حي: الأعمدة تتحرك بسلاسة إلى القيم الجديدة
+            existing.xAxis.data.setAll(data);
+            Object.values(existing.series).forEach((s) => s.data.setAll(data));
+            return;
+        }
+        this.disposeKey("branches");
+
+        const root = this._newRoot(el);
+        const chart = root.container.children.push(
+            am5xy.XYChart.new(root, {
+                panX: false,
+                panY: false,
+                wheelX: "none",
+                wheelY: "none",
+                layout: root.verticalLayout,
+            })
+        );
+        const xAxis = chart.xAxes.push(
+            am5xy.CategoryAxis.new(root, {
+                categoryField: "name",
+                renderer: am5xy.AxisRendererX.new(root, {
+                    minGridDistance: 30,
+                    cellStartLocation: 0.1,
+                    cellEndLocation: 0.9,
+                }),
+            })
+        );
+        xAxis.get("renderer").labels.template.setAll({
+            oversizedBehavior: "wrap",
+            maxWidth: 120,
+            textAlign: "center",
+            fontSize: 13,
+        });
+        const yAxisSettings = {
+            numberFormat: "#.#a",
+            renderer: am5xy.AxisRendererY.new(root, {}),
+        };
+        if (log) {
+            yAxisSettings.logarithmic = true;
+            yAxisSettings.min = 1;
+        }
+        const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, yAxisSettings));
+
+        const defs = [
+            { field: "sales", name: "مبيعات العملاء", color: "#22d3ee" },
+            { field: "debt", name: "مديونيات العملاء", color: "#fb7185" },
+            { field: "paid", name: "سداد العملاء", color: "#34d399" },
+        ];
+        const seriesMap = {};
+        defs.forEach((def) => {
+            const color = am5.color(def.color);
+            const series = chart.series.push(
+                am5xy.ColumnSeries.new(root, {
+                    name: def.name,
+                    xAxis,
+                    yAxis,
+                    valueYField: def.field,
+                    categoryXField: "name",
+                    fill: color,
+                    stroke: color,
+                    tooltip: am5.Tooltip.new(root, {
+                        labelText: "{name}: {valueY.formatNumber('#,###')}",
+                    }),
+                })
+            );
+            series.columns.template.setAll({
+                cornerRadiusTL: 5,
+                cornerRadiusTR: 5,
+                width: am5.percent(92),
+                fillOpacity: 0.92,
+            });
+            series.bullets.push(() =>
+                am5.Bullet.new(root, {
+                    locationY: 1,
+                    sprite: am5.Label.new(root, {
+                        text: "{valueY.formatNumber('#.#a')}",
+                        populateText: true,
+                        fill: root.interfaceColors.get("text"),
+                        centerX: am5.p50,
+                        centerY: am5.p100,
+                        dy: -4,
+                        fontSize: 11.5,
+                    }),
+                })
+            );
+            series.data.setAll(data);
+            series.appear(900);
+            seriesMap[def.field] = series;
+        });
+        xAxis.data.setAll(data);
+
+        const legend = chart.children.push(
+            am5.Legend.new(root, { centerX: am5.p50, x: am5.p50, marginTop: 10 })
+        );
+        legend.data.setAll(chart.series.values);
+        chart.appear(900, 100);
+
+        this.charts.branches = { root, el, key, xAxis, series: seriesMap };
     }
 
     renderDrawerCharts() {
