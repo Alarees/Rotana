@@ -46,10 +46,16 @@
                         <h1 t-esc="sectionTitle"/>
                         <p><span t-esc="sectionSubtitle"/> · <span t-esc="rangeLabel"/></p>
                     </div>
-                    <div class="rmd-live" t-att-class="{'busy': state.refreshing}">
-                        <span class="rmd-live-dot"/>
-                        <span>بث حي</span>
-                        <small t-if="state.lastUpdate" t-esc="lastUpdateLabel"/>
+                    <div class="rmd-header-actions">
+                        <div class="rmd-clock">
+                            <strong t-esc="clockLabel"/>
+                            <small t-esc="dateLabel"/>
+                        </div>
+                        <div class="rmd-live" t-att-class="{'busy': state.refreshing}">
+                            <span class="rmd-live-dot"/>
+                            <span>بث حي</span>
+                            <small t-if="state.lastUpdate">آخر تحديث للبيانات <span t-esc="lastUpdateLabel"/></small>
+                        </div>
                     </div>
                 </header>
 

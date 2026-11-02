@@ -180,6 +180,7 @@ class RotanaManagementDashboard extends Component {
             chartMode: "line",
             data: null,
             lastUpdate: null,
+            now: new Date(),           // الساعة الحية في أعلى الشاشة
             drawer: { open: false, loading: false, company: null, data: null },
         });
 
@@ -201,6 +202,9 @@ class RotanaManagementDashboard extends Component {
             } catch (e) {
                 console.warn("Rotana dashboard: bus unavailable, using polling only", e);
             }
+            this._clock = setInterval(() => {
+                this.state.now = new Date();
+            }, 1000);
             this._poll = setInterval(() => {
                 if (!document.hidden) {
                     this.loadData(true);
@@ -211,6 +215,7 @@ class RotanaManagementDashboard extends Component {
         onWillUnmount(() => {
             this._dead = true;
             clearInterval(this._poll);
+            clearInterval(this._clock);
             clearTimeout(this._debounce);
             if (typeof this._unsub === "function") {
                 this._unsub();
@@ -517,6 +522,20 @@ class RotanaManagementDashboard extends Component {
         return this.state.dateFrom === this.state.dateTo
             ? this.state.dateFrom
             : `${this.state.dateFrom}  ←  ${this.state.dateTo}`;
+    }
+
+    get clockLabel() {
+        const d = this.state.now;
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    get dateLabel() {
+        return new Intl.DateTimeFormat("ar-u-nu-latn", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }).format(this.state.now);
     }
 
     get lastUpdateLabel() {

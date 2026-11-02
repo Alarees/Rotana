@@ -259,3 +259,10 @@
 .rmd-charts.one { grid-template-columns: 1fr; }
 .rmd-chart.tall { height: 460px; }
 .rmd-note { margin: 4px 6px 10px; color: var(--rmd-muted); font-size: 13.5px; }
+
+/* ---------- الساعة الحية ---------- */
+.rmd-header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rmd-clock { display: flex; flex-direction: column; align-items: flex-end; padding: 6px 16px; border-radius: 14px;
+    background: var(--rmd-glass-strong); border: 1px solid var(--rmd-border); line-height: 1.25; }
+.rmd-clock strong { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--rmd-deep); direction: ltr; }
+.rmd-clock small { color: var(--rmd-muted); font-size: 13px; }
