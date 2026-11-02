@@ -61,9 +61,6 @@
                                         <th class="text-end">
                                             <strong>Subtotal</strong>
                                         </th>
-                                        <th class="text-end">
-                                            <strong>Requested Date</strong>
-                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -84,9 +81,6 @@
                                         </td>
                                         <td class="text-end">
                                             <span t-field="line_id.price_subtotal" />
-                                        </td>
-                                        <td class="text-end">
-                                            <span t-field="line_id.date_required" />
                                         </td>
                                     </tr>
                                 </tbody>

@@ -13,7 +13,6 @@
             >
                 <field name="request_id" />
                 <field name="requested_by" widget="many2one_avatar_user" />
-                <field name="date_required" />
                 <field name="description" />
                 <field name="product_qty" />
                 <field name="currency_id" column_invisible="1" />
@@ -48,7 +47,6 @@
                     <group name="main">
                         <group name="info">
                             <field name="requested_by" />
-                            <field name="date_start" />
                             <field
                                 name="company_id"
                                 groups="base.group_multi_company"
@@ -61,7 +59,6 @@
                             <field name="currency_id" invisible="1" />
                             <field name="price_unit" />
                             <field name="price_subtotal" />
-                            <field name="date_required" />
                             <field name="cancelled" />
                             <field
                                 name="analytic_distribution"
@@ -84,8 +81,6 @@
                 <field name="request_id" />
                 <field name="description" />
                 <field name="requested_by" />
-                <field name="date_start" />
-                <field name="date_required" />
                 <field
                     name="analytic_distribution"
                     groups="analytic.group_analytic_accounting"

@@ -65,11 +65,34 @@
                         <field name="bill_count" invisible="1" />
                         <field name="name" class="oe_inline" readonly="1" />
                     </h1>
+                    <group string="Purchase Request Details">
+                        <group>
+                            <field
+                                name="requested_by"
+                                readonly="is_editable == False"
+                            />
+                            <field
+                                name="vendor_id"
+                                readonly="state == 'rejected'"
+                                context="{'res_partner_search_mode': 'supplier'}"
+                            />
+                        </group>
+                        <group>
+                            <field name="date_start" readonly="is_editable == False" />
+                            <field name="description" readonly="is_editable == False" />
+                            <field name="company_id" invisible="1" />
+                            <field
+                                name="company_id"
+                                groups="base.group_multi_company"
+                                widget="selection"
+                                readonly="is_editable == False"
+                            />
+                        </group>
+                    </group>
                     <group
                         name="approvals"
                         col="4"
-                        invisible="state == 'draft'"
-                    >
+                        invisible="state == 'draft'">
                         <group string="Department Manager">
                             <button
                                 name="button_approve_dept_manager"
@@ -147,30 +170,6 @@
                             />
                         </group>
                     </group>
-                    <group>
-                        <group>
-                            <field
-                                name="requested_by"
-                                readonly="is_editable == False"
-                            />
-                            <field
-                                name="vendor_id"
-                                readonly="state == 'rejected'"
-                                context="{'res_partner_search_mode': 'supplier'}"
-                            />
-                        </group>
-                        <group>
-                            <field name="date_start" readonly="is_editable == False" />
-                            <field name="description" readonly="is_editable == False" />
-                            <field name="company_id" invisible="1" />
-                            <field
-                                name="company_id"
-                                groups="base.group_multi_company"
-                                widget="selection"
-                                readonly="is_editable == False"
-                            />
-                        </group>
-                    </group>
                     <notebook>
                         <page string="Products">
                             <field name="line_ids" readonly="is_editable == False">
@@ -180,7 +179,6 @@
                                     <field name="price_unit" />
                                     <field name="price_subtotal" />
                                     <field name="currency_id" column_invisible="1" />
-                                    <field name="date_required" />
                                     <field name="cancelled" column_invisible="1" />
                                     <field
                                         name="analytic_distribution"

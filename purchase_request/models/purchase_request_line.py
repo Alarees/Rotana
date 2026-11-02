@@ -32,13 +32,6 @@ class PurchaseRequestLine(models.Model):
         string="Requested by",
         store=True,
     )
-    date_start = fields.Date(related="request_id.date_start", store=True)
-    date_required = fields.Date(
-        string="Request Date",
-        required=True,
-        tracking=True,
-        default=fields.Date.context_today,
-    )
     currency_id = fields.Many2one(related="company_id.currency_id", readonly=True)
     price_unit = fields.Monetary(
         string="Unit Price",
