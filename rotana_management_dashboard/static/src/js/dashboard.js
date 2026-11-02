@@ -29,9 +29,10 @@ const SECTIONS = [
     { id: "branches", label: "تفاصيل الفروع", icon: "fa-bar-chart" },
 ];
 
+// لونان فقط (من الشعار): لون حبة القمح (قريب من الأبيض) + الأخضر، بدرجات متفاوتة للتمييز
 const PALETTE = [
-    "#22d3ee", "#a78bfa", "#34d399", "#fbbf24", "#fb7185",
-    "#60a5fa", "#f472b6", "#2dd4bf", "#fb923c", "#c084fc",
+    "#f6f9ef", "#3ab24b", "#c9dfa6", "#1f9d57", "#e4efcf",
+    "#6fcf7a", "#a8c97f", "#4cbf8d", "#d8e8b8", "#8ed16a",
 ];
 
 const PRESETS = [
@@ -643,6 +644,38 @@ class RotanaManagementDashboard extends Component {
         return root;
     }
 
+    /* تدرجات لونية للأعمدة (من لون فاتح إلى أغمق) وللمساحات (شفافية متناقصة) */
+    _gradient(root, hex, rotation = 90) {
+        const am5 = window.am5;
+        const base = am5.color(hex);
+        return am5.LinearGradient.new(root, {
+            rotation,
+            stops: [
+                { color: am5.Color.lighten(base, 0.18) },
+                { color: am5.Color.lighten(base, -0.28) },
+            ],
+        });
+    }
+
+    _areaGradient(root) {
+        return window.am5.LinearGradient.new(root, {
+            rotation: 90,
+            stops: [{ opacity: 0.45 }, { opacity: 0 }],
+        });
+    }
+
+    _sliceItems(root, rows) {
+        const am5 = window.am5;
+        return rows.map((r) => ({
+            name: r.name,
+            value: r.value,
+            sliceSettings: {
+                fill: am5.color(r.hex),
+                fillGradient: this._gradient(root, r.hex, 45),
+            },
+        }));
+    }
+
     _points(buckets, values) {
         return buckets.map((b, i) => ({
             date: new Date(b + "T00:00:00").getTime(),
@@ -742,11 +775,16 @@ class RotanaManagementDashboard extends Component {
             let series;
             if (mode === "column") {
                 series = chart.series.push(am5xy.ColumnSeries.new(root, settings));
-                series.columns.template.setAll({ cornerRadiusTL: 4, cornerRadiusTR: 4, width: am5.percent(80) });
+                series.columns.template.setAll({
+                    cornerRadiusTL: 4,
+                    cornerRadiusTR: 4,
+                    width: am5.percent(80),
+                    fillGradient: this._gradient(root, this.colorOf(c.id)),
+                });
             } else {
                 series = chart.series.push(am5xy.LineSeries.new(root, settings));
                 series.strokes.template.setAll({ strokeWidth: 3 });
-                series.fills.template.setAll({ visible: true, fillOpacity: 0.12 });
+                series.fills.template.setAll({ visible: true, fillGradient: this._areaGradient(root) });
                 series.bullets.push(() =>
                     am5.Bullet.new(root, {
                         sprite: am5.Circle.new(root, { radius: 3.5, fill: color, stroke: root.interfaceColors.get("background"), strokeWidth: 1 }),
@@ -769,17 +807,13 @@ class RotanaManagementDashboard extends Component {
         const am5 = window.am5;
         const am5percent = window.am5percent;
         const data = this.state.data;
-        const items = data.companies
+        const rows = data.companies
             .filter((c) => c.own_total > 0)
-            .map((c) => ({
-                name: c.name,
-                value: c.own_total,
-                sliceSettings: { fill: am5.color(this.colorOf(c.id)) },
-            }));
-        const key = items.map((i) => i.name).join("|");
+            .map((c) => ({ name: c.name, value: c.own_total, hex: this.colorOf(c.id) }));
+        const key = rows.map((r) => r.name).join("|");
         const existing = this.charts.share;
         if (existing && existing.el === el && existing.key === key) {
-            existing.series.data.setAll(items);
+            existing.series.data.setAll(this._sliceItems(existing.root, rows));
             return;
         }
         this.disposeKey("share");
@@ -799,7 +833,7 @@ class RotanaManagementDashboard extends Component {
         });
         series.labels.template.set("forceHidden", true);
         series.ticks.template.set("forceHidden", true);
-        series.data.setAll(items);
+        series.data.setAll(this._sliceItems(root, rows));
         series.appear(800, 100);
 
         this.charts.share = { root, el, key, series };
@@ -859,9 +893,9 @@ class RotanaManagementDashboard extends Component {
         const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, yAxisSettings));
 
         const defs = [
-            { field: "sales", name: "مبيعات العملاء", color: "#22d3ee" },
-            { field: "debt", name: "مديونيات العملاء", color: "#fb7185" },
-            { field: "paid", name: "سداد العملاء", color: "#34d399" },
+            { field: "sales", name: "مبيعات العملاء", color: "#f6f9ef" },
+            { field: "debt", name: "مديونيات العملاء", color: "#2ca04a" },
+            { field: "paid", name: "سداد العملاء", color: "#9be28f" },
         ];
         const seriesMap = {};
         defs.forEach((def) => {
@@ -884,7 +918,7 @@ class RotanaManagementDashboard extends Component {
                 cornerRadiusTL: 5,
                 cornerRadiusTR: 5,
                 width: am5.percent(92),
-                fillOpacity: 0.92,
+                fillGradient: this._gradient(root, def.color),
             });
             series.bullets.push(() =>
                 am5.Bullet.new(root, {
@@ -967,7 +1001,7 @@ class RotanaManagementDashboard extends Component {
             })
         );
         series.strokes.template.setAll({ strokeWidth: 3 });
-        series.fills.template.setAll({ visible: true, fillOpacity: 0.18 });
+        series.fills.template.setAll({ visible: true, fillGradient: this._areaGradient(root) });
         series.data.setAll(this._points(d.buckets, d.series));
         this.charts.drawerLine = { root };
     }
@@ -1000,7 +1034,12 @@ class RotanaManagementDashboard extends Component {
                 tooltip: am5.Tooltip.new(root, { labelText: "{categoryY}: {valueX.formatNumber('#,###')}" }),
             })
         );
-        series.columns.template.setAll({ cornerRadiusTR: 4, cornerRadiusBR: 4, height: am5.percent(70) });
+        series.columns.template.setAll({
+            cornerRadiusTR: 4,
+            cornerRadiusBR: 4,
+            height: am5.percent(70),
+            fillGradient: this._gradient(root, colorHex, 0),
+        });
         yAxis.data.setAll(d.products);
         series.data.setAll(d.products);
         this.charts.drawerProducts = { root };

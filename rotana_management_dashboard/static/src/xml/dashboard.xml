@@ -108,7 +108,7 @@
 
                     <!-- بطاقات الملخص -->
                     <section class="rmd-summary">
-                        <article class="rmd-card rmd-kpi" style="--c:#22d3ee">
+                        <article class="rmd-card rmd-kpi" style="--c:#f6f9ef">
                             <div class="rmd-kpi-icon"><i class="fa fa-money"/></div>
                             <div class="rmd-kpi-body">
                                 <small>إجمالي المبيعات</small>
@@ -118,21 +118,21 @@
                                 <em>مقارنة بالفترة السابقة</em>
                             </div>
                         </article>
-                        <article class="rmd-card rmd-kpi" style="--c:#a78bfa">
+                        <article class="rmd-card rmd-kpi" style="--c:#3ab24b">
                             <div class="rmd-kpi-icon"><i class="fa fa-file-text-o"/></div>
                             <div class="rmd-kpi-body">
                                 <small>عدد أوامر البيع</small>
                                 <strong><CountUp value="state.data.totals.orders" format="countFormat"/></strong>
                             </div>
                         </article>
-                        <article class="rmd-card rmd-kpi" style="--c:#34d399">
+                        <article class="rmd-card rmd-kpi" style="--c:#dde9cc">
                             <div class="rmd-kpi-icon"><i class="fa fa-balance-scale"/></div>
                             <div class="rmd-kpi-body">
                                 <small>متوسط قيمة الأمر</small>
                                 <strong><CountUp value="state.data.totals.avg" format="moneyFormat"/></strong>
                             </div>
                         </article>
-                        <article class="rmd-card rmd-kpi" style="--c:#fbbf24">
+                        <article class="rmd-card rmd-kpi" style="--c:#7ed67f">
                             <div class="rmd-kpi-icon"><i class="fa fa-trophy"/></div>
                             <div class="rmd-kpi-body">
                                 <small>الأعلى مبيعاً</small>
