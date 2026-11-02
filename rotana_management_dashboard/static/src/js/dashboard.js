@@ -29,10 +29,10 @@ const SECTIONS = [
     { id: "branches", label: "تفاصيل الفروع", icon: "fa-bar-chart" },
 ];
 
-// لونان فقط (من الشعار): لون حبة القمح (قريب من الأبيض) + الأخضر، بدرجات متفاوتة للتمييز
+// الخلفية بلون حبة القمح (قريب من الأبيض) والبيانات بدرجات الأخضر (من الشعار)
 const PALETTE = [
-    "#f6f9ef", "#3ab24b", "#c9dfa6", "#1f9d57", "#e4efcf",
-    "#6fcf7a", "#a8c97f", "#4cbf8d", "#d8e8b8", "#8ed16a",
+    "#0f6b3d", "#3ab24b", "#8fd18a", "#178749", "#5cc46a",
+    "#0b4a2c", "#2ca04a", "#b4e0a6", "#1f9d57", "#74c981",
 ];
 
 const PRESETS = [
@@ -635,11 +635,22 @@ class RotanaManagementDashboard extends Component {
         const fontTheme = window.am5.Theme.new(root);
         fontTheme.rule("Label").setAll({ fontFamily: FONT_FAMILY, fontSize: 13.5 });
         fontTheme.rule("Legend").setAll({ fontFamily: FONT_FAMILY });
+        fontTheme.rule("Tooltip").setAll({ getFillFromSprite: false, getLabelFillFromSprite: false });
+        fontTheme.rule("PointedRectangle", ["tooltip", "background"]).setAll({
+            fill: window.am5.color(0x0b4a2c),
+            fillOpacity: 0.96,
+            strokeOpacity: 0,
+        });
+        fontTheme.rule("Label", ["tooltip"]).setAll({ fill: window.am5.color(0xf6f9ef) });
         root.setThemes([
             window.am5themes_Animated.new(root),
-            window.am5themes_Dark.new(root),
             fontTheme,
         ]);
+        // خلفية فاتحة: نصوص خضراء داكنة وتلميحات (tooltips) خضراء غامقة بنص فاتح
+        const ic = root.interfaceColors;
+        ic.set("text", window.am5.color(0x14452e));
+        ic.set("grid", window.am5.color(0x178749));
+        ic.set("background", window.am5.color(0xf6f9ef));
         root.numberFormatter.set("numberFormat", "#,###");
         return root;
     }
@@ -893,9 +904,9 @@ class RotanaManagementDashboard extends Component {
         const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, yAxisSettings));
 
         const defs = [
-            { field: "sales", name: "مبيعات العملاء", color: "#f6f9ef" },
-            { field: "debt", name: "مديونيات العملاء", color: "#2ca04a" },
-            { field: "paid", name: "سداد العملاء", color: "#9be28f" },
+            { field: "sales", name: "مبيعات العملاء", color: "#0f6b3d" },
+            { field: "debt", name: "مديونيات العملاء", color: "#3ab24b" },
+            { field: "paid", name: "سداد العملاء", color: "#a6dd9a" },
         ];
         const seriesMap = {};
         defs.forEach((def) => {
