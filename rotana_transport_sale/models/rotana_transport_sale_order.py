@@ -113,11 +113,8 @@ class RotanaTransportSaleOrder(models.Model):
 
     @api.depends('order_line.product_uom_qty')
     def _compute_total_weight_to_transport(self):
-        ton = self.env['uom.uom'].search([('name', '=', 'Ton')], limit=1)
         for order in self:
-            order.total_weight_to_transport = sum(
-                line.product_uom_id._compute_quantity(line.product_uom_qty, ton) for line in order.order_line
-            )
+            order.total_weight_to_transport = sum(line.product_uom_qty for line in order.order_line)
 
     @api.depends('trip_ids.discharged_quantity')
     def _compute_total_discharged_quantity(self):

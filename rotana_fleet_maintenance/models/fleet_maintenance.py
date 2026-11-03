@@ -210,11 +210,10 @@ class MaintenanceRequest(models.Model):
         if not picking_type:
             raise UserError(_('لا يوجد مستودع بنوع عملية "تسليم" للشركة %s.', self.company_id.name))
         src_location = picking_type.default_location_src_id
-        dest_location = self.env.ref('rotana_fleet_maintenance.stock_location_maintenance_consumption')
         picking = self.env['stock.picking'].sudo().create({
             'picking_type_id': picking_type.id,
-            'location_id': src_location.id,
-            'location_dest_id': dest_location.id,
+            # 'location_id': src_location.id,
+            # 'location_dest_id': dest_location.id,
             'origin': self.name,
             'company_id': self.company_id.id,
             'maintenance_request_id': self.id,
@@ -224,7 +223,6 @@ class MaintenanceRequest(models.Model):
                 'product_uom_qty': line.quantity,
                 'product_uom': line.product_id.uom_id.id,
                 'location_id': src_location.id,
-                'location_dest_id': dest_location.id,
                 'company_id': self.company_id.id,
             }) for line in self.part_line_ids],
         })
