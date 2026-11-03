@@ -12,7 +12,7 @@
     "category": "Purchase Management",
     "depends": ["purchase_stock", "account"],
     "data": [
-        "security/purchase_request.xml",
+        "security/transportation_purchase_request.xml",
         "security/ir.model.access.csv",
         "data/purchase_request_sequence.xml",
         "data/purchase_request_data.xml",

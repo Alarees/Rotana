@@ -14,20 +14,20 @@ class TestPurchaseRequest(TransactionCase):
         super().setUpClass()
         cls.request_model = cls.env["purchase.request"]
         cls.line_model = cls.env["purchase.request.line"]
-        cls.purchase_request = cls.request_model.create(
+        cls.transportation_purchase_request = cls.request_model.create(
             {"requested_by": SUPERUSER_ID}
         )
         cls.line = cls.line_model.create(
             {
                 "description": "Test line",
-                "request_id": cls.purchase_request.id,
+                "request_id": cls.transportation_purchase_request.id,
                 "product_qty": 5.0,
             }
         )
 
     def test_purchase_request_status(self):
         """Tests Purchase Request status workflow."""
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         self.assertTrue(pr.is_editable)
         self.assertEqual(pr.state, "draft")
         pr.button_to_approve()
@@ -57,7 +57,7 @@ class TestPurchaseRequest(TransactionCase):
 
     def _add_approver_groups(self):
         self.env.user.group_ids = [
-            (4, self.env.ref(f"purchase_request.{xmlid}").id)
+            (4, self.env.ref(f"transportation_purchase_request.{xmlid}").id)
             for xmlid in (
                 "group_pr_dept_manager",
                 "group_pr_accounts_head",
@@ -67,14 +67,14 @@ class TestPurchaseRequest(TransactionCase):
         ]
 
     def test_approval_order_and_rights(self):
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         pr.button_to_approve()
         user = self.env["res.users"].create(
             {
                 "name": "Approver",
                 "login": "pr_accounts_approver",
                 "group_ids": [
-                    (4, self.env.ref("purchase_request.group_pr_accounts_head").id)
+                    (4, self.env.ref("transportation_purchase_request.group_pr_accounts_head").id)
                 ],
             }
         )
@@ -86,7 +86,7 @@ class TestPurchaseRequest(TransactionCase):
             pr.with_user(user).button_approve_dept_manager()
 
     def test_reject_cancels_lines(self):
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         pr.button_to_approve()
         self._add_approver_groups()
         pr.button_rejected()
@@ -97,7 +97,7 @@ class TestPurchaseRequest(TransactionCase):
 
     def test_auto_reject(self):
         """A request is auto-rejected when all its lines are cancelled."""
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         self.line_model.create(
             {"request_id": pr.id, "description": "Second", "product_qty": 5.0}
         )
@@ -108,7 +108,7 @@ class TestPurchaseRequest(TransactionCase):
         self.assertEqual(pr.state, "rejected")
 
     def test_to_approve_allowed(self):
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         self.assertTrue(pr.to_approve_allowed)
         pr.line_ids.write({"product_qty": 0})
         self.assertFalse(pr.to_approve_allowed)
@@ -124,7 +124,7 @@ class TestPurchaseRequest(TransactionCase):
         self.assertTrue(pr.to_approve_allowed)
 
     def test_empty_purchase_request(self):
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         pr.line_ids.write({"product_qty": 0})
         with self.assertRaises(UserError):
             pr.button_to_approve()
@@ -133,11 +133,11 @@ class TestPurchaseRequest(TransactionCase):
         self.assertEqual(pr.state, "dept_manager")
 
     def test_line_count(self):
-        self.assertEqual(self.purchase_request.line_count, 1)
+        self.assertEqual(self.transportation_purchase_request.line_count, 1)
         self.line_model.create(
-            {"request_id": self.purchase_request.id, "product_qty": 1.0}
+            {"request_id": self.transportation_purchase_request.id, "product_qty": 1.0}
         )
-        self.assertEqual(self.purchase_request.line_count, 2)
+        self.assertEqual(self.transportation_purchase_request.line_count, 2)
 
     def test_default_name_and_form(self):
         with Form(self.request_model) as f:
@@ -145,13 +145,13 @@ class TestPurchaseRequest(TransactionCase):
         self.assertNotEqual(f.record.name, "New")
 
     def test_copy_purchase_request(self):
-        copy = self.purchase_request.copy()
+        copy = self.transportation_purchase_request.copy()
         self.assertEqual(copy.state, "draft")
-        self.assertNotEqual(copy.name, self.purchase_request.name)
-        self.assertEqual(len(copy.line_ids), len(self.purchase_request.line_ids))
+        self.assertNotEqual(copy.name, self.transportation_purchase_request.name)
+        self.assertEqual(len(copy.line_ids), len(self.transportation_purchase_request.line_ids))
 
     def test_price_and_totals(self):
-        pr = self.purchase_request
+        pr = self.transportation_purchase_request
         self.line.write({"price_unit": 10.0})
         self.assertEqual(self.line.price_subtotal, 50.0)
         self.assertEqual(pr.amount_total, 50.0)

@@ -215,7 +215,7 @@ class PurchaseRequest(models.Model):
         to the next stage (or to ``approved`` after the last one)."""
         stages = _PENDING_STATES
         group = dict(_APPROVAL_CHAIN)[stage]
-        if not self.env.user.has_group(f"purchase_request.{group}"):
+        if not self.env.user.has_group(f"transportation_purchase_request.{group}"):
             raise UserError(
                 self.env._("You are not allowed to approve at this stage.")
             )
@@ -252,7 +252,7 @@ class PurchaseRequest(models.Model):
 
     def button_rejected(self):
         if not any(
-            self.env.user.has_group(f"purchase_request.{group}")
+            self.env.user.has_group(f"transportation_purchase_request.{group}")
             for _state, group in _APPROVAL_CHAIN
         ):
             raise UserError(self.env._("You are not allowed to reject requests."))

@@ -28,14 +28,14 @@
                         invisible="state not in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager')"
                         string="Reject"
                         type="object"
-                        groups="purchase_request.group_pr_dept_manager,purchase_request.group_pr_accounts_head,purchase_request.group_pr_internal_auditor,purchase_request.group_pr_general_manager"
+                        groups="transportation_purchase_request.group_pr_dept_manager,transportation_purchase_request.group_pr_accounts_head,transportation_purchase_request.group_pr_internal_auditor,transportation_purchase_request.group_pr_general_manager"
                     />
                     <button
                         name="button_draft"
                         string="Reset"
                         invisible="state not in ('dept_manager', 'accounts_head', 'internal_audit', 'general_manager', 'approved', 'rejected')"
                         type="object"
-                        groups="purchase_request.group_purchase_request_manager"
+                        groups="transportation_purchase_request.group_purchase_request_manager"
                     />
                     <field
                         name="state"
@@ -100,7 +100,7 @@
                                 type="object"
                                 class="btn-primary"
                                 invisible="state != 'dept_manager'"
-                                groups="purchase_request.group_pr_dept_manager"
+                                groups="transportation_purchase_request.group_pr_dept_manager"
                             />
                             <field
                                 name="dept_manager_user_id"
@@ -119,7 +119,7 @@
                                 type="object"
                                 class="btn-primary"
                                 invisible="state != 'accounts_head'"
-                                groups="purchase_request.group_pr_accounts_head"
+                                groups="transportation_purchase_request.group_pr_accounts_head"
                             />
                             <field
                                 name="accounts_head_user_id"
@@ -138,7 +138,7 @@
                                 type="object"
                                 class="btn-primary"
                                 invisible="state != 'internal_audit'"
-                                groups="purchase_request.group_pr_internal_auditor"
+                                groups="transportation_purchase_request.group_pr_internal_auditor"
                             />
                             <field
                                 name="internal_audit_user_id"
@@ -157,7 +157,7 @@
                                 type="object"
                                 class="btn-primary"
                                 invisible="state != 'general_manager'"
-                                groups="purchase_request.group_pr_general_manager"
+                                groups="transportation_purchase_request.group_pr_general_manager"
                             />
                             <field
                                 name="general_manager_user_id"
@@ -391,7 +391,7 @@
         id="parent_menu_purchase_request"
         name="Purchase Requests"
         sequence="22"
-        web_icon="purchase_request,static/description/icon.png"
+        web_icon="transportation_purchase_request,static/description/icon.png"
         groups="group_purchase_request_user,group_purchase_request_manager"
     />
     <menuitem
