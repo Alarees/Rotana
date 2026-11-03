@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- نوع العملية: خيار "عملية مركبات" -->
+    <record id="view_picking_type_form_inherit_fleet" model="ir.ui.view">
+        <field name="name">stock.picking.type.form.inherit.fleet</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sequence_code']" position="after">
+                <field name="is_fleet_operation"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- إذن المخزن: إخفاء العميل وإظهار المركبة لعمليات المركبات -->
+    <record id="view_picking_form_inherit_fleet" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit.fleet</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <!-- تسمية العميل (الـ div الحاوي للتسميات الثلاث) -->
+            <xpath expr="//label[@for='partner_id']/.." position="attributes">
+                <attribute name="invisible">is_fleet_operation</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][@nolabel='1']" position="attributes">
+                <attribute name="invisible">is_fleet_operation</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][@nolabel='1']" position="after">
+                <field name="is_fleet_operation" invisible="1"/>
+                <field name="fleet_id"
+                       invisible="not is_fleet_operation"
+                       required="is_fleet_operation"
+                       readonly="state in ('cancel', 'done')"
+                       options="{'no_create': True, 'no_open': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- قائمة الأذون: عمود المركبة -->
+    <record id="vpicktree_inherit_fleet" model="ir.ui.view">
+        <field name="name">stock.picking.list.inherit.fleet</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="fleet_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

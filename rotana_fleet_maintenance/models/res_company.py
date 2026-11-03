@@ -24,3 +24,16 @@ class ResCompany(models.Model):
         help='الدفتر الذي يُسجَّل فيه قيد قطع الغيار. '
              'إن تُرك فارغاً يُستخدم أول دفتر متنوع (General).',
     )
+    maintenance_out_picking_type_id = fields.Many2one(
+        'stock.picking.type',
+        string='عمليات التسليم',
+        domain="[('code', '=', 'outgoing'), ('company_id', '=', id)]",
+        help='نوع العملية الافتراضي لإذن التسليم الذي يُنشأ عند تأكيد قطع الغيار. '
+             'إن تُرك فارغاً يُستخدم نوع \"تسليم\" في أول مستودع للشركة.',
+    )
+    maintenance_in_picking_type_id = fields.Many2one(
+        'stock.picking.type',
+        string='عمليات الاستلام',
+        domain="[('code', '=', 'incoming'), ('company_id', '=', id)]",
+        help='نوع العملية الافتراضي لإذن استلام قطع الغيار الخاصة بالمركبات.',
+    )

@@ -205,7 +205,8 @@ class MaintenanceRequest(models.Model):
         self.ensure_one()
         warehouse = self.env['stock.warehouse'].sudo().search(
             [('company_id', '=', self.company_id.id)], limit=1)
-        picking_type = warehouse.out_type_id
+        # نوع العملية الافتراضي من إعدادات الصيانة، وإلا نوع التسليم للمستودع
+        picking_type = self.company_id.maintenance_out_picking_type_id or warehouse.out_type_id
         if not picking_type:
             raise UserError(_('لا يوجد مستودع بنوع عملية "تسليم" للشركة %s.', self.company_id.name))
         src_location = picking_type.default_location_src_id
@@ -217,6 +218,7 @@ class MaintenanceRequest(models.Model):
             'origin': self.name,
             'company_id': self.company_id.id,
             'maintenance_request_id': self.id,
+            'fleet_id': self.fleet_id.id,
             'move_ids': [Command.create({
                 'product_id': line.product_id.id,
                 'product_uom_qty': line.quantity,
