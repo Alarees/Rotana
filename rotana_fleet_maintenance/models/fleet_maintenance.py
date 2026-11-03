@@ -181,7 +181,9 @@ class MaintenanceRequest(models.Model):
             if not request.part_line_ids:
                 raise UserError(_('أضف قطع غيار واحدة على الأقل قبل التأكيد.'))
             request._check_analytic_account()
+            receipt_groups = request._get_receipt_groups()
             request._create_parts_picking()
+            request._create_parts_receipts(receipt_groups)
             request.parts_state = 'confirmed'
         return True
 
@@ -230,6 +232,53 @@ class MaintenanceRequest(models.Model):
         picking.action_assign()
         return picking
 
+    def _get_receipt_groups(self):
+        """ يجمّع سطور قطع الغيار بحسب نوع عملية الاستلام (تالف / تأهيل). """
+        self.ensure_one()
+        company = self.company_id
+        groups = defaultdict(lambda: self.env['maintenance.request.part'])
+        for line in self.part_line_ids:
+            picking_type = line.picking_type_id or (
+                company.maintenance_rehab_picking_type_id if line.spare_state == 'rehab'
+                else company.maintenance_scrap_picking_type_id)
+            if not picking_type:
+                raise UserError(_(
+                    'حدد نوع العملية للقطعة \"%(product)s\" أو حدد \"عملية التالف / عملية التأهيل\" '
+                    'في إعدادات الشركة %(company)s.',
+                    product=line.product_id.display_name, company=company.name))
+            groups[picking_type] |= line
+        return groups
+
+    def _create_parts_receipts(self, groups):
+        """ إذن استلام واحد لكل نوع عملية (تالف / تأهيل) يضم سطور هذا النوع. """
+        self.ensure_one()
+        pickings = self.env['stock.picking']
+        for picking_type, lines in groups.items():
+            src_location = picking_type.default_location_src_id
+            move_vals = []
+            for line in lines:
+                vals = {
+                    'product_id': line.product_id.id,
+                    'product_uom_qty': line.quantity,
+                    'product_uom': line.product_id.uom_id.id,
+                    'company_id': self.company_id.id,
+                }
+                if src_location:
+                    vals['location_id'] = src_location.id
+                move_vals.append(Command.create(vals))
+            picking = self.env['stock.picking'].sudo().create({
+                'picking_type_id': picking_type.id,
+                'origin': self.name,
+                'company_id': self.company_id.id,
+                'maintenance_request_id': self.id,
+                'fleet_id': self.fleet_id.id,
+                'move_ids': move_vals,
+            })
+            picking.action_confirm()
+            picking.action_assign()
+            pickings |= picking
+        return pickings
+
     # ------------------------------------------------------------------
     # الإكمال: قيد يومية لإنقاص قيمة المخزون
     # ------------------------------------------------------------------
@@ -258,7 +307,8 @@ class MaintenanceRequest(models.Model):
             request = request.with_company(request.company_id)
             company = request.company_id
             currency = company.currency_id
-            moves = request.picking_ids.filtered(lambda p: p.state == 'done') \
+            moves = request.picking_ids.filtered(
+                lambda p: p.state == 'done' and p.picking_type_code != 'incoming') \
                 .sudo().move_ids.filtered(lambda m: m.state == 'done')
 
             debit_by_account = defaultdict(float)

@@ -21,10 +21,29 @@ class MaintenanceRequestPart(models.Model):
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]",
     )
     quantity = fields.Float(string='الكمية', default=1.0, required=True)
+    spare_state = fields.Selection(
+        [('scrap', 'تالف'), ('rehab', 'تأهيل')],
+        string='حالة الاسبير', default='scrap', required=True,
+    )
+    picking_type_id = fields.Many2one(
+        'stock.picking.type', string='نوع العملية',
+        compute='_compute_picking_type_id', store=True, readonly=False,
+        domain="[('code', '=', 'incoming')]",
+        help='نوع عملية إذن الاستلام، يُحدَّد تلقائياً من إعدادات الشركة حسب حالة الاسبير.',
+    )
     uom_id = fields.Many2one(related='product_id.uom_id', string='الوحدة')
     qty_available = fields.Float(related='product_id.qty_available', string='المتوفر')
     unit_cost = fields.Float(related='product_id.standard_price', string='التكلفة')
     subtotal = fields.Monetary(compute='_compute_subtotal', string='الإجمالي')
+
+    @api.depends('spare_state', 'request_id.company_id')
+    def _compute_picking_type_id(self):
+        for line in self:
+            company = line.request_id.company_id or self.env.company
+            if line.spare_state == 'rehab':
+                line.picking_type_id = company.maintenance_rehab_picking_type_id
+            else:
+                line.picking_type_id = company.maintenance_scrap_picking_type_id
 
     @api.depends('quantity', 'unit_cost')
     def _compute_subtotal(self):

@@ -37,3 +37,15 @@ class ResCompany(models.Model):
         domain="[('code', '=', 'incoming'), ('company_id', '=', id)]",
         help='نوع العملية الافتراضي لإذن استلام قطع الغيار الخاصة بالمركبات.',
     )
+    maintenance_scrap_picking_type_id = fields.Many2one(
+        'stock.picking.type',
+        string='عملية التالف',
+        domain="[('code', '=', 'incoming'), ('company_id', '=', id)]",
+        help='نوع عملية إذن الاستلام لقطع الغيار التي حالتها \"تالف\".',
+    )
+    maintenance_rehab_picking_type_id = fields.Many2one(
+        'stock.picking.type',
+        string='عملية التأهيل',
+        domain="[('code', '=', 'incoming'), ('company_id', '=', id)]",
+        help='نوع عملية إذن الاستلام لقطع الغيار التي حالتها \"تأهيل\".',
+    )

@@ -60,6 +60,9 @@
                             <field name="product_id" options="{'no_create': True}"/>
                             <field name="qty_available" optional="show"/>
                             <field name="quantity"/>
+                            <field name="spare_state"/>
+                            <field name="picking_type_id" options="{'no_create': True}"
+                                   domain="[('code', '=', 'incoming')]"/>
                             <field name="uom_id" optional="show"/>
                             <field name="unit_cost" optional="show" groups="account.group_account_user"/>
                             <field name="subtotal" sum="الإجمالي" groups="account.group_account_user"/>
@@ -135,6 +138,8 @@
                         <field name="maintenance_journal_id"/>
                         <field name="maintenance_out_picking_type_id"/>
                         <field name="maintenance_in_picking_type_id"/>
+                        <field name="maintenance_scrap_picking_type_id"/>
+                        <field name="maintenance_rehab_picking_type_id"/>
                     </group>
                 </page>
             </xpath>
