@@ -17,3 +17,7 @@ class ResCompany(models.Model):
         domain="[('type', '=', 'general')]",
         help='Journal in which custody entries are created.',
     )
+
+class ResUser(models.Model):
+    _name = 'res.users'
+    _inherit = ['res.users', 'mail.thread', 'mail.activity.mixin']    
