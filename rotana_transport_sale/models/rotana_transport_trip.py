@@ -201,6 +201,16 @@ class RotanaTransportTrip(models.Model):
     def action_generate_manifest_number(self):
         manifest_number = self.env['ir.sequence'].next_by_code('rotana.transport.trip')
         self.write({'manifest_number': manifest_number})
+        vehicle = self.vehicle_id
+        if vehicle and not vehicle.analytic_plan_id:
+            # vehicle created before the module was installed: create its plan now
+            vehicle._create_missing_analytic_plans()
+            if not vehicle.analytic_plan_id:
+                raise UserError(_(
+                    'Vehicle %s has no analytic plan. Set the parent analytic plan in the '
+                    'Rotana Transport settings, then run "Create Missing Analytic Plans" on the vehicle.',
+                    vehicle.display_name,
+                ))
         account_analytic = self.env['account.analytic.account'].create({
             'name': self.manifest_number,
             'company_id': self.company_id.id,

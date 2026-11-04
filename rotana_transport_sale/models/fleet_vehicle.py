@@ -1,4 +1,9 @@
+import logging
+
 from odoo import _, api, fields, models
+
+_logger = logging.getLogger(__name__)
+
 
 class FleetVehicle(models.Model):
     _inherit = 'fleet.vehicle'
@@ -41,13 +46,56 @@ class FleetVehicle(models.Model):
             string='Notes',
         )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        Model = self.env['fleet.vehicle.model']
+    @api.model
+    def _get_parent_analytic_plan_id(self):
+        """Parent analytic plan id from the settings (False if not set or deleted)."""
         param = self.env['ir.config_parameter'].sudo().get_param(
             'rotana_transport_sale.parent_analytic_plan_id'
         )
         parent_id = int(param) if param and str(param).isdigit() else False
+        if parent_id and not self.env['account.analytic.plan'].sudo().browse(parent_id).exists():
+            return False
+        return parent_id
+
+    def _get_analytic_plan_name(self):
+        """Plan name for an existing vehicle: Brand/Model/Unit Number (license plate if no unit number)."""
+        self.ensure_one()
+        return '/'.join(filter(None, [
+            self.model_id.brand_id.name,
+            self.model_id.name,
+            self.unit_number or self.license_plate,
+        ])) or _('Vehicle %s', self.id)
+
+    def _create_missing_analytic_plans(self):
+        """Create analytic plans for vehicles that have none.
+
+        Used for vehicles that existed before the module was installed, and as a
+        safety net when a trip needs the vehicle plan. All plans are created in a
+        single batch call. Returns the vehicles that got a plan.
+        """
+        vehicles = self.filtered(lambda vehicle: not vehicle.analytic_plan_id)
+        if not vehicles:
+            return vehicles
+        parent_id = self._get_parent_analytic_plan_id()
+        if not parent_id:
+            _logger.warning(
+                'Parent analytic plan is not set: no analytic plan was created for %s vehicle(s). '
+                'Set it in the Rotana Transport settings, then run "Create Missing Analytic Plans".',
+                len(vehicles),
+            )
+            return self.browse()
+        plans = self.env['account.analytic.plan'].sudo().create([
+            {'name': vehicle._get_analytic_plan_name(), 'parent_id': parent_id}
+            for vehicle in vehicles
+        ])
+        for vehicle, plan in zip(vehicles, plans):
+            vehicle.analytic_plan_id = plan.id
+        return vehicles
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        Model = self.env['fleet.vehicle.model']
+        parent_id = self._get_parent_analytic_plan_id()
 
         # قراءة الموديلات والماركات دفعة واحدة بدل استعلام لكل صف
         models = Model.browse([v['model_id'] for v in vals_list if v.get('model_id')])

@@ -96,4 +96,14 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Backfill: create analytic plans for vehicles that have none (Actions menu on list/form) -->
+    <record id="action_fleet_vehicle_create_missing_analytic_plans" model="ir.actions.server">
+        <field name="name">Create Missing Analytic Plans</field>
+        <field name="model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="binding_model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">records._create_missing_analytic_plans()</field>
+    </record>
 </odoo>

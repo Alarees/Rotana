@@ -7,6 +7,7 @@
     'description': '\n        Module for Rotana Transport that provides:\n        - A sales menu dedicated to transport services\n        - Transport location management\n        - Automatic linking of sales orders to trips\n        - Vehicle, driver, departure and arrival locations\n        - Analytic account for each sales order line\n        - Trip status tracking\n    ',
     'author': 'Rotana Development - IT Department',
     'license': 'LGPL-3',
+    'post_init_hook': 'post_init_hook',
     'depends': [
         'base',
         'account',
