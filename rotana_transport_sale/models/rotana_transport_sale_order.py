@@ -107,20 +107,14 @@ class RotanaTransportSaleOrder(models.Model):
             transported = sum(
                 trip.transported_weight for trip in order.trip_ids.filtered(lambda t: t.state != 'draft')
             )
-            # No validation here: a compute that raises blocks the module install/upgrade on
-            # any existing order. The over-transport check is a constraint on the trip.
+            if transported > order.total_weight_to_transport :
+                raise UserError(_('The transported weight cannot exceed the weight to be transported.'))
             order.total_transported_weight = transported
 
-    @api.depends(
-        'order_line.product_uom_qty', 'order_line.product_uom_id',
-        'order_line.product_id', 'order_line.display_type',
-    )
+    @api.depends('order_line.product_uom_qty')
     def _compute_total_weight_to_transport(self):
-        """Total weight in tons: weight units are converted, count units use the product weight."""
         for order in self:
-            order.total_weight_to_transport = sum(
-                line._get_transport_weight_tons() for line in order.order_line
-            )
+            order.total_weight_to_transport = sum(line.product_uom_qty for line in order.order_line)
 
     @api.depends('trip_ids.discharged_quantity')
     def _compute_total_discharged_quantity(self):
