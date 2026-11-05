@@ -1,0 +1,7 @@
+# graphify: generated knowledge graph (local only)
+graphify-out/
+.graphifyignore.local
+
+# Python bytecode
+__pycache__/
+*.pyc
