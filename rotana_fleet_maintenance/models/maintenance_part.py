@@ -69,6 +69,8 @@ class MaintenanceRequestPart(models.Model):
     # حماية السطور بعد التأكيد
     # ------------------------------------------------------------------
     def _check_request_editable(self):
+        if self.env.context.get('skip_part_editable_check'):
+            return
         for line in self:
             if line.request_id.parts_state != 'draft':
                 raise UserError(_('لا يمكن تعديل قطع الغيار بعد تأكيد الطلب.'))

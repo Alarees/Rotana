@@ -224,6 +224,7 @@ class MaintenanceRequest(models.Model):
                 'product_id': line.product_id.id,
                 'product_uom_qty': line.quantity,
                 'product_uom': line.product_id.uom_id.id,
+                'maintenance_part_id': line.id,
                 'location_id': src_location.id,
                 'company_id': self.company_id.id,
             }) for line in self.part_line_ids],

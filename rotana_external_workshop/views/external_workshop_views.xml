@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rotana_external_workshop_view_list" model="ir.ui.view">
+        <field name="name">rotana.external.workshop.list</field>
+        <field name="model">rotana.external.workshop</field>
+        <field name="arch" type="xml">
+            <list string="الورشة الخارجية" editable="bottom">
+                <field name="name"/>
+                <field name="maintenance_request_id" options="{'no_create': True}"
+                       readonly="state not in ('draft', 'confirmed')"/>
+                <field name="fleet_id" options="{'no_create': True}"
+                       readonly="state not in ('draft', 'confirmed')"/>
+                <field name="product_id" options="{'no_create': True}" required="1"
+                       readonly="state not in ('draft', 'confirmed')"/>
+                <field name="quantity" readonly="state not in ('draft', 'confirmed')"/>
+                <field name="partner_id" options="{'no_create': True}"
+                       readonly="state not in ('in_workshop', 'done') or invoice_state == 'invoiced'"/>
+                <field name="amount" sum="الإجمالي"
+                       readonly="state not in ('in_workshop', 'done') or invoice_state == 'invoiced'"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'confirmed'"
+                       decoration-primary="state == 'in_workshop'"
+                       decoration-success="state == 'done'"/>
+                <field name="invoice_state" widget="badge"
+                       decoration-muted="invoice_state == 'not_invoiced'"
+                       decoration-success="invoice_state == 'invoiced'"/>
+                <field name="picking_type_id" options="{'no_create': True}"
+                       readonly="state not in ('draft', 'confirmed')"/>
+                <field name="picking_id" optional="hide"/>
+                <field name="settlement_move_id" optional="hide" groups="account.group_account_invoice"/>
+                <field name="invoice_id" optional="hide" groups="account.group_account_invoice"/>
+                <field name="company_id" column_invisible="1"/>
+                <field name="currency_id" column_invisible="1"/>
+                <!-- أزرار تغيير الحالة في آخر القائمة -->
+                <button name="action_confirm" type="object" string="تأكيد" icon="fa-check"
+                        invisible="state != 'draft'"/>
+                <button name="action_send_to_workshop" type="object" string="إلى الورشة" icon="fa-wrench"
+                        invisible="state != 'confirmed'"/>
+                <button name="action_done" type="object" string="تمت الصيانة" icon="fa-check-circle"
+                        invisible="state != 'in_workshop'"/>
+                <button name="action_create_invoice" type="object" string="فوترة" icon="fa-file-text-o"
+                        groups="account.group_account_invoice"
+                        invisible="state != 'done' or invoice_state == 'invoiced'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rotana_external_workshop_view_search" model="ir.ui.view">
+        <field name="name">rotana.external.workshop.search</field>
+        <field name="model">rotana.external.workshop</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="fleet_id"/>
+                <field name="maintenance_request_id"/>
+                <field name="partner_id"/>
+                <filter name="filter_draft" string="مسودة" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_confirmed" string="مؤكد" domain="[('state', '=', 'confirmed')]"/>
+                <filter name="filter_in_workshop" string="في الورشة" domain="[('state', '=', 'in_workshop')]"/>
+                <filter name="filter_done" string="تمت الصيانة" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_not_invoiced" string="لم تتم الفوترة" domain="[('invoice_state', '=', 'not_invoiced')]"/>
+                <group>
+                    <filter name="group_state" string="الحالة" context="{'group_by': 'state'}"/>
+                    <filter name="group_fleet" string="المركبة" context="{'group_by': 'fleet_id'}"/>
+                    <filter name="group_partner" string="المورد" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="rotana_external_workshop_action" model="ir.actions.act_window">
+        <field name="name">الورشة الخارجية</field>
+        <field name="res_model">rotana.external.workshop</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="rotana_external_workshop_view_list"/>
+        <field name="search_view_id" ref="rotana_external_workshop_view_search"/>
+    </record>
+
+    <menuitem id="rotana_external_workshop_menu"
+              name="الورشة الخارجية"
+              parent="maintenance.menu_maintenance_title"
+              action="rotana_external_workshop_action"
+              sequence="30"/>
+
+</odoo>
