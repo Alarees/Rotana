@@ -36,12 +36,10 @@
             </xpath>
             <!-- قسم بيانات النقل بعد مجموعة المعلومات الأساسية -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <group invisible="not is_transport_order">
-                    <field name="transport_location_from_id"
-                                   options="{'no_create': True}"/>
-                    <field name="transport_location_to_id"
-                                   options="{'no_create': True}"/>
-                </group>
+                <field name="transport_location_from_id"
+                                   options="{'no_create': True}" invisible="not is_transport_order"/>
+                <field name="transport_location_to_id"
+                                   options="{'no_create': True}" invisible="not is_transport_order"/>
             </xpath>
             <!-- إضافة حقل الوزن المنقول في سطور أمر البيع -->
             <field name="payment_term_id" position="after">
