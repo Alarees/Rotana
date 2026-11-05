@@ -148,11 +148,23 @@ class RotanaTransportTrip(models.Model):
     # دورة الحياة
     # ==============================
 
+    @api.constrains('transported_weight', 'state', 'sale_order_id')
+    def _check_order_transported_weight(self):
+        for order in self.sale_order_id:
+            if (
+                order.total_weight_to_transport > 0
+                and order.total_transported_weight - order.total_weight_to_transport > 1e-6
+            ):
+                raise ValidationError(_('The transported weight cannot exceed the weight to be transported.'))
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             sale_order = self.env['sale.order'].browse(vals.get('sale_order_id'))
-            if sale_order.total_transported_weight >= sale_order.total_weight_to_transport :
+            if (
+                sale_order.total_weight_to_transport > 0
+                and sale_order.total_transported_weight >= sale_order.total_weight_to_transport
+            ):
                 raise UserError(_('You cannot create the trip: the transported weight is already complete.'))
             if sale_order.state in ('draft', 'cancel'):
                 raise ValidationError('You cannot create a trip for an unconfirmed sales order.')
