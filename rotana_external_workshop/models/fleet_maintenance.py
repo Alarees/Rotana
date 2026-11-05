@@ -37,7 +37,7 @@ class MaintenanceRequest(models.Model):
     def _create_workshop_requests(self):
         """ طلب صيانة اسبير (مسودة) لكل سطر اسبير حالته تأهيل. """
         self.ensure_one()
-        Workshop = self.env['rotana.external.workshop']
+        Workshop = self.env['rotana.external.workshop'].sudo()
         for line in self.part_line_ids.filtered(lambda l: l.spare_state == 'rehab'):
             if Workshop.search_count([('part_line_id', '=', line.id)]):
                 continue
@@ -61,5 +61,5 @@ class MaintenanceRequest(models.Model):
                 'لا يمكن إلغاء التأكيد لأن طلبات الورشة التالية دخلت الورشة:\n%s',
                 '\n'.join('- %s' % w.name for w in sent)))
         res = super().action_reset_parts()
-        workshops.unlink()
+        workshops.sudo().unlink()
         return res

@@ -82,8 +82,9 @@
 
     <menuitem id="rotana_external_workshop_menu"
               name="الورشة الخارجية"
-              parent="maintenance.menu_maintenance_title"
+              web_icon="rotana_external_workshop,static/description/icon.png"
               action="rotana_external_workshop_action"
+              groups="rotana_external_workshop.group_external_workshop_manager"
               sequence="30"/>
 
 </odoo>

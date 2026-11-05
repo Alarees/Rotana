@@ -15,11 +15,12 @@
     'license': 'LGPL-3',
     'depends': ['rotana_fleet_maintenance'],
     'data': [
+        'security/security.xml',
         'security/ir.model.access.csv',
         'data/sequence.xml',
         'views/external_workshop_views.xml',
     ],
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
 }
