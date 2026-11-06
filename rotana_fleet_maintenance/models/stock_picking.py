@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import _, fields, models
+from odoo.exceptions import UserError
 
 
 class StockPicking(models.Model):
@@ -37,7 +38,19 @@ class StockMove(models.Model):
     )
 
     def write(self, vals):
+        moves_to_reassign = self.env['stock.move']
+        if 'product_id' in vals:
+            linked = self.filtered(
+                lambda m: m.maintenance_part_id and m.product_id.id != vals['product_id'])
+            if any(m.state in ('done', 'cancel') for m in linked):
+                raise UserError(_('لا يمكن تغيير المنتج بعد إتمام أو إلغاء سطر إذن التسليم.'))
+            # فك الحجز قبل تغيير المنتج، ثم إعادة الحجز بالمنتج الجديد
+            moves_to_reassign = linked.filtered(
+                lambda m: m.state in ('confirmed', 'partially_available', 'assigned'))
+            moves_to_reassign._do_unreserve()
         res = super().write(vals)
+        if moves_to_reassign:
+            moves_to_reassign._action_assign()
         if 'product_id' in vals:
             # تغيير المنتج في إذن التسليم ينتقل إلى سطر قطعة الغيار في طلب الصيانة
             for move in self.filtered('maintenance_part_id'):

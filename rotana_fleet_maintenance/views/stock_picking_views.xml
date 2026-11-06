@@ -34,6 +34,13 @@
                        readonly="state in ('cancel', 'done')"
                        options="{'no_create': True, 'no_open': True}"/>
             </xpath>
+            <!-- سطر المنتج قابل للتعديل لأسطر طلب الصيانة (ينتقل التغيير إلى طلب الصيانة) -->
+            <xpath expr="//field[@name='move_ids']/list/field[@name='product_id']" position="attributes">
+                <attribute name="readonly">(maintenance_part_id and state in ('done', 'cancel')) or (not maintenance_part_id and ((state != 'draft' and not additional) or move_lines_count &gt; 0))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='move_ids']/list/field[@name='product_id']" position="after">
+                <field name="maintenance_part_id" column_invisible="True"/>
+            </xpath>
         </field>
     </record>
 
