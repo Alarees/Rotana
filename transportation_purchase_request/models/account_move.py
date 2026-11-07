@@ -6,9 +6,9 @@ from odoo import fields, models
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    purchase_request_id = fields.Many2one(
-        comodel_name="purchase.request",
-        string="Purchase Request",
+    transportation_purchase_request_id = fields.Many2one(
+        comodel_name="transportation.purchase.request",
+        string="Transportation Purchase Request",
         copy=False,
         readonly=True,
         index="btree_not_null",
