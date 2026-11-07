@@ -36,7 +36,7 @@
             </xpath>
             <!-- سطر المنتج قابل للتعديل لأسطر طلب الصيانة (ينتقل التغيير إلى طلب الصيانة) -->
             <xpath expr="//field[@name='move_ids']/list/field[@name='product_id']" position="attributes">
-                <attribute name="readonly">(maintenance_part_id and state in ('done', 'cancel')) or (not maintenance_part_id and ((state != 'draft' and not additional) or move_lines_count &gt; 0))</attribute>
+                <attribute name="readonly">(parent.maintenance_request_id and parent.picking_type_code == 'outgoing' and state in ('done', 'cancel')) or (not (parent.maintenance_request_id and parent.picking_type_code == 'outgoing') and ((state != 'draft' and not additional) or move_lines_count &gt; 0))</attribute>
             </xpath>
             <xpath expr="//field[@name='move_ids']/list/field[@name='product_id']" position="after">
                 <field name="maintenance_part_id" column_invisible="True"/>
