@@ -9,6 +9,6 @@
               name="لوحة الإدارة"
               action="action_rotana_management_dashboard"
               sequence="1"
-              groups="group_rotana_dashboard_manager,base.group_system"
+              groups="group_rotana_dashboard_manager"
               web_icon="rotana_management_dashboard,static/description/icon.png"/>
 </odoo>

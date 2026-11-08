@@ -29,8 +29,8 @@ class RotanaManagementDashboard(models.AbstractModel):
 
     # ------------------------------------------------------------------ helpers
     def _check_dashboard_access(self):
-        user = self.env.user
-        if not (user.has_group('base.group_system') or user.has_group(DASHBOARD_GROUP)):
+        # الوصول حصراً لأعضاء مجموعة لوحة الإدارة (حتى مديرو النظام لا يملكونه افتراضياً)
+        if not self.env.user.has_group(DASHBOARD_GROUP):
             raise AccessError(_("ليست لديك صلاحية الوصول إلى لوحة الإدارة."))
 
     def _allowed_companies(self, company_ids=None):
