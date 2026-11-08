@@ -266,3 +266,7 @@
     background: var(--rmd-glass-strong); border: 1px solid var(--rmd-border); line-height: 1.25; }
 .rmd-clock strong { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; color: var(--rmd-deep); direction: ltr; }
 .rmd-clock small { color: var(--rmd-muted); font-size: 13px; }
+
+/* ---------- لون العناوين: لا نرث لون عناوين أودو/بوتستراب ---------- */
+.rmd-root :where(h1, h2, h3, h4, h5, h6) { color: var(--rmd-text); font-family: inherit; }
+.rmd-root .rmd-section-title { color: var(--rmd-text); }
