@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== شاشة Audit Trail (قائمة) ===================== -->
+    <record id="view_message_tree_audit_log_review" model="ir.ui.view">
+        <field name="name">mail.message.list.audit.log.review</field>
+        <field name="model">mail.message</field>
+        <field name="inherit_id" ref="account.view_message_tree_audit_log"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="before">
+                <header>
+                    <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                            class="btn-success" groups="rotana_audit_review.group_audit_reviewer"/>
+                    <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                            class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"/>
+                    <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                            groups="rotana_audit_review.group_audit_reviewer"/>
+                </header>
+            </xpath>
+            <field name="account_audit_log_preview" position="after">
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"/>
+                <field name="audit_reviewer_id" optional="show"/>
+                <field name="audit_review_date" optional="hide"/>
+                <field name="audit_review_note" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- ===================== شاشة Audit Trail (بحث وفلاتر) ===================== -->
+    <record id="view_message_tree_audit_log_search_review" model="ir.ui.view">
+        <field name="name">mail.message.search.audit.log.review</field>
+        <field name="model">mail.message</field>
+        <field name="inherit_id" ref="account.view_message_tree_audit_log_search"/>
+        <field name="arch" type="xml">
+            <filter name="restricted_by_audit_trail" position="after">
+                <separator/>
+                <filter string="بانتظار المراجعة" name="audit_pending"
+                        domain="[('audit_review_state', '=', 'pending')]"/>
+                <filter string="تمت المراجعة" name="audit_reviewed"
+                        domain="[('audit_review_state', '=', 'reviewed')]"/>
+                <filter string="مرفوضة" name="audit_rejected"
+                        domain="[('audit_review_state', '=', 'rejected')]"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- ===================== شاشات السجلات (أعلى الطرف) ===================== -->
+    <record id="view_move_form_audit_review" model="ir.ui.view">
+        <field name="name">account.move.form.audit.review</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="audit_trail_enabled" invisible="1"/>
+                <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                        class="btn-success" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'reviewed'"/>
+                <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                        class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'rejected'"/>
+                <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                        groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled"/>
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"
+                       invisible="not audit_trail_enabled"/>
+        </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_form_audit_review" model="ir.ui.view">
+        <field name="name">account.account.form.audit.review</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+            <header>
+                <field name="audit_trail_enabled" invisible="1"/>
+                <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                        class="btn-success" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'reviewed'"/>
+                <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                        class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'rejected'"/>
+                <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                        groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled"/>
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"
+                       invisible="not audit_trail_enabled"/>
+            </header>
+        </xpath>
+        </field>
+    </record>
+
+    <record id="view_tax_form_audit_review" model="ir.ui.view">
+        <field name="name">account.tax.form.audit.review</field>
+        <field name="model">account.tax</field>
+        <field name="inherit_id" ref="account.view_tax_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+            <header>
+                <field name="audit_trail_enabled" invisible="1"/>
+                <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                        class="btn-success" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'reviewed'"/>
+                <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                        class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'rejected'"/>
+                <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                        groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled"/>
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"
+                       invisible="not audit_trail_enabled"/>
+            </header>
+        </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_form_audit_review" model="ir.ui.view">
+        <field name="name">res.partner.form.audit.review</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+            <header>
+                <field name="audit_trail_enabled" invisible="1"/>
+                <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                        class="btn-success" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'reviewed'"/>
+                <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                        class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'rejected'"/>
+                <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                        groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled"/>
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"
+                       invisible="not audit_trail_enabled"/>
+            </header>
+        </xpath>
+        </field>
+    </record>
+
+    <record id="view_company_form_audit_review" model="ir.ui.view">
+        <field name="name">res.company.form.audit.review</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+            <header>
+                <field name="audit_trail_enabled" invisible="1"/>
+                <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
+                        class="btn-success" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'reviewed'"/>
+                <button name="action_audit_mark_rejected" type="object" string="مرفوضة"
+                        class="btn-danger" groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled or audit_review_state == 'rejected'"/>
+                <button name="action_audit_add_task" type="object" string="إضافة مهمة"
+                        groups="rotana_audit_review.group_audit_reviewer"
+                        invisible="not id or not audit_trail_enabled"/>
+                <field name="audit_review_state" widget="badge"
+                       decoration-warning="audit_review_state == 'pending'"
+                       decoration-success="audit_review_state == 'reviewed'"
+                       decoration-danger="audit_review_state == 'rejected'"
+                       invisible="not audit_trail_enabled"/>
+            </header>
+        </xpath>
+        </field>
+    </record>
+
+</odoo>
