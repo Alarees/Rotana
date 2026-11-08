@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_audit_review_wizard,audit.review.wizard,model_audit_review_wizard,rotana_audit_review.group_audit_reviewer,1,1,1,1
