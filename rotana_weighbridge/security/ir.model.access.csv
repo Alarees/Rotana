@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_weighbridge_ticket_user,weighbridge.ticket.user,model_rotana_weighbridge_ticket,base.group_user,1,1,0,0
+access_weighbridge_ticket_admin,weighbridge.ticket.admin,model_rotana_weighbridge_ticket,base.group_system,1,1,1,1

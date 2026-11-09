@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_weighbridge_root" name="Weighbridge" sequence="45"/>
+    <menuitem id="menu_weighbridge_dashboard" name="Dashboard" parent="menu_weighbridge_root"
+              action="action_weighbridge_dashboard" sequence="1"/>
+    <menuitem id="menu_weighbridge_tickets" name="Tickets" parent="menu_weighbridge_root"
+              action="action_weighbridge_ticket" sequence="2"/>
+    <menuitem id="menu_weighbridge_daily" name="Daily Summary" parent="menu_weighbridge_root"
+              action="action_weighbridge_daily" sequence="3"/>
+    <menuitem id="menu_weighbridge_review" name="Needs Review" parent="menu_weighbridge_root"
+              action="action_weighbridge_review" sequence="4"/>
+</odoo>

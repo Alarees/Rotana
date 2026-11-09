@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Time zone of the weighbridge PC: used to compute the local ticket date. -->
+    <record id="param_timezone" model="ir.config_parameter">
+        <field name="key">rotana_weighbridge.timezone</field>
+        <field name="value">Africa/Khartoum</field>
+    </record>
+</odoo>

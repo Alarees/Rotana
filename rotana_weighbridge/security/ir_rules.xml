@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_weighbridge_ticket_company" model="ir.rule">
+        <field name="name">Weighbridge ticket: multi-company</field>
+        <field name="model_id" ref="model_rotana_weighbridge_ticket"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

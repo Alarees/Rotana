@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ LIST ============================ -->
+    <record id="view_weighbridge_ticket_list" model="ir.ui.view">
+        <field name="name">rotana.weighbridge.ticket.list</field>
+        <field name="model">rotana.weighbridge.ticket</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-danger="needs_review" decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="ticket_datetime"/>
+                <field name="plate_number"/>
+                <field name="vehicle_id" optional="show"/>
+                <field name="vehicle_match" widget="badge" optional="show"
+                       decoration-success="vehicle_match == 'matched'"
+                       decoration-warning="vehicle_match == 'ambiguous'"
+                       decoration-info="vehicle_match == 'external'"/>
+                <field name="trip_id" optional="show"/>
+                <field name="customer_name" optional="show"/>
+                <field name="destination" optional="show"/>
+                <field name="driver_name" optional="hide"/>
+                <field name="net_weight" sum="Total Net (kg)"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'pending'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="needs_review" column_invisible="1"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================ FORM ============================ -->
+    <record id="view_weighbridge_ticket_form" model="ir.ui.view">
+        <field name="name">rotana.weighbridge.ticket.form</field>
+        <field name="model">rotana.weighbridge.ticket</field>
+        <field name="arch" type="xml">
+            <form create="0" delete="0">
+                <header>
+                    <button name="action_rematch" type="object" string="Re-match vehicle &amp; trip"
+                            invisible="state == 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Vehicle">
+                            <field name="plate_number"/>
+                            <field name="vehicle_match" widget="badge"/>
+                            <field name="vehicle_id"/>
+                            <field name="unit_number"/>
+                            <field name="trip_id" domain="[('vehicle_id', '=', vehicle_id)]"/>
+                            <field name="review_reason" invisible="not review_reason"/>
+                        </group>
+                        <group string="Shipment">
+                            <field name="customer_name"/>
+                            <field name="destination"/>
+                            <field name="driver_name"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Truck">
+                            <field name="first_weight"/>
+                            <field name="first_weight_datetime"/>
+                            <field name="second_weight"/>
+                            <field name="second_weight_datetime"/>
+                            <field name="truck_net_weight"/>
+                        </group>
+                        <group string="Trailer">
+                            <field name="has_trailer"/>
+                            <field name="trailer_first_weight" invisible="not has_trailer"/>
+                            <field name="trailer_second_weight" invisible="not has_trailer"/>
+                            <field name="trailer_net_weight" invisible="not has_trailer"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Totals">
+                            <field name="net_weight"/>
+                            <field name="source_net_weight"/>
+                            <field name="unit"/>
+                        </group>
+                        <group string="Source">
+                            <field name="ticket_datetime"/>
+                            <field name="ticket_date"/>
+                            <field name="station_code"/>
+                            <field name="ticket_number"/>
+                            <field name="is_cancelled"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================ SEARCH ============================ -->
+    <record id="view_weighbridge_ticket_search" model="ir.ui.view">
+        <field name="name">rotana.weighbridge.ticket.search</field>
+        <field name="model">rotana.weighbridge.ticket</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Ticket"/>
+                <field name="plate_number"/>
+                <field name="vehicle_id"/>
+                <field name="customer_name"/>
+                <field name="driver_name"/>
+                <field name="destination"/>
+                <filter string="Today" name="today"
+                        domain="[('ticket_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="This Month" name="this_month"
+                        domain="[('ticket_date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <filter string="Completed" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
+                <separator/>
+                <filter string="Needs Review" name="needs_review" domain="[('needs_review', '=', True)]"/>
+                <filter string="External Trucks" name="external" domain="[('vehicle_match', '=', 'external')]"/>
+                <filter string="Fleet Trucks" name="fleet" domain="[('vehicle_match', '=', 'matched')]"/>
+                <group>
+                    <filter string="Day" name="group_day" context="{'group_by': 'ticket_date:day'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'ticket_date:month'}"/>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'customer_name'}"/>
+                    <filter string="Vehicle Match" name="group_match" context="{'group_by': 'vehicle_match'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================ PIVOT / GRAPH ============================ -->
+    <record id="view_weighbridge_ticket_pivot" model="ir.ui.view">
+        <field name="name">rotana.weighbridge.ticket.pivot</field>
+        <field name="model">rotana.weighbridge.ticket</field>
+        <field name="arch" type="xml">
+            <pivot string="Daily Summary">
+                <field name="ticket_date" interval="day" type="row"/>
+                <field name="vehicle_match" type="col"/>
+                <field name="ticket_count" type="measure"/>
+                <field name="net_weight" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_weighbridge_ticket_graph" model="ir.ui.view">
+        <field name="name">rotana.weighbridge.ticket.graph</field>
+        <field name="model">rotana.weighbridge.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Net weight per day" type="bar">
+                <field name="ticket_date" interval="day"/>
+                <field name="net_weight" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ============================ ACTIONS ============================ -->
+    <record id="action_weighbridge_ticket" model="ir.actions.act_window">
+        <field name="name">Weighbridge Tickets</field>
+        <field name="res_model">rotana.weighbridge.ticket</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_weighbridge_ticket_search"/>
+    </record>
+
+    <record id="action_weighbridge_daily" model="ir.actions.act_window">
+        <field name="name">Daily Summary</field>
+        <field name="res_model">rotana.weighbridge.ticket</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_weighbridge_ticket_search"/>
+        <field name="context">{'search_default_done': 1, 'search_default_this_month': 1}</field>
+    </record>
+
+    <record id="action_weighbridge_review" model="ir.actions.act_window">
+        <field name="name">Needs Review</field>
+        <field name="res_model">rotana.weighbridge.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_weighbridge_ticket_search"/>
+        <field name="context">{'search_default_needs_review': 1}</field>
+    </record>
+
+    <record id="action_weighbridge_dashboard" model="ir.actions.client">
+        <field name="name">Weighbridge Dashboard</field>
+        <field name="tag">rotana_weighbridge.dashboard</field>
+    </record>
+
+</odoo>

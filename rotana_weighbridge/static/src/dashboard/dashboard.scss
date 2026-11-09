@@ -1,0 +1,22 @@
+.o_rotana_wb_dashboard {
+    .o_rotana_wb_card {
+        cursor: pointer;
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+    }
+    .o_rotana_wb_value {
+        font-size: 1.9rem;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    .o_rotana_wb_row {
+        cursor: pointer;
+    }
+    .o_rotana_wb_bar {
+        height: 12px;
+        min-width: 0;
+        border-radius: 6px;
+        background-color: var(--primary, #714b67);
+    }
+}

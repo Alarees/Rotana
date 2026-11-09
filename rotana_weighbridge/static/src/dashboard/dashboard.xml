@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rotana_weighbridge.Dashboard">
+        <div class="o_action o_rotana_wb_dashboard overflow-auto p-3">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h3 class="m-0 me-auto">Weighbridge Dashboard</h3>
+                <select class="form-select w-auto" t-on-change="onChangeDays">
+                    <option value="7" t-att-selected="state.days === 7">Last 7 days</option>
+                    <option value="30" t-att-selected="state.days === 30">Last 30 days</option>
+                    <option value="90" t-att-selected="state.days === 90">Last 90 days</option>
+                </select>
+                <button class="btn btn-secondary" t-on-click="refresh">Refresh</button>
+            </div>
+
+            <t t-if="state.data">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openToday">
+                            <div class="card-body">
+                                <div class="text-muted">Tickets today</div>
+                                <div class="o_rotana_wb_value" t-out="state.data.today.count"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openToday">
+                            <div class="card-body">
+                                <div class="text-muted">Net weight today (t)</div>
+                                <div class="o_rotana_wb_value" t-out="tons(state.data.today.net)"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openMonth">
+                            <div class="card-body">
+                                <div class="text-muted">Tickets this month</div>
+                                <div class="o_rotana_wb_value" t-out="state.data.month.count"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openMonth">
+                            <div class="card-body">
+                                <div class="text-muted">Net weight this month (t)</div>
+                                <div class="o_rotana_wb_value" t-out="tons(state.data.month.net)"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openPending">
+                            <div class="card-body">
+                                <div class="text-muted">In progress today</div>
+                                <div class="o_rotana_wb_value" t-out="state.data.pending_today"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-4 col-xl-2">
+                        <div class="card o_rotana_wb_card" t-on-click="openReview">
+                            <div class="card-body">
+                                <div class="text-muted">Needs review</div>
+                                <div class="o_rotana_wb_value"
+                                     t-att-class="state.data.needs_review ? 'text-danger' : ''"
+                                     t-out="state.data.needs_review"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-end">Tickets</th>
+                                <th class="text-end">Net weight (t)</th>
+                                <th class="w-50"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="rows" t-as="row" t-key="row.date"
+                                class="o_rotana_wb_row" t-on-click="() => this.openDay(row)">
+                                <td t-out="row.date"/>
+                                <td class="text-end" t-out="row.count"/>
+                                <td class="text-end" t-out="tons(row.net)"/>
+                                <td>
+                                    <div class="o_rotana_wb_bar"
+                                         t-att-style="'width:' + barWidth(row.net) + '%'"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,399 @@
+# Arabic translation of Rotana Weighbridge
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#. module: rotana_weighbridge
+#: model:ir.model,name:rotana_weighbridge.model_rotana_weighbridge_ticket
+msgid "Weighbridge Ticket"
+msgstr "تذكرة ميزان"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__name
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Ticket"
+msgstr "التذكرة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__external_key
+msgid "External Key"
+msgstr "المفتاح الخارجي"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__station_code
+msgid "Weighbridge Station"
+msgstr "محطة الميزان"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__ticket_number
+msgid "Ticket Number"
+msgstr "رقم التذكرة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__state
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Status"
+msgstr "الحالة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__is_cancelled
+msgid "Cancelled at source"
+msgstr "ملغاة في الميزان"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__ticket_count
+#: model:ir.ui.menu,name:rotana_weighbridge.menu_weighbridge_tickets
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Tickets"
+msgstr "التذاكر"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__first_weight
+msgid "First Weight (kg)"
+msgstr "الوزن الأول (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__first_weight_datetime
+msgid "First Weight Time"
+msgstr "وقت الوزن الأول"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__second_weight
+msgid "Second Weight (kg)"
+msgstr "الوزن الثاني (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__second_weight_datetime
+msgid "Second Weight Time"
+msgstr "وقت الوزن الثاني"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__has_trailer
+msgid "Has Trailer"
+msgstr "لديها مقطورة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__trailer_first_weight
+msgid "Trailer First Weight (kg)"
+msgstr "الوزن الأول للمقطورة (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__trailer_second_weight
+msgid "Trailer Second Weight (kg)"
+msgstr "الوزن الثاني للمقطورة (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__truck_net_weight
+msgid "Truck Net (kg)"
+msgstr "صافي الشاحنة (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__trailer_net_weight
+msgid "Trailer Net (kg)"
+msgstr "صافي المقطورة (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__net_weight
+msgid "Net Weight (kg)"
+msgstr "الوزن الصافي (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__source_net_weight
+msgid "Reported Net (kg)"
+msgstr "الصافي المسجل في الميزان (كجم)"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__unit
+msgid "Unit"
+msgstr "الوحدة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__ticket_datetime
+msgid "Ticket Time"
+msgstr "وقت التذكرة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__ticket_date
+msgid "Ticket Date"
+msgstr "تاريخ التذكرة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__plate_number
+msgid "Plate Number"
+msgstr "رقم اللوحة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__plate_key
+msgid "Plate Digits"
+msgstr "أرقام اللوحة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__vehicle_id
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Vehicle"
+msgstr "المركبة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__unit_number
+msgid "Unit Number"
+msgstr "رقم الوحدة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__vehicle_match
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Vehicle Match"
+msgstr "مطابقة المركبة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__trip_id
+msgid "Trip"
+msgstr "الرحلة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__review_reason
+msgid "Review Reason"
+msgstr "سبب المراجعة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__needs_review
+#: model:ir.ui.menu,name:rotana_weighbridge.menu_weighbridge_review
+#: model:ir.actions.act_window,name:rotana_weighbridge.action_weighbridge_review
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Needs Review"
+msgstr "تحتاج مراجعة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__driver_name
+msgid "Driver"
+msgstr "السائق"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__customer_name
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Customer"
+msgstr "العميل"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__destination
+msgid "Destination"
+msgstr "الوجهة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields,field_description:rotana_weighbridge.field_rotana_weighbridge_ticket__notes
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Notes"
+msgstr "ملاحظات"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__state__pending
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Pending"
+msgstr "قيد التنفيذ"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__state__done
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Completed"
+msgstr "مكتملة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__state__cancelled
+msgid "Cancelled"
+msgstr "ملغاة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__vehicle_match__matched
+msgid "Fleet vehicle"
+msgstr "مركبة من الأسطول"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__vehicle_match__external
+msgid "External truck"
+msgstr "شاحنة خارجية"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__vehicle_match__ambiguous
+msgid "Ambiguous plate"
+msgstr "لوحة ملتبسة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__review_reason__ambiguous_vehicle
+msgid "Several vehicles share this plate"
+msgstr "عدة مركبات بنفس رقم اللوحة"
+
+#. module: rotana_weighbridge
+#: model:ir.model.fields.selection,name:rotana_weighbridge.selection__rotana_weighbridge_ticket__review_reason__multiple_trips
+msgid "Several open trips for this vehicle"
+msgstr "عدة رحلات مفتوحة لهذه المركبة"
+
+#. module: rotana_weighbridge
+#: model:ir.ui.menu,name:rotana_weighbridge.menu_weighbridge_root
+msgid "Weighbridge"
+msgstr "الميزان"
+
+#. module: rotana_weighbridge
+#: model:ir.ui.menu,name:rotana_weighbridge.menu_weighbridge_dashboard
+msgid "Dashboard"
+msgstr "لوحة المتابعة"
+
+#. module: rotana_weighbridge
+#: model:ir.ui.menu,name:rotana_weighbridge.menu_weighbridge_daily
+#: model:ir.actions.act_window,name:rotana_weighbridge.action_weighbridge_daily
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_pivot
+msgid "Daily Summary"
+msgstr "الملخص اليومي"
+
+#. module: rotana_weighbridge
+#: model:ir.actions.act_window,name:rotana_weighbridge.action_weighbridge_ticket
+msgid "Weighbridge Tickets"
+msgstr "تذاكر الميزان"
+
+#. module: rotana_weighbridge
+#: model:ir.actions.client,name:rotana_weighbridge.action_weighbridge_dashboard
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Weighbridge Dashboard"
+msgstr "لوحة متابعة الميزان"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_list
+msgid "Total Net (kg)"
+msgstr "إجمالي الصافي (كجم)"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Re-match vehicle & trip"
+msgstr "إعادة مطابقة المركبة والرحلة"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Shipment"
+msgstr "الشحنة"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Truck"
+msgstr "الشاحنة"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Trailer"
+msgstr "المقطورة"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Totals"
+msgstr "الإجماليات"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_form
+msgid "Source"
+msgstr "المصدر"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Today"
+msgstr "اليوم"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "This Month"
+msgstr "هذا الشهر"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "External Trucks"
+msgstr "شاحنات خارجية"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Fleet Trucks"
+msgstr "شاحنات الأسطول"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Day"
+msgstr "يوم"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_search
+msgid "Month"
+msgstr "شهر"
+
+#. module: rotana_weighbridge
+#: model_terms:ir.ui.view,arch_db:rotana_weighbridge.view_weighbridge_ticket_graph
+msgid "Net weight per day"
+msgstr "الوزن الصافي يوميًا"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Last 7 days"
+msgstr "آخر 7 أيام"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Last 30 days"
+msgstr "آخر 30 يومًا"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Last 90 days"
+msgstr "آخر 90 يومًا"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.js:0
+msgid "Tickets today"
+msgstr "تذاكر اليوم"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Net weight today (t)"
+msgstr "الصافي اليوم (طن)"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.js:0
+msgid "Tickets this month"
+msgstr "تذاكر هذا الشهر"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Net weight this month (t)"
+msgstr "الصافي هذا الشهر (طن)"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.js:0
+msgid "In progress today"
+msgstr "قيد التنفيذ اليوم"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+msgid "Net weight (t)"
+msgstr "الوزن الصافي (طن)"
+
+#. module: rotana_weighbridge
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.xml:0
+#: code:addons/rotana_weighbridge/static/src/dashboard/dashboard.js:0
+msgid "Needs review"
+msgstr "تحتاج مراجعة"
