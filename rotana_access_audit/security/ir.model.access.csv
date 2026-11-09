@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rotana_access_log_viewer,rotana.access.log viewer,model_rotana_access_log,rotana_access_audit.group_access_log_viewer,1,0,0,0
+access_rotana_access_log_system,rotana.access.log system,model_rotana_access_log,base.group_system,1,0,0,0

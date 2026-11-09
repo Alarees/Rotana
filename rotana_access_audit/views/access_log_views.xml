@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_access_log_list" model="ir.ui.view">
+        <field name="name">rotana.access.log.list</field>
+        <field name="model">rotana.access.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="log_date"/>
+                <field name="actor_name"/>
+                <field name="operation"/>
+                <field name="res_model"/>
+                <field name="description"/>
+                <field name="target_user_name"/>
+                <field name="old_value" optional="show"/>
+                <field name="new_value" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_access_log_form" model="ir.ui.view">
+        <field name="name">rotana.access.log.form</field>
+        <field name="model">rotana.access.log</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="log_date"/>
+                            <field name="actor_name"/>
+                            <field name="actor_login"/>
+                            <field name="operation"/>
+                        </group>
+                        <group>
+                            <field name="res_model"/>
+                            <field name="res_id"/>
+                            <field name="record_name"/>
+                            <field name="target_user_name"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                        <field name="field_label"/>
+                        <field name="old_value"/>
+                        <field name="new_value"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_access_log_search" model="ir.ui.view">
+        <field name="name">rotana.access.log.search</field>
+        <field name="model">rotana.access.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="actor_name"/>
+                <field name="target_user_name"/>
+                <field name="description"/>
+                <field name="res_model"/>
+                <filter name="f_groups" string="المجموعات"
+                        domain="[('operation', 'in', ('group_add', 'group_remove'))]"/>
+                <filter name="f_access" string="حقوق الوصول"
+                        domain="[('res_model', '=', 'ir.model.access')]"/>
+                <filter name="f_rules" string="قواعد السجلات"
+                        domain="[('res_model', '=', 'ir.rule')]"/>
+                <filter name="f_users" string="المستخدمون"
+                        domain="[('res_model', '=', 'res.users')]"/>
+                <group>
+                    <filter name="g_actor" string="المنفّذ" context="{'group_by': 'actor_name'}"/>
+                    <filter name="g_target" string="المستخدم المتأثر" context="{'group_by': 'target_user_name'}"/>
+                    <filter name="g_operation" string="العملية" context="{'group_by': 'operation'}"/>
+                    <filter name="g_model" string="الموديل" context="{'group_by': 'res_model'}"/>
+                    <filter name="g_day" string="اليوم" context="{'group_by': 'log_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_access_log" model="ir.actions.act_window">
+        <field name="name">سجل الصلاحيات</field>
+        <field name="res_model">rotana.access.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_access_log" name="سجل الصلاحيات"
+              parent="base.menu_administration" action="action_access_log" sequence="99"
+              groups="rotana_access_audit.group_access_log_viewer,base.group_system"/>
+
+    <!-- تبويب سجل الصلاحيات في شاشة المستخدم -->
+    <record id="view_users_form_access_log" model="ir.ui.view">
+        <field name="name">res.users.form.access.log</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="سجل الصلاحيات"
+                      groups="rotana_access_audit.group_access_log_viewer,base.group_system">
+                    <field name="access_log_ids" readonly="1">
+                        <list>
+                            <field name="log_date"/>
+                            <field name="actor_name"/>
+                            <field name="operation"/>
+                            <field name="description"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
