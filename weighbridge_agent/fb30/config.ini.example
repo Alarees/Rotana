@@ -1,0 +1,39 @@
+; Copy this file to config.ini and edit. Never share config.ini (it holds passwords).
+
+[firebird]
+; The SmartBridge database server on THIS PC.
+host = localhost
+; SmartBridge's Firebird listens on 3052 here (default Firebird port is 3050).
+port = 3052
+; Alias name or full path of the database file. The backup you sent was made from the alias SMARTBRIDGE.
+database = SMARTBRIDGE
+; Read-only user created with grant_reader.sql. Change it here any time, no code change needed.
+user = SB_READER
+password = CHANGE_ME
+charset = UTF8
+; Optional full path of fbclient.dll. Leave empty to use the one found automatically.
+;   Firebird 2.5 example: C:\Program Files (x86)\Firebird\Firebird_2_5\bin\fbclient.dll
+;   Firebird 3.0 example: C:\Program Files\Firebird\Firebird_3_0\fbclient.dll
+client_library =
+
+[odoo]
+url = https://YOUR-ODOO-DOMAIN
+; Only if several databases are served on that domain
+db =
+; Same value as the system parameter rotana_weighbridge.api_token
+token = CHANGE_ME
+; Ticket key = station + ticket number. Change it (e.g. main-2) only if SmartBridge numbering restarts.
+station = main
+timeout_seconds = 30
+
+[agent]
+poll_seconds = 60
+; Re-check the last N days to catch edits and deletions
+lookback_days = 30
+batch_size = 200
+; Safety: if more tickets than this vanish in one cycle, nothing is cancelled in Odoo
+max_deletes_per_cycle = 20
+; Weighbridge PC clock offset from UTC in minutes (Sudan = +120, no daylight saving)
+utc_offset_minutes = 120
+state_dir = state
+log_dir = logs
