@@ -5,7 +5,7 @@
     'category': 'Operations',
     'author': 'Rotana',
     'license': 'LGPL-3',
-    'depends': ['base', 'fleet', 'rotana_fleet', 'rotana_transport_sale'],
+    'depends': ['base', 'fleet', 'rotana_transport_sale'],
     'data': [
         'security/ir.model.access.csv',
         'security/ir_rules.xml',

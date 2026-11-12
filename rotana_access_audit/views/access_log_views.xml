@@ -82,9 +82,9 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_access_log" name="سجل الصلاحيات"
-              parent="base.menu_administration" action="action_access_log" sequence="99"
-              groups="rotana_access_audit.group_access_log_viewer,base.group_system"/>
+    <menuitem id="menu_access_log" name="Access Viewer"
+              parent="base.menu_security" action="action_access_log" sequence="99"
+              groups="rotana_access_audit.group_access_log_viewer"/>
 
     <!-- تبويب سجل الصلاحيات في شاشة المستخدم -->
     <record id="view_users_form_access_log" model="ir.ui.view">
@@ -94,7 +94,7 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="سجل الصلاحيات"
-                      groups="rotana_access_audit.group_access_log_viewer,base.group_system">
+                      groups="rotana_access_audit.group_access_log_viewer">
                     <field name="access_log_ids" readonly="1">
                         <list>
                             <field name="log_date"/>

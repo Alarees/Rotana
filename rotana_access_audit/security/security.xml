@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="group_access_log_viewer" model="res.groups">
-        <field name="name">مراجع سجل الصلاحيات</field>
-        <field name="comment">يستطيع الاطلاع فقط على سجل تغييرات الصلاحيات (قراءة فقط).</field>
+        <field name="name">Access Viewer</field>
+        <!-- <field name="comment">يستطيع الاطلاع فقط على سجل تغييرات الصلاحيات (قراءة فقط).</field> -->
     </record>
 </odoo>
