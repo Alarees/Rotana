@@ -5,7 +5,7 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
 
-from .audit_review_mixin import AUDIT_MODELS, REVIEW_STATES
+from .audit_review_mixin import REVIEW_STATES, audit_models
 
 
 class MailMessage(models.Model):
@@ -24,9 +24,10 @@ class MailMessage(models.Model):
     # ------------------------------------------------------------------
     @api.depends('model', 'res_id')
     def _compute_audit_review(self):
+        audit = audit_models(self.env)
         by_model = defaultdict(set)
         for msg in self:
-            if msg.model in AUDIT_MODELS and msg.res_id:
+            if msg.model in audit and msg.res_id:
                 by_model[msg.model].add(msg.res_id)
         records = {}
         for model, ids in by_model.items():
@@ -44,7 +45,7 @@ class MailMessage(models.Model):
         if operator not in ('=', '!=', 'in', 'not in'):
             return NotImplemented
         domains = []
-        for model in AUDIT_MODELS:
+        for model in audit_models(self.env):
             records = self.env[model].sudo().with_context(active_test=False)
             query = records._search(
                 Domain('audit_review_state', operator, value) & Domain(records._audit_enabled_domain()))
@@ -55,9 +56,10 @@ class MailMessage(models.Model):
     # أزرار قائمة Audit Trail
     # ------------------------------------------------------------------
     def _audit_targets(self):
+        audit = audit_models(self.env)
         targets = defaultdict(set)
         for msg in self.sudo():
-            if msg.model in AUDIT_MODELS and msg.res_id:
+            if msg.model in audit and msg.res_id:
                 targets[msg.model].add(msg.res_id)
         if not targets:
             raise UserError('حدد سطراً واحداً على الأقل من سجل المراجعة.')
@@ -84,10 +86,16 @@ class MailMessage(models.Model):
     def _audit_reset_reviews(self):
         if self.env.context.get('audit_review_no_reset'):
             return
+        audit = audit_models(self.env)
         todo = defaultdict(set)
         for msg in self.sudo():
-            if (msg.model in AUDIT_MODELS and msg.res_id
-                    and msg.message_type == 'notification' and msg.tracking_value_ids):
+            if not (msg.model in audit and msg.res_id and msg.message_type == 'notification'
+                    and msg.tracking_value_ids):
+                continue
+            tracked = set(msg.tracking_value_ids.field_id.mapped('name'))
+            ignored = self.env[msg.model]._audit_reset_ignored_fields()
+            # لا نُعيد الحالة إذا كانت كل الحقول المتغيرة من الحقول المستثناة (مثل state في HR)
+            if not tracked or tracked - ignored:
                 todo[msg.model].add(msg.res_id)
         for model, ids in todo.items():
             records = self.env[model].sudo().with_context(active_test=False).browse(ids).exists()
