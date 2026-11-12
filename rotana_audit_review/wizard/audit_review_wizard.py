@@ -5,7 +5,7 @@ from datetime import timedelta
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError
 
-from ..models.audit_review_mixin import AUDIT_MODELS
+from ..models.audit_review_mixin import audit_models
 
 GROUP = 'rotana_audit_review.group_audit_reviewer'
 
@@ -61,7 +61,7 @@ class AuditReviewWizard(models.TransientModel):
         data = json.loads(self.targets or '{}')
         done = 0
         for model, ids in data.items():
-            if model not in AUDIT_MODELS:
+            if model not in audit_models(self.env):
                 continue
             # search بدل browse لتطبيق قواعد الصلاحيات وتعدد الشركات
             records = self.env[model].with_context(active_test=False).search([('id', 'in', ids)])
