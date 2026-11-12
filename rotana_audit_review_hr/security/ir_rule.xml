@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_audit_reviewer_hr_employee" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_employee</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_version" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_version</field>
+        <field name="model_id" ref="hr.model_hr_version"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_department" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_department</field>
+        <field name="model_id" ref="hr.model_hr_department"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_job" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_job</field>
+        <field name="model_id" ref="hr.model_hr_job"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_leave" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_leave</field>
+        <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_leave_allocation" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_leave_allocation</field>
+        <field name="model_id" ref="hr_holidays.model_hr_leave_allocation"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_expense" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_expense</field>
+        <field name="model_id" ref="hr_expense.model_hr_expense"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_attendance" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_attendance</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_appraisal" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_appraisal</field>
+        <field name="model_id" ref="hr_appraisal.model_hr_appraisal"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_payslip" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_payslip</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_audit_reviewer_hr_payslip_run" model="ir.rule">
+        <field name="name">Audit reviewer: read all hr_payslip_run</field>
+        <field name="model_id" ref="hr_payroll.model_hr_payslip_run"/>
+        <field name="groups" eval="[(4, ref('rotana_audit_review.group_audit_reviewer'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</odoo>
