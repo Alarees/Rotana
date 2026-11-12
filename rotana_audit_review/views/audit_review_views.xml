@@ -53,6 +53,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
+            <!-- الأزرار في الهيدر -->
             <xpath expr="//header" position="inside">
                 <field name="audit_trail_enabled" invisible="1"/>
                 <button name="action_audit_mark_reviewed" type="object" string="تمت المراجعة"
@@ -64,12 +65,17 @@
                 <button name="action_audit_add_task" type="object" string="إضافة مهمة"
                         groups="rotana_audit_review.group_audit_reviewer"
                         invisible="not id or not audit_trail_enabled"/>
-                <field name="audit_review_state" widget="badge"
-                       decoration-warning="audit_review_state == 'pending'"
-                       decoration-success="audit_review_state == 'reviewed'"
-                       decoration-danger="audit_review_state == 'rejected'"
-                       invisible="not audit_trail_enabled"/>
-        </xpath>
+            </xpath>
+            <!-- شارة الحالة: أعلى نهاية الشيت (sheet) -->
+            <xpath expr="//sheet/*[1]" position="before">
+                <div class="d-flex justify-content-end mb-2"
+                     invisible="not audit_trail_enabled or not id">
+                    <field name="audit_review_state" widget="badge"
+                           decoration-warning="audit_review_state == 'pending'"
+                           decoration-success="audit_review_state == 'reviewed'"
+                           decoration-danger="audit_review_state == 'rejected'"/>
+                </div>
+            </xpath>
         </field>
     </record>
 
