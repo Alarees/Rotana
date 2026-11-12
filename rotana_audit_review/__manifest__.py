@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana Audit Review',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Accounting',
     'summary': 'مراجعة سجل Audit Trail: تمت المراجعة / مرفوضة / إضافة مهمة',
     'description': """
