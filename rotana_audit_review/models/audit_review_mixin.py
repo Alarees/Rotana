@@ -17,6 +17,11 @@ REVIEW_STATES = [
 AUDIT_FIELDS = {'audit_review_state', 'audit_reviewer_id', 'audit_review_date', 'audit_review_note'}
 
 
+def audit_models(env):
+    """الموديلات المفعّلة فعلاً في قاعدة البيانات الحالية (تدعم مديولات الإضافة مثل HR)."""
+    return [m for m in AUDIT_MODELS if m in env and 'audit_review_state' in env[m]._fields]
+
+
 class AuditReviewMixin(models.AbstractModel):
     _name = 'audit.review.mixin'
     _description = 'Audit Trail Review Mixin'
@@ -55,6 +60,10 @@ class AuditReviewMixin(models.AbstractModel):
                 domain = ['|', ('company_id', '=', False)] + domain
             return domain
         return [(1, '=', 1)] if any_enabled else [(0, '=', 1)]
+
+    def _audit_reset_ignored_fields(self):
+        """حقول لا يُعيد تغييرها وحدها الحالة إلى «بانتظار المراجعة» (تُخصَّص في مديولات الإضافة)."""
+        return set()
 
     # ------------------------------------------------------------------
     # حماية حقول المراجعة من الكتابة المباشرة
