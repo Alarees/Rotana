@@ -16,6 +16,14 @@
                              help="Journal of the spare-parts entry. If empty, the first miscellaneous journal is used.">
                         <field name="maintenance_journal_id"/>
                     </setting>
+                    <setting id="maintenance_scrap_value_percent"
+                             help="Value of a scrap spare part when it returns to stock, as a percentage of the product cost (0 = zero value). Decided by finance.">
+                        <field name="maintenance_scrap_value_percent"/>
+                    </setting>
+                    <setting id="maintenance_rehab_value_percent"
+                             help="Value of a rehabilitated spare part when it returns to stock, as a percentage of the product cost. Decided by finance.">
+                        <field name="maintenance_rehab_value_percent"/>
+                    </setting>
                 </block>
                 <block title="Fleet Maintenance - Operation Types" name="maintenance_picking_container">
                     <setting id="maintenance_out_picking_type_id"

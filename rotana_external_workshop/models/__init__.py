@@ -4,3 +4,4 @@ from . import (
     maintenance_part,
     fleet_maintenance,
 )
+from . import stock_move

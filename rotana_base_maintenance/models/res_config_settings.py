@@ -17,3 +17,7 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.maintenance_scrap_picking_type_id', readonly=False)
     maintenance_rehab_picking_type_id = fields.Many2one(
         related='company_id.maintenance_rehab_picking_type_id', readonly=False)
+    maintenance_scrap_value_percent = fields.Float(
+        related='company_id.maintenance_scrap_value_percent', readonly=False)
+    maintenance_rehab_value_percent = fields.Float(
+        related='company_id.maintenance_rehab_value_percent', readonly=False)

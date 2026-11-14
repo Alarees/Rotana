@@ -195,10 +195,11 @@ class RotanaExternalWorkshop(models.Model):
         for move in picking.move_ids:
             move.quantity = move.product_uom_qty
             move.picked = True
+        # الربط قبل التأكيد: التقييم عند التنفيذ يحتاج معرفة أن الإذن لطلب ورشة (قيمة التأهيل)
+        self.picking_id = picking
         picking.button_validate()
         if picking.state != 'done':
             raise UserError(_('تعذر تأكيد إذن الاستلام %s آلياً، راجع الإذن.', picking.name))
-        self.picking_id = picking
         return picking
 
     # ------------------------------------------------------------------
