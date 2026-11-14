@@ -270,3 +270,10 @@
 /* ---------- لون العناوين: لا نرث لون عناوين أودو/بوتستراب ---------- */
 .rmd-root :where(h1, h2, h3, h4, h5, h6) { color: var(--rmd-text); font-family: inherit; }
 .rmd-root .rmd-section-title { color: var(--rmd-text); }
+
+/* شاشة «لا صلاحية» */
+.rmd-denied-root { display: flex; align-items: center; justify-content: center; min-height: 100%; }
+.rmd-denied { text-align: center; padding: 48px 32px; max-width: 480px; opacity: .9; }
+.rmd-denied .fa { font-size: 56px; margin-bottom: 16px; }
+.rmd-denied h2 { font-size: 22px; margin: 0 0 8px; }
+.rmd-denied p { margin: 0; opacity: .75; }

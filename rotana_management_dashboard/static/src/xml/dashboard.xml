@@ -6,7 +6,14 @@
     </t>
 
     <t t-name="rotana_management_dashboard.Main">
-        <div class="rmd-root">
+        <div class="rmd-root rmd-denied-root" t-if="state.denied">
+            <div class="rmd-denied">
+                <i class="fa fa-lock"/>
+                <h2>لا تملك صلاحية الوصول إلى لوحة الإدارة</h2>
+                <p>اطلب من مدير النظام إضافتك إلى مجموعة «لوحة الإدارة».</p>
+            </div>
+        </div>
+        <div class="rmd-root" t-if="!state.denied">
 
             <!-- خلفية متحركة -->
             <div class="rmd-bg" aria-hidden="true">

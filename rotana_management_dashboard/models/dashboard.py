@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 import pytz
 
@@ -33,6 +33,42 @@ class RotanaManagementDashboard(models.AbstractModel):
         if not self.env.user.has_group(DASHBOARD_GROUP):
             raise AccessError(_("ليست لديك صلاحية الوصول إلى لوحة الإدارة."))
 
+    @api.model
+    def has_dashboard_access(self):
+        """هل المستخدم الحالي عضو في مجموعة لوحة الإدارة؟ (تستخدمها الواجهة لعرض شاشة «لا صلاحية»)."""
+        return bool(self.env.user.has_group(DASHBOARD_GROUP))
+
+    # ---- التحقق من المدخلات القادمة من العميل (RPC) ----
+    @staticmethod
+    def _clean_id(value):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise UserError(_("معرّف الشركة غير صالح."))
+        return value
+
+    @classmethod
+    def _clean_ids(cls, values):
+        """None / فارغ = كل الشركات المسموحة؛ وإلا قائمة أعداد صحيحة."""
+        if values in (None, False, ''):
+            return None
+        if not isinstance(values, (list, tuple)):
+            raise UserError(_("قائمة الشركات غير صالحة."))
+        return [cls._clean_id(v) for v in values]
+
+    @staticmethod
+    def _clean_date(value, label):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if not isinstance(value, str):
+            raise UserError(_("تاريخ %s غير صالح.", label))
+        try:
+            return fields.Date.to_date(value)
+        except (ValueError, TypeError):
+            raise UserError(_("تاريخ %s غير صالح.", label))
+
     def _allowed_companies(self, company_ids=None):
         companies = self.env.user.company_ids
         if company_ids:
@@ -41,8 +77,8 @@ class RotanaManagementDashboard(models.AbstractModel):
         return companies
 
     def _parse_dates(self, date_from, date_to):
-        d_from = fields.Date.to_date(date_from) or fields.Date.context_today(self)
-        d_to = fields.Date.to_date(date_to) or d_from
+        d_from = self._clean_date(date_from, _("البداية")) or fields.Date.context_today(self)
+        d_to = self._clean_date(date_to, _("النهاية")) or d_from
         if d_to < d_from:
             d_from, d_to = d_to, d_from
         if (d_to - d_from).days > MAX_RANGE_DAYS:
@@ -175,6 +211,8 @@ class RotanaManagementDashboard(models.AbstractModel):
         """consolidated=True: بطاقة الشركة الأم تجمع مبيعاتها مع كل فروعها.
         الإجماليات العامة والرسوم (own_*) لا تكرر الحساب أبداً."""
         self._check_dashboard_access()
+        company_ids = self._clean_ids(company_ids)
+        consolidated = bool(consolidated)
         scope, children, all_companies = self._scope(company_ids, consolidated)
 
         d_from, d_to, start, end = self._parse_dates(date_from, date_to)
@@ -238,6 +276,8 @@ class RotanaManagementDashboard(models.AbstractModel):
     @api.model
     def get_company_details(self, company_id, date_from, date_to, consolidated=True):
         self._check_dashboard_access()
+        company_id = self._clean_id(company_id)
+        consolidated = bool(consolidated)
         scope, children, _all = self._scope([company_id], consolidated)
         company = scope.filtered(lambda c: c.id == company_id)
         if not company:
@@ -340,6 +380,7 @@ class RotanaManagementDashboard(models.AbstractModel):
     @api.model
     def get_branches_overview(self, date_from, date_to, company_ids=None):
         self._check_dashboard_access()
+        company_ids = self._clean_ids(company_ids)
         all_companies = self.env.user.company_ids.sorted('id')
         companies = self._allowed_companies(company_ids).sorted('id')
 

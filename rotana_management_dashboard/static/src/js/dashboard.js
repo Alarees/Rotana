@@ -169,6 +169,7 @@ class RotanaManagementDashboard extends Component {
             loading: true,
             refreshing: false,
             error: null,
+            denied: false,             // المستخدم ليس في مجموعة لوحة الإدارة
             preset: "this_month",
             dateFrom: ymd(from),
             dateTo: ymd(to),
@@ -191,10 +192,21 @@ class RotanaManagementDashboard extends Component {
         });
 
         onWillStart(async () => {
-            await loadAmCharts();
+            try {
+                this.state.denied = !(await this.orm.call(
+                    "rotana.management.dashboard", "has_dashboard_access", []));
+            } catch (e) {
+                this.state.denied = true;
+            }
+            if (!this.state.denied) {
+                await loadAmCharts();
+            }
         });
 
         onMounted(() => {
+            if (this.state.denied) {
+                return;   // لا تحميل بيانات ولا اشتراك bus ولا تحديث دوري
+            }
             this.loadData();
             try {
                 this.bus.addChannel(BUS_CHANNEL);
@@ -262,6 +274,17 @@ class RotanaManagementDashboard extends Component {
         return this.loadSales(silent);
     }
 
+    /* يعرض شاشة «لا صلاحية» عند AccessError ويوقف التحديث الدوري، وإلا يعرض رسالة الخطأ */
+    handleLoadError(e, fallback) {
+        const name = (e && e.data && e.data.name) || "";
+        if (name.includes("AccessError")) {
+            this.state.denied = true;
+            clearInterval(this._poll);
+            return;
+        }
+        this.state.error = (e && e.data && e.data.message) || (e && e.message) || fallback;
+    }
+
     async loadBranches(silent = false) {
         const seq = ++this._seq;
         if (silent) {
@@ -285,8 +308,7 @@ class RotanaManagementDashboard extends Component {
             if (this._dead || seq !== this._seq) {
                 return;
             }
-            this.state.error =
-                (e && e.data && e.data.message) || (e && e.message) || "تعذر جلب البيانات";
+            this.handleLoadError(e, "تعذر جلب البيانات");
         } finally {
             if (!this._dead && seq === this._seq) {
                 this.state.loading = false;
@@ -321,8 +343,7 @@ class RotanaManagementDashboard extends Component {
             if (this._dead || seq !== this._seq) {
                 return;
             }
-            this.state.error =
-                (e && e.data && e.data.message) || (e && e.message) || "تعذر جلب البيانات";
+            this.handleLoadError(e, "تعذر جلب البيانات");
         } finally {
             if (!this._dead && seq === this._seq) {
                 this.state.loading = false;
@@ -348,7 +369,7 @@ class RotanaManagementDashboard extends Component {
             }
         } catch (e) {
             if (!this._dead) {
-                this.state.error = (e && e.data && e.data.message) || "تعذر جلب تفاصيل الشركة";
+                this.handleLoadError(e, "تعذر جلب تفاصيل الشركة");
             }
         } finally {
             drawer.loading = false;
