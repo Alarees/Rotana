@@ -47,15 +47,11 @@ class FleetVehicle(models.Model):
         )
 
     @api.model
-    def _get_parent_analytic_plan_id(self):
-        """Parent analytic plan id from the settings (False if not set or deleted)."""
-        param = self.env['ir.config_parameter'].sudo().get_param(
-            'rotana_transport_sale.parent_analytic_plan_id'
-        )
-        parent_id = int(param) if param and str(param).isdigit() else False
-        if parent_id and not self.env['account.analytic.plan'].sudo().browse(parent_id).exists():
-            return False
-        return parent_id
+    def _get_parent_analytic_plan_id(self, company=None):
+        """Parent analytic plan id from the company settings (False if not set or deleted)."""
+        company = company or self.env.company
+        plan = company.sudo().parent_analytic_plan_id
+        return plan.id if plan.exists() else False
 
     def _get_analytic_plan_name(self):
         """Plan name for an existing vehicle: Brand/Model/Unit Number (license plate if no unit number)."""
@@ -76,26 +72,25 @@ class FleetVehicle(models.Model):
         vehicles = self.filtered(lambda vehicle: not vehicle.analytic_plan_id)
         if not vehicles:
             return vehicles
-        parent_id = self._get_parent_analytic_plan_id()
-        if not parent_id:
-            _logger.warning(
-                'Parent analytic plan is not set: no analytic plan was created for %s vehicle(s). '
-                'Set it in the Rotana Transport settings, then run "Create Missing Analytic Plans".',
-                len(vehicles),
-            )
-            return self.browse()
-        plans = self.env['account.analytic.plan'].sudo().create([
-            {'name': vehicle._get_analytic_plan_name(), 'parent_id': parent_id}
-            for vehicle in vehicles
-        ])
-        for vehicle, plan in zip(vehicles, plans):
-            vehicle.analytic_plan_id = plan.id
-        return vehicles
+        ready = vehicles.browse()
+        for vehicle in vehicles:
+            parent_id = self._get_parent_analytic_plan_id(vehicle.company_id or self.env.company)
+            if not parent_id:
+                _logger.warning(
+                    'Parent analytic plan is not set for company %s: no analytic plan was created '
+                    'for vehicle %s. Set it in the Rotana settings, then run "Create Missing Analytic Plans".',
+                    (vehicle.company_id or self.env.company).display_name, vehicle.display_name,
+                )
+                continue
+            vehicle.analytic_plan_id = self.env['account.analytic.plan'].sudo().create({
+                'name': vehicle._get_analytic_plan_name(), 'parent_id': parent_id}).id
+            ready |= vehicle
+        return ready
 
     @api.model_create_multi
     def create(self, vals_list):
         Model = self.env['fleet.vehicle.model']
-        parent_id = self._get_parent_analytic_plan_id()
+        Company = self.env['res.company']
 
         # قراءة الموديلات والماركات دفعة واحدة بدل استعلام لكل صف
         models = Model.browse([v['model_id'] for v in vals_list if v.get('model_id')])
@@ -111,7 +106,11 @@ class FleetVehicle(models.Model):
                 model.brand_id.name, model.name, vals.get('unit_number'),
             ]))
             if name:
-                pending.append((vals, {'name': name, 'parent_id': parent_id}))
+                company = Company.browse(vals['company_id']) if vals.get('company_id') else self.env.company
+                pending.append((vals, {
+                    'name': name,
+                    'parent_id': self._get_parent_analytic_plan_id(company),
+                }))
 
         if pending:
             plans = self.env['account.analytic.plan'].sudo().create(

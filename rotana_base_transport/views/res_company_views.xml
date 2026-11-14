@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_company_view_form_rotana_base_transport" model="ir.ui.view">
+        <field name="name">res.company.view.form.inherit.rotana.base.transport</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Rotana Transport" name="rotana_base_transport">
+                    <group>
+                        <group string="Defaults">
+                            <field name="parent_analytic_plan_id"/>
+                            <field name="allowable_deficit"/>
+                        </group>
+                        <group string="Financial Custodies">
+                            <field name="custody_account_id"/>
+                            <field name="custody_journal_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

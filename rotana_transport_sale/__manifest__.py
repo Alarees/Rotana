@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana Transport Sale',
-    'version': '19.0.1.0.3',
+    'version': '19.0.1.1.0',
     'category': 'Sales/Transport',
     'summary': 'Transport services sales management system for Rotana',
     'description': '\n        Module for Rotana Transport that provides:\n        - A sales menu dedicated to transport services\n        - Transport location management\n        - Automatic linking of sales orders to trips\n        - Vehicle, driver, departure and arrival locations\n        - Analytic account for each sales order line\n        - Trip status tracking\n    ',
@@ -10,6 +10,7 @@
     'post_init_hook': 'post_init_hook',
     'depends': [
         'base',
+        'rotana_base_transport',
         'account',
         'sale',
         'sale_management',

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_company_view_form_rotana_base_maintenance" model="ir.ui.view">
+        <field name="name">res.company.view.form.inherit.rotana.base.maintenance</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Fleet Maintenance" name="rotana_base_maintenance">
+                    <group>
+                        <group string="Accounting">
+                            <field name="maintenance_expense_account_id"/>
+                            <field name="maintenance_journal_id"/>
+                        </group>
+                        <group string="Operation Types">
+                            <field name="maintenance_out_picking_type_id"/>
+                            <field name="maintenance_in_picking_type_id"/>
+                            <field name="maintenance_scrap_picking_type_id"/>
+                            <field name="maintenance_rehab_picking_type_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

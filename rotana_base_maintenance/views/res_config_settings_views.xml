@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_rotana_base_maintenance" model="ir.ui.view">
+        <field name="name">rotana.base.maintenance.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="20"/>
+        <field name="inherit_id" ref="rotana_base_transport.res_config_settings_view_form_rotana_base"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='rotana_base_transport']" position="inside">
+                <block title="Fleet Maintenance - Accounting" name="maintenance_accounting_container">
+                    <setting id="maintenance_expense_account_id"
+                             help="Debit account of the spare-parts consumption entry. If empty, the expense account of the product category is used.">
+                        <field name="maintenance_expense_account_id"/>
+                    </setting>
+                    <setting id="maintenance_journal_id"
+                             help="Journal of the spare-parts entry. If empty, the first miscellaneous journal is used.">
+                        <field name="maintenance_journal_id"/>
+                    </setting>
+                </block>
+                <block title="Fleet Maintenance - Operation Types" name="maintenance_picking_container">
+                    <setting id="maintenance_out_picking_type_id"
+                             help="Delivery order created when spare parts are confirmed.">
+                        <field name="maintenance_out_picking_type_id"
+                               domain="[('code', '=', 'outgoing'), ('company_id', '=', company_id)]"/>
+                    </setting>
+                    <setting id="maintenance_in_picking_type_id"
+                             help="Default receipt type for fleet spare parts.">
+                        <field name="maintenance_in_picking_type_id"
+                               domain="[('code', '=', 'incoming'), ('company_id', '=', company_id)]"/>
+                    </setting>
+                    <setting id="maintenance_scrap_picking_type_id"
+                             help="Receipt type for parts whose state is scrap.">
+                        <field name="maintenance_scrap_picking_type_id"
+                               domain="[('code', '=', 'incoming'), ('company_id', '=', company_id)]"/>
+                    </setting>
+                    <setting id="maintenance_rehab_picking_type_id"
+                             help="Receipt type for parts whose state is rehabilitation.">
+                        <field name="maintenance_rehab_picking_type_id"
+                               domain="[('code', '=', 'incoming'), ('company_id', '=', company_id)]"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,38 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="rotana_transport_sale_res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">rotana.transport.sale.res.config.settings.view.form.inherit.sale</field>
-        <field name="model">res.config.settings</field>
-        <field name="priority" eval="10"/>
-        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//form" position="inside">
-                <app string="Rotana Transportation" data-string="Rotana Transportation" name="rotana_transport_sale" >
-                    <block title="Default Settings" name="default_settings_container">
-                        <setting id="parent_analytic_plan_id" help="The parent analytic plan for transport vehicles.">
-                            <field name="parent_analytic_plan_id"/>
-                        </setting>
-                        <setting id="allowable_deficit" help="The default allowable deficit percentage for transported weight.">
-                            <field name="allowable_deficit"/>
-                        </setting>
-                    </block>
-                    <block title="Financial Custodies" name="custody_settings_container">
-                        <setting id="custody_account_id" help="Custody account (Custody Payable), of type Payable or Receivable, on which driver custodies are recorded.">
-                            <field name="custody_account_id"/>
-                        </setting>
-                        <setting id="custody_journal_id" help="Journal in which custody entries are created.">
-                            <field name="custody_journal_id"/>
-                        </setting>
-                    </block>
-                </app>
-            </xpath>
-        </field>
-    </record>
+    <!-- شاشة الإعدادات نفسها معرّفة في المديول الأساسي rotana_base_transport -->
     <record id="action_rotana_transport_sale_config_settings" model="ir.actions.act_window">
         <field name="name">Settings</field>
         <field name="res_model">res.config.settings</field>
-        <field name="view_id" ref="rotana_transport_sale_res_config_settings_view_form"/>
+        <field name="view_id" ref="rotana_base_transport.res_config_settings_view_form_rotana_base"/>
         <field name="view_mode">form</field>
-        <field name="context">{'module' : 'rotana_transport_sale', 'bin_size': False}</field>
+        <field name="context">{'module' : 'rotana_base_transport', 'bin_size': False}</field>
     </record>
 </odoo>

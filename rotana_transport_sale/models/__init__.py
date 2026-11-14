@@ -7,7 +7,6 @@ from . import (
     rotana_transport_sale_order,
     rotana_transport_sale_order_line,
     fleet_vehicle,
-    res_config_settings,
     account_analytic,
     fleet_vehicle_log,
     res_company,

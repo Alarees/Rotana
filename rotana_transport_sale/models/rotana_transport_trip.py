@@ -24,7 +24,7 @@ class RotanaTransportTrip(models.Model):
     _rec_name = 'manifest_number'
 
     def _defalut_allowable_deficit(self):
-        return self.env['ir.config_parameter'].sudo().get_param('rotana_transport_sale.allowable_deficit', default=0.0)
+        return self.env.company.allowable_deficit
 
 
     manifest_number = fields.Char(
