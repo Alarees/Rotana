@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- مستخدم صيانة المركبات: يضيف ويعدّل ويحذف قطع الغيار والمنصرفات -->
+    <record id="group_fleet_maintenance_user" model="res.groups">
+        <field name="name">Fleet Maintenance User</field>
+    </record>
+
+    <!-- مدير المعدات (مديول الصيانة) يحصل عليها تلقائياً -->
+    <record id="maintenance.group_equipment_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_fleet_maintenance_user'))]"/>
+    </record>
+
+    <!-- فصل الشركات -->
+    <record id="maintenance_request_part_company_rule" model="ir.rule">
+        <field name="name">Maintenance request part: multi-company</field>
+        <field name="model_id" ref="model_maintenance_request_part"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="maintenance_request_expense_company_rule" model="ir.rule">
+        <field name="name">Maintenance request expense: multi-company</field>
+        <field name="model_id" ref="model_maintenance_request_expense"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

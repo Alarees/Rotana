@@ -33,7 +33,7 @@ class MaintenanceRequestPart(models.Model):
     )
     uom_id = fields.Many2one(related='product_id.uom_id', string='الوحدة')
     qty_available = fields.Float(related='product_id.qty_available', string='المتوفر')
-    unit_cost = fields.Float(related='product_id.standard_price', string='التكلفة')
+    unit_cost = fields.Float(compute='_compute_unit_cost', string='التكلفة')
     subtotal = fields.Monetary(compute='_compute_subtotal', string='الإجمالي')
 
     @api.depends('spare_state', 'request_id.company_id')
@@ -44,6 +44,12 @@ class MaintenanceRequestPart(models.Model):
                 line.picking_type_id = company.maintenance_rehab_picking_type_id
             else:
                 line.picking_type_id = company.maintenance_scrap_picking_type_id
+
+    @api.depends('product_id', 'request_id.company_id')
+    def _compute_unit_cost(self):
+        for line in self:
+            company = line.request_id.company_id or self.env.company
+            line.unit_cost = line.product_id.with_company(company).standard_price
 
     @api.depends('quantity', 'unit_cost')
     def _compute_subtotal(self):

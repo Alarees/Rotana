@@ -15,7 +15,7 @@ class MaintenanceRequest(models.Model):
             ('fleet', 'Fleet'),
         ],
         ondelete={
-            'fleet': 'cascade',
+            'fleet': 'set default',
         },
     )
     fleet_id = fields.Many2one('fleet.vehicle', string='Fleet')
@@ -75,6 +75,11 @@ class MaintenanceRequest(models.Model):
             raise UserError(_(
                 'حدد المورد للمنصرفات التالية قبل إنشاء الفواتير:\n%s',
                 '\n'.join('- %s' % (e.name or '') for e in missing)))
+        no_account = lines.filtered(lambda e: not e.account_id)
+        if no_account:
+            raise UserError(_(
+                'حدد حساب المصروف للمنصرفات التالية قبل إنشاء الفواتير:\n%s',
+                '\n'.join('- %s' % (e.name or '') for e in no_account)))
         analytic = {str(self.fleet_id.analytic_account_id.id): 100.0}
         bills = self.env['account.move']
         for partner in lines.partner_id:
@@ -89,6 +94,7 @@ class MaintenanceRequest(models.Model):
                     'name': e.name,
                     'quantity': 1.0,
                     'price_unit': e.amount,
+                    'account_id': e.account_id.id,
                     'analytic_distribution': analytic,
                 }) for e in partner_lines],
             })
@@ -149,7 +155,7 @@ class MaintenanceRequest(models.Model):
     def _get_product_catalog_order_data(self, products, **kwargs):
         res = super()._get_product_catalog_order_data(products, **kwargs)
         for product in products:
-            res[product.id]['price'] = product.standard_price
+            res[product.id]['price'] = product.with_company(self.company_id).standard_price
         return res
 
     def _update_order_line_info(self, product_id, quantity, **kwargs):
@@ -167,7 +173,7 @@ class MaintenanceRequest(models.Model):
                 'product_id': product_id,
                 'quantity': quantity,
             })
-        return product.standard_price
+        return product.with_company(self.company_id).standard_price
 
     # ------------------------------------------------------------------
     # التأكيد: إذن تسليم + حساب تحليلي
@@ -194,18 +200,21 @@ class MaintenanceRequest(models.Model):
                 continue
             if request.picking_ids.filtered(lambda p: p.state == 'done'):
                 raise UserError(_('لا يمكن إلغاء التأكيد لأن إذن التسليم تم تنفيذه بالفعل.'))
-            request.picking_ids.filtered(lambda p: p.state != 'cancel').sudo().action_cancel()
+            request.picking_ids.filtered(
+                lambda p: p.state != 'cancel' and p.company_id == request.company_id
+            ).with_company(request.company_id).sudo().action_cancel()
             request.parts_state = 'draft'
         return True
 
     def _check_analytic_account(self):
         self.ensure_one()
+        self.fleet_id._ensure_analytic_account()
         if not self.fleet_id.analytic_account_id:
             raise UserError(_('لا يوجد حساب تحليلي مربوط بهذه العربة'))
 
     def _create_parts_picking(self):
         self.ensure_one()
-        warehouse = self.env['stock.warehouse'].sudo().search(
+        warehouse = self.env['stock.warehouse'].with_company(self.company_id).search(
             [('company_id', '=', self.company_id.id)], limit=1)
         # نوع العملية الافتراضي من إعدادات الصيانة، وإلا نوع التسليم للمستودع
         picking_type = self.company_id.maintenance_out_picking_type_id or warehouse.out_type_id
@@ -233,12 +242,17 @@ class MaintenanceRequest(models.Model):
         picking.action_assign()
         return picking
 
+    def _get_receipt_lines(self):
+        """ السطور التي يصدر لها إذن استلام عند التأكيد (للتوسعة في المديولات الأخرى). """
+        self.ensure_one()
+        return self.part_line_ids
+
     def _get_receipt_groups(self):
         """ يجمّع سطور قطع الغيار بحسب نوع عملية الاستلام (تالف / تأهيل). """
         self.ensure_one()
         company = self.company_id
         groups = defaultdict(lambda: self.env['maintenance.request.part'])
-        for line in self.part_line_ids:
+        for line in self._get_receipt_lines():
             picking_type = line.picking_type_id or (
                 company.maintenance_rehab_picking_type_id if line.spare_state == 'rehab'
                 else company.maintenance_scrap_picking_type_id)
@@ -303,6 +317,11 @@ class MaintenanceRequest(models.Model):
                     raise UserError(_(
                         'لا يمكن إكمال الطلب "%s" قبل تنفيذ إذن تسليم قطع الغيار من المخزن.', request.name))
 
+    def _get_parts_entry_date(self, moves):
+        """ تاريخ قيد قطع الغيار = تاريخ تنفيذ التسليم وليس تاريخ اليوم. """
+        dates = [d.date() if hasattr(d, 'date') else d for d in moves.mapped('date') if d]
+        return max(dates) if dates else fields.Date.context_today(self)
+
     def _create_parts_journal_entry(self):
         for request in self.filtered(lambda r: r.parts_state == 'confirmed' and not r.parts_move_id):
             request = request.with_company(request.company_id)
@@ -315,6 +334,10 @@ class MaintenanceRequest(models.Model):
             debit_by_account = defaultdict(float)
             credit_by_account = defaultdict(float)
             for move in moves:
+                categ = move.product_id.categ_id.with_company(company)
+                if getattr(categ, 'property_valuation', 'manual_periodic') == 'real_time':
+                    # التقييم التلقائي يسجّل قيد المخزون عند التسليم؛ تسجيله هنا يكرر التكلفة
+                    continue
                 amount = currency.round(abs(move.value))
                 if currency.is_zero(amount):
                     continue
@@ -351,7 +374,7 @@ class MaintenanceRequest(models.Model):
                     'move_type': 'entry',
                     'journal_id': journal.id,
                     'company_id': company.id,
-                    'date': fields.Date.context_today(request),
+                    'date': request._get_parts_entry_date(moves),
                     'ref': label,
                     'line_ids': line_vals,
                 })

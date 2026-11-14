@@ -26,11 +26,14 @@ class ProductProduct(models.Model):
             warehouses = self.env['stock.warehouse'].browse([w for w in ids if isinstance(w, int)])
         else:
             warehouses = self.env['stock.warehouse'].search([('id', operator, value)])
+        # فقط مخازن الشركات المسموحة للمستخدم الحالي
+        warehouses = warehouses.filtered(lambda w: w.company_id in self.env.companies)
         locations = warehouses.view_location_id
         product_ids = []
         if locations:
             groups = self.env['stock.quant'].sudo()._read_group(
-                [('location_id', 'child_of', locations.ids), ('quantity', '>', 0)],
+                [('location_id', 'child_of', locations.ids), ('quantity', '>', 0),
+                 ('company_id', 'in', self.env.companies.ids)],
                 groupby=['product_id'],
             )
             product_ids = [product.id for (product,) in groups]

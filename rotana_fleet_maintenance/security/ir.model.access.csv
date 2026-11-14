@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_maintenance_request_part_user,maintenance.request.part.user,model_maintenance_request_part,base.group_user,1,1,1,1
-access_maintenance_request_expense_user,maintenance.request.expense.user,model_maintenance_request_expense,base.group_user,1,1,1,1
+access_maintenance_request_part_read,maintenance.request.part.read,model_maintenance_request_part,base.group_user,1,0,0,0
+access_maintenance_request_part_user,maintenance.request.part.user,model_maintenance_request_part,group_fleet_maintenance_user,1,1,1,1
+access_maintenance_request_expense_read,maintenance.request.expense.read,model_maintenance_request_expense,base.group_user,1,0,0,0
+access_maintenance_request_expense_user,maintenance.request.expense.user,model_maintenance_request_expense,group_fleet_maintenance_user,1,1,1,1

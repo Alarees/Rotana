@@ -73,9 +73,10 @@
                 <page string="المنصرفات" name="expenses" invisible="maintenance_for != 'fleet'">
                     <field name="expense_ids">
                         <list editable="bottom" decoration-info="not is_invoiced">
-                            <field name="partner_id" groups="account.group_account_invoice"
-                                   readonly="is_invoiced"/>
+                            <field name="partner_id" readonly="is_invoiced"/>
                             <field name="name" readonly="is_invoiced"/>
+                            <field name="account_id" readonly="is_invoiced" options="{'no_create': True}"
+                                   domain="[('account_type', 'in', ('expense', 'expense_direct_cost', 'expense_depreciation'))]"/>
                             <field name="amount" sum="الإجمالي" readonly="is_invoiced"/>
                             <field name="is_invoiced" column_invisible="1" widget="boolean" groups="account.group_account_invoice"/>
                             <field name="move_id" groups="account.group_account_invoice"/>
@@ -122,28 +123,5 @@
         </field>
     </record>
 
-    <!-- ============================================================
-         إعدادات الشركة: الخطة التحليلية والحساب والدفتر
-         ============================================================ -->
-    <record id="res_company_view_form_inherit_fleet_maintenance" model="ir.ui.view">
-        <field name="name">res.company.view.form.inherit.fleet.maintenance</field>
-        <field name="model">res.company</field>
-        <field name="inherit_id" ref="base.view_company_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="صيانة المركبات" name="fleet_maintenance">
-                    <group>
-                        <field name="maintenance_analytic_plan_id"/>
-                        <field name="maintenance_expense_account_id"/>
-                        <field name="maintenance_journal_id"/>
-                        <field name="maintenance_out_picking_type_id"/>
-                        <field name="maintenance_in_picking_type_id"/>
-                        <field name="maintenance_scrap_picking_type_id"/>
-                        <field name="maintenance_rehab_picking_type_id"/>
-                    </group>
-                </page>
-            </xpath>
-        </field>
-    </record>
 
 </odoo>
