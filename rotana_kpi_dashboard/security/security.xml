@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_rotana_kpi_manager" model="res.groups">
+        <field name="name">KPI Dashboards Manager</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <!-- مدير النظام يحصل عليها تلقائياً -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_rotana_kpi_manager'))]"/>
+    </record>
+</odoo>

@@ -5,6 +5,7 @@
     <menuitem id="menu_rotana_kpi_root"
               name="KPI Dashboards"
               sequence="5"
+              groups="rotana_kpi_dashboard.group_rotana_kpi_manager"
               web_icon="rotana_kpi_dashboard,static/description/icon.png"/>
 
     <!-- Actions: each is a Client Action rendering our dashboard controller
@@ -77,12 +78,10 @@
             <head>
                 <meta charset="utf-8"/>
                 <title>Rotana KPI Dashboard</title>
-                <!-- Google Material font, used purely for the Material Design look -->
-                <link rel="preconnect" href="https://fonts.googleapis.com"/>
-                <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+
                 <link rel="stylesheet" type="text/css" href="/rotana_kpi_dashboard/static/src/css/dashboard.css"/>
-                <!-- Chart.js (plain UMD build via CDN, no build step, no framework) -->
-                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+                <!-- Chart.js 4.4.4 (UMD) محلي داخل المديول: يعمل بدون إنترنت -->
+                <script src="/rotana_kpi_dashboard/static/lib/chart.umd.js"></script>
             </head>
             <body>
                 <div id="root"></div>

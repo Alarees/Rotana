@@ -12,6 +12,7 @@
   // ------------------------------------------------------------------
   var MODULE_CONFIG = {
     sales: {
+      weightKey: "quotations_count",
       title: "مؤشرات أداء المبيعات",
       endpoint: "/rotana_kpi/data/sales",
       metrics: [
@@ -22,6 +23,7 @@
       ],
     },
     purchase: {
+      weightKey: "po_count",
       title: "مؤشرات أداء المشتريات",
       endpoint: "/rotana_kpi/data/purchase",
       metrics: [
@@ -30,6 +32,7 @@
       ],
     },
     accounting: {
+      weightKey: "total_invoices",
       title: "مؤشرات أداء الحسابات",
       endpoint: "/rotana_kpi/data/accounting",
       metrics: [
@@ -39,6 +42,7 @@
       ],
     },
     inventory: {
+      weightKey: "total_pickings",
       title: "مؤشرات أداء المخازن",
       endpoint: "/rotana_kpi/data/inventory",
       metrics: [
@@ -48,6 +52,7 @@
       ],
     },
     manufacturing: {
+      weightKey: "total_mo",
       title: "مؤشرات أداء التصنيع",
       endpoint: "/rotana_kpi/data/manufacturing",
       metrics: [
@@ -70,6 +75,7 @@
     dateFrom: null,
     dateTo: null,
     employees: [],
+    error: null,
     chartInstances: {},
   };
 
@@ -128,10 +134,21 @@
     if (state.dateTo) params.append("date_to", state.dateTo);
     if (state.selectedCompanies.length) params.append("company_ids", state.selectedCompanies.join(","));
 
+    state.error = null;
     return fetch(config.endpoint + "?" + params.toString())
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        return r.json().then(function (json) {
+          if (!r.ok || (json && json.error)) {
+            throw new Error((json && json.error) || ("HTTP " + r.status));
+          }
+          return json;
+        });
+      })
       .then(function (json) { state.employees = (json && json.employees) || []; })
-      .catch(function () { state.employees = []; });
+      .catch(function (err) {
+        state.employees = [];
+        state.error = (err && err.message) || "تعذر تحميل البيانات";
+      });
   }
 
   // ------------------------------------------------------------------
@@ -202,8 +219,22 @@
     );
 
     config.metrics.slice(0, 3).forEach(function (m) {
-      var total = state.employees.reduce(function (s, e) { return s + (e[m.key] || 0); }, 0);
-      var avg = state.employees.length ? (total / state.employees.length).toFixed(2) : 0;
+      var avg = 0;
+      if (state.employees.length) {
+        if (m.kind === "number") {
+          var total = state.employees.reduce(function (s, e) { return s + (e[m.key] || 0); }, 0);
+          avg = (total / state.employees.length).toFixed(2);
+        } else {
+          // المتوسط موزون بعدد المستندات لكل موظف (موظف بطلب واحد ليس كموظف بمئة)
+          var wsum = 0, vsum = 0;
+          state.employees.forEach(function (e) {
+            var w = e[config.weightKey] || 0;
+            wsum += w;
+            vsum += (e[m.key] || 0) * w;
+          });
+          avg = wsum ? (vsum / wsum).toFixed(2) : 0;
+        }
+      }
       grid.appendChild(
         el("div", { class: "md-stat-card" }, [
           el("div", { class: "stat-label" }, [m.label + " (متوسط)"]),
@@ -304,6 +335,15 @@
     container.appendChild(card);
   }
 
+  function renderError(container) {
+    container.appendChild(
+      el("div", { class: "md-card", style: "border-inline-start:4px solid #c62828;" }, [
+        el("h2", {}, ["تعذر تحميل البيانات"]),
+        el("div", {}, [String(state.error)]),
+      ])
+    );
+  }
+
   function renderLoader(container) {
     container.appendChild(
       el("div", { class: "md-loader-wrap" }, [el("div", { class: "md-spinner" })])
@@ -323,6 +363,10 @@
     fetchData().then(function () {
       clear(main);
       renderFilters(main);
+      if (state.error) {
+        renderError(main);
+        return;
+      }
       renderStats(main);
       renderCharts(main);
       renderTable(main);

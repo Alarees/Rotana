@@ -21,7 +21,7 @@ class RotanaKpiEngine(models.AbstractModel):
       - company_ids: list[int] (branches). Empty/None = all allowed companies.
 
     All methods return a dict shaped for direct consumption by the
-    React/FusionCharts front-end: {'employees': [...], 'kpis': {...}}
+    dashboard front-end: {'employees': [...]}
     """
     _name = 'rotana.kpi.engine'
     _description = 'Rotana KPI Computation Engine'
@@ -38,9 +38,27 @@ class RotanaKpiEngine(models.AbstractModel):
         return domain
 
     def _domain_company(self, company_ids, field='company_id'):
-        if company_ids:
-            return [(field, 'in', company_ids)]
-        return []
+        # الشركات المسموحة دائماً تأتي من المتحكم؛ لا يُترك الحقل فارغاً أبداً
+        company_ids = company_ids or self.env.user.company_ids.ids
+        return [(field, 'in', company_ids)]
+
+    def _get_sale_confirm_dates(self, orders):
+        """لحظة تأكيد كل أمر بيع من رسالة التتبع (قراءة واحدة)، وإلا تاريخ الأمر إن لم تتوفر."""
+        if not orders:
+            return {}
+        subtype = self.env.ref('sale.mt_order_confirmed', raise_if_not_found=False)
+        dates = {}
+        if subtype:
+            rows = self.env['mail.message'].sudo().search_read(
+                [('model', '=', 'sale.order'), ('res_id', 'in', orders.ids),
+                 ('subtype_id', '=', subtype.id)],
+                ['res_id', 'date'], order='date asc')
+            for row in rows:
+                dates.setdefault(row['res_id'], row['date'])
+        for order in orders:
+            if order.id not in dates and order.state in ('sale', 'done') and order.date_order:
+                dates[order.id] = order.date_order
+        return dates
 
     # ------------------------------------------------------------------
     # 1. SALES KPIs
@@ -48,8 +66,11 @@ class RotanaKpiEngine(models.AbstractModel):
     @api.model
     def get_sales_kpis(self, date_from=None, date_to=None, company_ids=None):
         Sale = self.env['sale.order']
-        domain = self._domain_dates(date_from, date_to) + self._domain_company(company_ids)
+        # الفترة بتاريخ المستند (date_order) لا تاريخ الإنشاء، وتُستبعد الملغاة
+        domain = self._domain_dates(date_from, date_to, 'date_order') + \
+            self._domain_company(company_ids) + [('state', '!=', 'cancel')]
         orders = Sale.search(domain)
+        confirm_dates = self._get_sale_confirm_dates(orders)
 
         by_user = {}
         for order in orders:
@@ -70,8 +91,9 @@ class RotanaKpiEngine(models.AbstractModel):
             if order.state in ('sale', 'done'):
                 data['confirmed_count'] += 1
                 data['orders_total_confirmed'] += 1
-                # response time: creation -> confirmation (date_order used as confirm proxy)
-                hours = _hours_between(order.create_date, order.date_order)
+                # زمن الاستجابة: من إنشاء العرض حتى لحظة التأكيد الفعلية
+                confirm_date = confirm_dates.get(order.id)
+                hours = _hours_between(order.create_date, confirm_date) if confirm_date else 0.0
                 if hours:
                     data['response_hours_sum'] += hours
                     data['response_hours_n'] += 1
@@ -80,16 +102,32 @@ class RotanaKpiEngine(models.AbstractModel):
                 if order.partner_id:
                     data['new_customers'].add(order.partner_id.id)
 
-        # Determine "new" customers: first ever order date falls inside the period
+        # العملاء الجدد: أول أمر بيع للعميل (أي موظف) يقع داخل الفترة.
+        # قراءة مجمّعة واحدة بدل بحث لكل عميل، وتعمل بتاريخ واحد أو بتاريخين.
+        all_partner_ids = set()
+        for d in by_user.values():
+            all_partner_ids |= d['new_customers']
+        first_order_date = {}
+        if all_partner_ids:
+            groups = Sale._read_group(
+                [('partner_id', 'in', list(all_partner_ids)), ('state', '!=', 'cancel')],
+                groupby=['partner_id'],
+                aggregates=['date_order:min'],
+            )
+            first_order_date = {partner.id: first for partner, first in groups}
+
+        def _in_period(value):
+            if not value:
+                return False
+            day = value.strftime('%Y-%m-%d')
+            return (not date_from or day >= date_from) and (not date_to or day <= date_to)
+
         result = []
         for uid, d in by_user.items():
-            # Filter customers whose very first sale order (any salesperson) is in-period
-            new_customers_count = 0
-            for partner_id in d['new_customers']:
-                first_order = Sale.search([('partner_id', '=', partner_id)], order='create_date asc', limit=1)
-                if first_order and date_from and date_to:
-                    if date_from <= first_order.create_date.strftime('%Y-%m-%d') <= date_to:
-                        new_customers_count += 1
+            new_customers_count = sum(
+                1 for partner_id in d['new_customers']
+                if _in_period(first_order_date.get(partner_id))
+            )
             avg_response = float_round(
                 d['response_hours_sum'] / d['response_hours_n'], 2
             ) if d['response_hours_n'] else 0.0
@@ -114,7 +152,8 @@ class RotanaKpiEngine(models.AbstractModel):
     @api.model
     def get_purchase_kpis(self, date_from=None, date_to=None, company_ids=None):
         Purchase = self.env['purchase.order']
-        domain = self._domain_dates(date_from, date_to) + self._domain_company(company_ids)
+        domain = self._domain_dates(date_from, date_to, 'date_order') + \
+            self._domain_company(company_ids) + [('state', '!=', 'cancel')]
         orders = Purchase.search(domain)
 
         by_user = {}
@@ -155,8 +194,8 @@ class RotanaKpiEngine(models.AbstractModel):
     @api.model
     def get_accounting_kpis(self, date_from=None, date_to=None, company_ids=None):
         Move = self.env['account.move']
-        domain = self._domain_dates(date_from, date_to) + self._domain_company(company_ids) + \
-            [('move_type', 'in', ('out_invoice', 'out_refund'))]
+        domain = self._domain_dates(date_from, date_to, 'date') + self._domain_company(company_ids) + \
+            [('move_type', 'in', ('out_invoice', 'out_refund')), ('state', '!=', 'cancel')]
         moves = Move.search(domain)
 
         by_user = {}
@@ -203,7 +242,8 @@ class RotanaKpiEngine(models.AbstractModel):
     @api.model
     def get_inventory_kpis(self, date_from=None, date_to=None, company_ids=None):
         Picking = self.env['stock.picking']
-        domain = self._domain_dates(date_from, date_to) + self._domain_company(company_ids)
+        domain = self._domain_dates(date_from, date_to, 'scheduled_date') + \
+            self._domain_company(company_ids) + [('state', '!=', 'cancel')]
         pickings = Picking.search(domain)
 
         by_user = {}
@@ -262,7 +302,8 @@ class RotanaKpiEngine(models.AbstractModel):
     @api.model
     def get_manufacturing_kpis(self, date_from=None, date_to=None, company_ids=None):
         Production = self.env['mrp.production']
-        domain = self._domain_dates(date_from, date_to) + self._domain_company(company_ids)
+        domain = self._domain_dates(date_from, date_to, 'date_start') + \
+            self._domain_company(company_ids) + [('state', '!=', 'cancel')]
         productions = Production.search(domain)
 
         by_user = {}

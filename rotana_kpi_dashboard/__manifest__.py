@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana Employee Performance KPI Dashboards',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Productivity/Dashboards',
     'summary': 'لوحات مؤشرات أداء الموظفين لمديولات المبيعات والمشتريات والحسابات والمخازن والتصنيع',
     'description': """
@@ -14,14 +14,15 @@ Employee Performance KPI Dashboards
 - Inventory KPIs (per Warehouse Keeper)
 - Manufacturing KPIs (per Production Supervisor)
 
-Built with vanilla JavaScript (no framework), Chart.js, and a manual
-Material Design look (Google Material color/typography tokens via CSS).
-Filters: Company/Branch, Date Range.
+Built with vanilla JavaScript and Chart.js (bundled locally, works offline).
+Filters: Company/Branch, Date Range. Data is read with the user's own access
+rights and limited to the user's allowed companies.
 """,
     'author': 'Rotana Development - HQ',
     'license': 'LGPL-3',
     'depends': ['base', 'sale_management', 'purchase', 'account', 'stock', 'mrp'],
     'data': [
+        'security/security.xml',
         'security/ir.model.access.csv',
         'views/menu_views.xml',
     ],
