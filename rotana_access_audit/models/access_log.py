@@ -60,7 +60,8 @@ class RotanaAccessLog(models.Model):
     @api.model
     def _fmt(self, value):
         if isinstance(value, (list, tuple)):
-            return ', '.join(value)
+            return ', '.join(
+                item[1] if isinstance(item, (list, tuple)) else str(item) for item in value)
         if isinstance(value, bool):
             return 'نعم' if value else 'لا'
         return str(value) if value else ''
@@ -81,13 +82,21 @@ class RotanaAccessLog(models.Model):
                 field = rec._fields[fname]
                 value = rec[fname]
                 if field.type in ('many2one', 'one2many', 'many2many'):
-                    vals[fname] = sorted(r.display_name or str(r.id) for r in value)
+                    # (id, اسم) لكل سجل: المقارنة بالرقم لا بالاسم، لأن مجموعات مختلفة قد تتشابه أسماؤها
+                    vals[fname] = [(r.id, r.display_name or str(r.id)) for r in value.sorted('id')]
                 elif field.type == 'boolean':
                     vals[fname] = bool(value)
                 else:
                     vals[fname] = value or ''
             result[rec.id] = vals
         return result
+
+    @staticmethod
+    def _comparable(value):
+        """القيم العلائقية تُقارَن بمجموعة الأرقام، والبقية كما هي."""
+        if isinstance(value, list) and all(isinstance(i, tuple) for i in value):
+            return frozenset(i[0] for i in value)
+        return value
 
     @api.model
     def _summary(self, record, fnames):
@@ -133,18 +142,20 @@ class RotanaAccessLog(models.Model):
                 if fname not in new_vals:
                     continue
                 old, new = old_vals.get(fname), new_vals.get(fname)
-                if old == new:
+                if self._comparable(old) == self._comparable(new):
                     continue
                 label = self._label(rec, fname)
                 if rec._name == 'res.users' and fname == 'group_ids':
-                    old_set, new_set = set(old or []), set(new or [])
-                    for grp in sorted(new_set - old_set):
+                    old_map, new_map = dict(old or []), dict(new or [])
+                    for gid in sorted(set(new_map) - set(old_map)):
+                        grp = new_map[gid]
                         self._log(rec, 'group_add',
-                                  'إضافة المستخدم %s إلى المجموعة %s' % (rec.name, grp),
+                                  'إضافة المستخدم %s إلى المجموعة %s (#%s)' % (rec.name, grp, gid),
                                   label, new=grp, target_user=target)
-                    for grp in sorted(old_set - new_set):
+                    for gid in sorted(set(old_map) - set(new_map)):
+                        grp = old_map[gid]
                         self._log(rec, 'group_remove',
-                                  'إزالة المستخدم %s من المجموعة %s' % (rec.name, grp),
+                                  'إزالة المستخدم %s من المجموعة %s (#%s)' % (rec.name, grp, gid),
                                   label, old=grp, target_user=target)
                     continue
                 self._log(rec, 'write', '%s: تعديل «%s»' % (rec.display_name, label),

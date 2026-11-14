@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana Access Audit',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Administration',
     'summary': 'تتبع تغييرات صلاحيات المستخدمين والمجموعات وحقوق الوصول (Access Rights)',
     'description': """
@@ -11,6 +11,7 @@
         - حقوق الوصول (ir.model.access) وقواعد السجلات (ir.rule): إنشاء، تعديل، حذف
         - السجل للقراءة فقط ولا يمكن تعديله أو حذفه (يبقى للأبد)
         - لا يُسجَّل شيء أثناء تثبيت/تحديث المديولات (install_mode)
+        - تحذير: إلغاء تثبيت المديول يحذف السجل؛ تُحفظ قبل ذلك نسخة CSV كاملة كمرفق
     """,
     'author': 'Rotana Development - IT Department',
     'license': 'LGPL-3',
@@ -20,6 +21,7 @@
         'security/ir.model.access.csv',
         'views/access_log_views.xml',
     ],
+    'uninstall_hook': 'uninstall_hook',
     'installable': True,
     'application': False,
     'auto_install': False,
