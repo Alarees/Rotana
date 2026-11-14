@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
-
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
@@ -12,20 +10,9 @@ class MaintenanceRequest(models.Model):
         'rotana.external.workshop', 'maintenance_request_id',
         string='طلبات الورشة الخارجية', copy=False)
 
-    def _get_receipt_groups(self):
+    def _get_receipt_lines(self):
         """ سطور (تأهيل) لا يصدر لها إذن استلام هنا: يُنشأ لها طلب ورشة خارجية بدلاً منه. """
-        self.ensure_one()
-        company = self.company_id
-        groups = defaultdict(lambda: self.env['maintenance.request.part'])
-        for line in self.part_line_ids.filtered(lambda l: l.spare_state != 'rehab'):
-            picking_type = line.picking_type_id or company.maintenance_scrap_picking_type_id
-            if not picking_type:
-                raise UserError(_(
-                    'حدد نوع العملية للقطعة \"%(product)s\" أو حدد \"عملية التالف\" '
-                    'في إعدادات الشركة %(company)s.',
-                    product=line.product_id.display_name, company=company.name))
-            groups[picking_type] |= line
-        return groups
+        return super()._get_receipt_lines().filtered(lambda l: l.spare_state != 'rehab')
 
     def action_confirm_parts(self):
         to_confirm = self.filtered(lambda r: r.parts_state == 'draft')

@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_rotana_external_workshop_manager,rotana.external.workshop.manager,model_rotana_external_workshop,rotana_external_workshop.group_external_workshop_manager,1,1,1,1
+access_rotana_external_workshop_accountant,rotana.external.workshop.accountant,model_rotana_external_workshop,account.group_account_invoice,1,0,0,0

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Rotana External Workshop',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Maintenance',
     'summary': 'الورشة الخارجية: طلبات صيانة الاسبير (تأهيل) خارج الشركة',
     'description': """
@@ -13,7 +13,7 @@
     """,
     'author': 'Rotana Development - IT Department',
     'license': 'LGPL-3',
-    'depends': ['rotana_fleet_maintenance'],
+    'depends': ['rotana_fleet_maintenance', 'mail'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',

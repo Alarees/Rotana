@@ -13,6 +13,7 @@ FINANCIAL_FIELDS = {'partner_id', 'amount'}
 class RotanaExternalWorkshop(models.Model):
     _name = 'rotana.external.workshop'
     _description = 'طلب صيانة اسبير (الورشة الخارجية)'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'id desc'
 
     name = fields.Char(string='الرقم', default='/', readonly=True, copy=False)
@@ -26,15 +27,15 @@ class RotanaExternalWorkshop(models.Model):
         'maintenance.request.part', string='سطر الاسبير في الصيانة',
         copy=False, index='btree_not_null', ondelete='set null')
     product_id = fields.Many2one(
-        'product.product', string='الاسبير', required=True,
+        'product.product', string='الاسبير', required=True, tracking=True,
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]")
     quantity = fields.Float(string='الكمية', default=1.0, required=True)
     company_id = fields.Many2one(
         'res.company', string='الشركة', required=True, index=True,
         default=lambda self: self.env.company)
     currency_id = fields.Many2one(related='company_id.currency_id')
-    partner_id = fields.Many2one('res.partner', string='المورد')
-    amount = fields.Monetary(string='المبلغ')
+    partner_id = fields.Many2one('res.partner', string='المورد', tracking=True)
+    amount = fields.Monetary(string='المبلغ', tracking=True)
     state = fields.Selection(
         [
             ('draft', 'مسودة'),
@@ -42,7 +43,7 @@ class RotanaExternalWorkshop(models.Model):
             ('in_workshop', 'في الورشة'),
             ('done', 'تمت الصيانة'),
         ],
-        string='الحالة', default='draft', required=True, readonly=True, copy=False)
+        string='الحالة', default='draft', required=True, readonly=True, copy=False, tracking=True)
     invoice_id = fields.Many2one(
         'account.move', string='فاتورة المورد', copy=False, readonly=True,
         ondelete='set null', index='btree_not_null')
@@ -51,8 +52,8 @@ class RotanaExternalWorkshop(models.Model):
         string='حالة الفوترة', compute='_compute_invoice_state', store=True, default='not_invoiced')
     picking_type_id = fields.Many2one(
         'stock.picking.type', string='نوع العملية',
-        domain="[('code', '=', 'incoming')]",
-        default=lambda self: self.env.company.maintenance_rehab_picking_type_id)
+        compute='_compute_picking_type_id', store=True, readonly=False, precompute=True,
+        domain="[('code', '=', 'incoming'), ('company_id', '=', company_id)]")
     picking_id = fields.Many2one(
         'stock.picking', string='إذن الاستلام', copy=False, readonly=True,
         ondelete='set null', index='btree_not_null')
@@ -67,6 +68,13 @@ class RotanaExternalWorkshop(models.Model):
     def _compute_fleet_id(self):
         for rec in self:
             rec.fleet_id = rec.maintenance_request_id.fleet_id or rec.fleet_id
+
+    @api.depends('company_id')
+    def _compute_picking_type_id(self):
+        for rec in self:
+            company_type = rec.company_id.maintenance_rehab_picking_type_id
+            if not rec.picking_type_id or rec.picking_type_id.company_id != rec.company_id:
+                rec.picking_type_id = company_type
 
     @api.depends('invoice_id', 'invoice_id.state')
     def _compute_invoice_state(self):
@@ -87,8 +95,22 @@ class RotanaExternalWorkshop(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get('name') or vals['name'] == '/':
-                vals['name'] = self.env['ir.sequence'].next_by_code('rotana.external.workshop') or '/'
+                company_id = vals.get('company_id') or self.env.company.id
+                vals['name'] = self._next_company_sequence(company_id)
         return super().create(vals_list)
+
+    @api.model
+    def _next_company_sequence(self, company_id):
+        """ ترقيم مستقل لكل شركة: يُنشأ تسلسل الشركة عند أول استخدام. """
+        Sequence = self.env['ir.sequence'].sudo()
+        code = 'rotana.external.workshop'
+        sequence = Sequence.search([('code', '=', code), ('company_id', '=', company_id)], limit=1)
+        if not sequence:
+            sequence = Sequence.create({
+                'name': _('الورشة الخارجية'), 'code': code, 'prefix': 'EW/',
+                'padding': 5, 'company_id': company_id,
+            })
+        return sequence.next_by_id()
 
     def write(self, vals):
         keys = set(vals)
@@ -109,7 +131,14 @@ class RotanaExternalWorkshop(models.Model):
     # ------------------------------------------------------------------
     # أزرار تغيير الحالة
     # ------------------------------------------------------------------
+    def _check_workshop_manager(self):
+        if self.env.su:
+            return
+        if not self.env.user.has_group('rotana_external_workshop.group_external_workshop_manager'):
+            raise UserError(_('هذا الإجراء متاح لمدير الورشة الخارجية فقط.'))
+
     def action_confirm(self):
+        self._check_workshop_manager()
         for rec in self.filtered(lambda r: r.state == 'draft'):
             if not rec.product_id or rec.quantity <= 0:
                 raise UserError(_('حدد الاسبير والكمية قبل التأكيد.'))
@@ -117,11 +146,13 @@ class RotanaExternalWorkshop(models.Model):
         return True
 
     def action_send_to_workshop(self):
+        self._check_workshop_manager()
         for rec in self.filtered(lambda r: r.state == 'confirmed'):
             rec.state = 'in_workshop'
         return True
 
     def action_done(self):
+        self._check_workshop_manager()
         for rec in self.filtered(lambda r: r.state == 'in_workshop'):
             if not rec.partner_id:
                 raise UserError(_('حدد المورد للطلب %s قبل تمت الصيانة.', rec.name))
@@ -164,7 +195,7 @@ class RotanaExternalWorkshop(models.Model):
         for move in picking.move_ids:
             move.quantity = move.product_uom_qty
             move.picked = True
-        picking.with_context(skip_backorder=True).button_validate()
+        picking.button_validate()
         if picking.state != 'done':
             raise UserError(_('تعذر تأكيد إذن الاستلام %s آلياً، راجع الإذن.', picking.name))
         self.picking_id = picking
@@ -183,9 +214,14 @@ class RotanaExternalWorkshop(models.Model):
         debit_by_account = defaultdict(float)
         credit_by_account = defaultdict(float)
         for move in moves:
-            valuation_account = move.location_id.valuation_account_id
-            if not move.account_move_id or not valuation_account:
+            if not move.account_move_id:
                 continue
+            valuation_account = move.location_id.valuation_account_id
+            if not valuation_account:
+                raise UserError(_(
+                    'لا يمكن تسجيل قيد التسوية: الموقع \"%(location)s\" ليس له حساب تقييم مخزون. '
+                    'حدد الحساب في الموقع ثم أعد المحاولة.',
+                    location=move.location_id.display_name))
             amount = currency.round(abs(move.value))
             if currency.is_zero(amount):
                 continue
@@ -229,10 +265,11 @@ class RotanaExternalWorkshop(models.Model):
         return account_move
 
     # ------------------------------------------------------------------
-    # الفوترة (فاتورة مورد بدون حساب تحليلي)
+    # الفوترة (فاتورة مورد مربوطة بالحساب التحليلي للمركبة)
     # ------------------------------------------------------------------
     def action_create_invoice(self):
         self.ensure_one()
+        self._check_workshop_manager()
         if self.state != 'done':
             raise UserError(_('الفوترة متاحة بعد (تمت الصيانة) فقط.'))
         if self.invoice_state == 'invoiced':
@@ -246,8 +283,13 @@ class RotanaExternalWorkshop(models.Model):
             'price_unit': self.amount,
         }
         expense_account = self.company_id.maintenance_expense_account_id
-        if expense_account:
-            line_vals['account_id'] = expense_account.id
+        if not expense_account:
+            raise UserError(_(
+                'حدد \"حساب مصروف قطع الغيار\" في إعدادات الشركة %s قبل إنشاء فاتورة المورد.',
+                self.company_id.name))
+        line_vals['account_id'] = expense_account.id
+        if self.fleet_id.analytic_account_id:
+            line_vals['analytic_distribution'] = {str(self.fleet_id.analytic_account_id.id): 100.0}
         bill = self.env['account.move'].create({
             'move_type': 'in_invoice',
             'partner_id': self.partner_id.id,
