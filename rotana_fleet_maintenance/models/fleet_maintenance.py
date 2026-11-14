@@ -334,9 +334,9 @@ class MaintenanceRequest(models.Model):
             debit_by_account = defaultdict(float)
             credit_by_account = defaultdict(float)
             for move in moves:
-                categ = move.product_id.categ_id.with_company(company)
-                if getattr(categ, 'property_valuation', 'manual_periodic') == 'real_time':
-                    # التقييم التلقائي يسجّل قيد المخزون عند التسليم؛ تسجيله هنا يكرر التكلفة
+                if move.account_move_id:
+                    # أودو 19 أنشأ قيد التقييم لهذه الحركة عند التنفيذ (المنتج بتقييم Perpetual
+                    # وفي أحد الموقعين حساب تقييم)؛ تسجيل قيد يدوي هنا يكرر التكلفة.
                     continue
                 amount = currency.round(abs(move.value))
                 if currency.is_zero(amount):
