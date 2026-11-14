@@ -63,7 +63,7 @@
         <field name="model_id" ref="model_transportation_purchase_request" />
         <field name="global" eval="True" />
         <field name="domain_force">
-            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+            [('company_id', 'in', company_ids)]
         </field>
     </record>
     <record model="ir.rule" id="transportation_purchase_request_line_comp_rule">
@@ -71,7 +71,7 @@
         <field name="model_id" ref="model_transportation_purchase_request_line" />
         <field name="global" eval="True" />
         <field name="domain_force">
-            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+            [('company_id', 'in', company_ids)]
         </field>
     </record>
     <record id="transportation_purchase_request_followers_rule" model="ir.rule">

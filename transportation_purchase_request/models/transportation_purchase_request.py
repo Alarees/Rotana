@@ -40,8 +40,25 @@ class PurchaseRequest(models.Model):
         return self.env["res.users"].browse(self.env.uid)
 
     @api.model
-    def _get_default_name(self):
-        return self.env["ir.sequence"].next_by_code("transportation.purchase.request")
+    def _get_default_name(self, company=None):
+        """Next reference from the sequence of the request's company (created on first use)."""
+        company = company or self.env.company
+        sequence_model = self.env["ir.sequence"].sudo()
+        code = "transportation.purchase.request"
+        sequence = sequence_model.search(
+            [("code", "=", code), ("company_id", "=", company.id)], limit=1
+        )
+        if not sequence:
+            sequence = sequence_model.create(
+                {
+                    "name": "Transportation Purchase Request",
+                    "code": code,
+                    "prefix": "PR",
+                    "padding": 5,
+                    "company_id": company.id,
+                }
+            )
+        return sequence.next_by_id()
 
     @api.depends("state")
     def _compute_is_editable(self):
@@ -78,7 +95,7 @@ class PurchaseRequest(models.Model):
     )
     company_id = fields.Many2one(
         comodel_name="res.company",
-        required=False,
+        required=True,
         default=lambda self: self._company_get(),
         tracking=True,
     )
@@ -100,28 +117,44 @@ class PurchaseRequest(models.Model):
         default="draft",
     )
     dept_manager_user_id = fields.Many2one(
-        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+        "res.users",
+        string="Approved by (Department Manager)",
+        readonly=True,
+        copy=False,
+        tracking=True,
     )
     dept_manager_date = fields.Datetime(
-        string="Approval Date", readonly=True, copy=False
+        string="Approval Date (Department Manager)", readonly=True, copy=False
     )
     accounts_head_user_id = fields.Many2one(
-        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+        "res.users",
+        string="Approved by (Head of Accounts)",
+        readonly=True,
+        copy=False,
+        tracking=True,
     )
     accounts_head_date = fields.Datetime(
-        string="Approval Date", readonly=True, copy=False
+        string="Approval Date (Head of Accounts)", readonly=True, copy=False
     )
     internal_audit_user_id = fields.Many2one(
-        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+        "res.users",
+        string="Approved by (Internal Auditor)",
+        readonly=True,
+        copy=False,
+        tracking=True,
     )
     internal_audit_date = fields.Datetime(
-        string="Approval Date", readonly=True, copy=False
+        string="Approval Date (Internal Auditor)", readonly=True, copy=False
     )
     general_manager_user_id = fields.Many2one(
-        "res.users", string="Approved by", readonly=True, copy=False, tracking=True
+        "res.users",
+        string="Approved by (General Manager)",
+        readonly=True,
+        copy=False,
+        tracking=True,
     )
     general_manager_date = fields.Datetime(
-        string="Approval Date", readonly=True, copy=False
+        string="Approval Date (General Manager)", readonly=True, copy=False
     )
     is_editable = fields.Boolean(compute="_compute_is_editable", readonly=True)
     to_approve_allowed = fields.Boolean(compute="_compute_to_approve_allowed")
@@ -171,14 +204,21 @@ class PurchaseRequest(models.Model):
     def copy(self, default=None):
         default = dict(default or {})
         self.ensure_one()
-        default.update({"state": "draft", "name": self._get_default_name()})
+        default.update(
+            {"state": "draft", "name": self._get_default_name(self.company_id)}
+        )
         return super().copy(default)
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("name", self.env._("New")) == self.env._("New"):
-                vals["name"] = self._get_default_name()
+                company = (
+                    self.env["res.company"].browse(vals["company_id"])
+                    if vals.get("company_id")
+                    else self.env.company
+                )
+                vals["name"] = self._get_default_name(company)
         return super().create(vals_list)
 
     def _can_be_deleted(self):
@@ -203,6 +243,12 @@ class PurchaseRequest(models.Model):
         return vals
 
     def button_draft(self):
+        if not self.env.su and not self.env.user.has_group(
+            "transportation_purchase_request.group_transportation_purchase_request_manager"
+        ):
+            raise UserError(
+                self.env._("Only a Transportation Purchase Request Manager can reset a request.")
+            )
         self.mapped("line_ids").do_uncancel()
         return self.write({"state": "draft", **self._clear_approvals()})
 
@@ -224,6 +270,22 @@ class PurchaseRequest(models.Model):
                 raise UserError(
                     self.env._(
                         "The request %(name)s is not waiting for this approval.",
+                        name=rec.name,
+                    )
+                )
+            if rec.requested_by == self.env.user:
+                raise UserError(
+                    self.env._(
+                        "You cannot approve your own request. (%(name)s)",
+                        name=rec.name,
+                    )
+                )
+            previous = [rec[f"{state}_user_id"] for state, _group in _APPROVAL_CHAIN]
+            if self.env.user in previous:
+                raise UserError(
+                    self.env._(
+                        "You already approved another stage of this request, "
+                        "a different person must approve this stage. (%(name)s)",
                         name=rec.name,
                     )
                 )
@@ -291,6 +353,7 @@ class PurchaseRequest(models.Model):
         return {
             "move_type": "in_invoice",
             "partner_id": self.vendor_id.id,
+            "company_id": self.company_id.id,
             "invoice_origin": self.name,
             "transportation_purchase_request_id": self.id,
             "currency_id": self.currency_id.id,
@@ -316,6 +379,25 @@ class PurchaseRequest(models.Model):
                     "A vendor bill already exists for this purchase request. "
                     "(%(name)s)",
                     name=self.name,
+                )
+            )
+        if not self.vendor_id:
+            raise UserError(
+                self.env._(
+                    "Set the vendor before creating the vendor bill. (%(name)s)",
+                    name=self.name,
+                )
+            )
+        company = self.company_id or self.env.company
+        journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", company.id)], limit=1
+        )
+        if not journal.default_account_id:
+            raise UserError(
+                self.env._(
+                    "The purchase journal of %(company)s has no default account: "
+                    "set it so the bill lines get an expense account.",
+                    company=company.name,
                 )
             )
         lines = self.line_ids.filtered(

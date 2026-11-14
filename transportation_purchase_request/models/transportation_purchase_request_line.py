@@ -2,6 +2,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0)
 
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 
 class PurchaseRequestLine(models.Model):
@@ -59,7 +60,33 @@ class PurchaseRequestLine(models.Model):
         """Actions to perform when uncancelling a purchase request line."""
         self.write({"cancelled": False})
 
+    def _check_request_draft(self):
+        """Lines can only be added, changed or removed while the request is a draft
+        (enforced on the server, not only on the screen)."""
+        for line in self:
+            if line.request_id and line.request_id.state != "draft":
+                raise UserError(
+                    self.env._(
+                        "You cannot change the lines of a request that is not "
+                        "in draft. (%(name)s)",
+                        name=line.request_id.name,
+                    )
+                )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._check_request_draft()
+        return lines
+
+    def unlink(self):
+        self._check_request_draft()
+        return super().unlink()
+
     def write(self, vals):
+        # reject / reset only flip the "cancelled" flag, which is always allowed
+        if set(vals) - {"cancelled"}:
+            self._check_request_draft()
         res = super().write(vals)
         if vals.get("cancelled"):
             requests = self.mapped("request_id")

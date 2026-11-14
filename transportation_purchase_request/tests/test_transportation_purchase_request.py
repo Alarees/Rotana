@@ -25,6 +25,26 @@ class TestPurchaseRequest(TransactionCase):
             }
         )
 
+    def _make_approvers(self):
+        """One different user per approval stage."""
+        users = {}
+        for stage, xmlid in (
+            ("dept_manager", "group_pr_dept_manager"),
+            ("accounts_head", "group_pr_accounts_head"),
+            ("internal_audit", "group_pr_internal_auditor"),
+            ("general_manager", "group_pr_general_manager"),
+        ):
+            users[stage] = self.env["res.users"].create(
+                {
+                    "name": f"Approver {stage}",
+                    "login": f"pr_approver_{stage}",
+                    "group_ids": [
+                        (4, self.env.ref(f"transportation_purchase_request.{xmlid}").id)
+                    ],
+                }
+            )
+        return users
+
     def test_transportation_purchase_request_status(self):
         """Tests Transportation Purchase Request status workflow."""
         pr = self.transportation_purchase_request
@@ -35,17 +55,17 @@ class TestPurchaseRequest(TransactionCase):
         self.assertFalse(pr.is_editable)
         with self.assertRaisesRegex(UserError, "which is not draft"):
             pr.unlink()
-        # approve through the whole chain, user and time are recorded
-        self._add_approver_groups()
+        # approve through the whole chain with a different user per stage
+        users = self._make_approvers()
         for stage, nxt in (
             ("dept_manager", "accounts_head"),
             ("accounts_head", "internal_audit"),
             ("internal_audit", "general_manager"),
             ("general_manager", "approved"),
         ):
-            getattr(pr, f"button_approve_{stage}")()
+            getattr(pr.with_user(users[stage]), f"button_approve_{stage}")()
             self.assertEqual(pr.state, nxt)
-            self.assertEqual(pr[f"{stage}_user_id"], self.env.user)
+            self.assertEqual(pr[f"{stage}_user_id"], users[stage])
             self.assertTrue(pr[f"{stage}_date"])
         self.assertFalse(pr.is_editable)
         pr.button_draft()
@@ -54,6 +74,49 @@ class TestPurchaseRequest(TransactionCase):
         self.assertFalse(pr.general_manager_date)
         self.assertTrue(pr.is_editable)
         pr.unlink()
+
+    def test_same_person_cannot_approve_two_stages(self):
+        pr = self.transportation_purchase_request
+        pr.button_to_approve()
+        user = self.env["res.users"].create(
+            {
+                "name": "Double approver",
+                "login": "pr_double_approver",
+                "group_ids": [
+                    (4, self.env.ref("transportation_purchase_request.group_pr_dept_manager").id),
+                    (4, self.env.ref("transportation_purchase_request.group_pr_accounts_head").id),
+                ],
+            }
+        )
+        pr.with_user(user).button_approve_dept_manager()
+        with self.assertRaisesRegex(UserError, "different person"):
+            pr.with_user(user).button_approve_accounts_head()
+
+    def test_cannot_approve_own_request(self):
+        user = self.env["res.users"].create(
+            {
+                "name": "Requester approver",
+                "login": "pr_requester_approver",
+                "group_ids": [
+                    (4, self.env.ref("transportation_purchase_request.group_pr_dept_manager").id),
+                ],
+            }
+        )
+        pr = self.request_model.create({"requested_by": user.id})
+        self.line_model.create({"request_id": pr.id, "product_qty": 1.0})
+        pr.button_to_approve()
+        with self.assertRaisesRegex(UserError, "own request"):
+            pr.with_user(user).button_approve_dept_manager()
+
+    def test_lines_locked_after_approval_request(self):
+        pr = self.transportation_purchase_request
+        pr.button_to_approve()
+        with self.assertRaisesRegex(UserError, "not in draft"):
+            self.line.write({"product_qty": 99})
+        with self.assertRaisesRegex(UserError, "not in draft"):
+            self.line_model.create({"request_id": pr.id, "product_qty": 1.0})
+        with self.assertRaisesRegex(UserError, "not in draft"):
+            self.line.unlink()
 
     def _add_approver_groups(self):
         self.env.user.group_ids = [
@@ -133,11 +196,11 @@ class TestPurchaseRequest(TransactionCase):
         self.assertEqual(pr.state, "dept_manager")
 
     def test_line_count(self):
-        self.assertEqual(self.transportation_purchase_request.line_count, 1)
+        self.assertEqual(len(self.transportation_purchase_request.line_ids), 1)
         self.line_model.create(
             {"request_id": self.transportation_purchase_request.id, "product_qty": 1.0}
         )
-        self.assertEqual(self.transportation_purchase_request.line_count, 2)
+        self.assertEqual(len(self.transportation_purchase_request.line_ids), 2)
 
     def test_default_name_and_form(self):
         with Form(self.request_model) as f:
