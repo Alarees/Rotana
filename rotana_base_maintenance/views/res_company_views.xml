@@ -11,8 +11,6 @@
                         <group string="Accounting">
                             <field name="maintenance_expense_account_id"/>
                             <field name="maintenance_journal_id"/>
-                            <field name="maintenance_scrap_value_percent"/>
-                            <field name="maintenance_rehab_value_percent"/>
                         </group>
                         <group string="Operation Types">
                             <field name="maintenance_out_picking_type_id"/>

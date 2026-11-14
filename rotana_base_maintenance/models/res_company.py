@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import fields, models
 
 
 class ResCompany(models.Model):
@@ -43,23 +42,3 @@ class ResCompany(models.Model):
         domain="[('code', '=', 'incoming'), ('company_id', '=', id)]",
         help='Receipt operation type for spare parts whose state is rehabilitation.',
     )
-    maintenance_scrap_value_percent = fields.Float(
-        string='Scrap Receipt Value (%)',
-        default=0.0,
-        help='Value of a scrap spare part when it returns to stock, as a percentage of the '
-             "product's cost. 0 means it enters stock at zero value. Decided by finance.",
-    )
-    maintenance_rehab_value_percent = fields.Float(
-        string='Rehabilitated Receipt Value (%)',
-        default=100.0,
-        help='Value of a rehabilitated spare part when it returns to stock, as a percentage of '
-             "the product's cost. Decided by finance.",
-    )
-
-    @api.constrains('maintenance_scrap_value_percent', 'maintenance_rehab_value_percent')
-    def _check_maintenance_value_percent(self):
-        for company in self:
-            for percent in (company.maintenance_scrap_value_percent,
-                            company.maintenance_rehab_value_percent):
-                if percent < 0.0 or percent > 100.0:
-                    raise ValidationError(_('The receipt value percentage must be between 0 and 100.'))
