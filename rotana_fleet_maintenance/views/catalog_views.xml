@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         شاشة الكتالوج (مبنية على نفس كتالوج product / industry_fsm_sale)
+         ============================================================ -->
+    <record id="maintenance_part_product_catalog_kanban_view" model="ir.ui.view">
+        <field name="name">maintenance.part.product.catalog.kanban</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_view_kanban_catalog"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='o_kanban_price']" position="after">
+                <div class="text-muted small">
+                    <span>المتوفر: </span>
+                    <field name="qty_available"/>
+                    <field name="uom_id"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- بحث الكتالوج: قائمة جانبية للمخزن والفئة (كل المنتجات المخزنية بلا تقييد بفئة) -->
+    <record id="maintenance_part_product_catalog_search_view" model="ir.ui.view">
+        <field name="name">maintenance.part.product.catalog.search</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_view_search_catalog"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//searchpanel/field[@name='categ_id']" position="before">
+                <field name="maintenance_warehouse_id" string="المخزن" icon="fa-building" expand="1"/>
+            </xpath>
+            <xpath expr="//searchpanel/field[@name='categ_id']" position="attributes">
+                <attribute name="string">الفئات</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

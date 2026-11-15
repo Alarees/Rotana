@@ -22,7 +22,13 @@ class ProductProduct(models.Model):
         لذلك نحوّل أي عامل إلى مجموعة مخازن ثم نبحث عن رصيدها. """
         negative = operator in ('!=', 'not in')
         if operator in ('=', '!=', 'in', 'not in', 'child_of', 'parent_of'):
-            ids = value if isinstance(value, (list, tuple, set)) else [value]
+            # أودو 19 يمرّر القيمة كـ OrderedSet (وليس list/set) فنحوّلها إلى قائمة أرقام
+            if isinstance(value, int):
+                ids = [value]
+            elif value and not isinstance(value, str):
+                ids = list(getattr(value, 'ids', value))
+            else:
+                ids = []
             warehouses = self.env['stock.warehouse'].browse([w for w in ids if isinstance(w, int)])
         else:
             warehouses = self.env['stock.warehouse'].search([('id', operator, value)])

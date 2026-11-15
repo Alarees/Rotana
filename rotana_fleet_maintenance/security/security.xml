@@ -1,24 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- مستخدم صيانة المركبات: يضيف ويعدّل ويحذف قطع الغيار والمنصرفات -->
+    <!-- مستخدم صيانة المركبات: ينشئ الطلبات ويضيف قطع الغيار والمنصرفات -->
     <record id="group_fleet_maintenance_user" model="res.groups">
         <field name="name">Fleet Maintenance User</field>
     </record>
 
-    <!-- مدير المعدات (مديول الصيانة) يحصل عليها تلقائياً -->
-    <record id="maintenance.group_equipment_manager" model="res.groups">
+    <!-- مدير صيانة المركبات: يدير الفرق والمراحل -->
+    <record id="group_fleet_maintenance_manager" model="res.groups">
+        <field name="name">Fleet Maintenance Manager</field>
         <field name="implied_ids" eval="[(4, ref('group_fleet_maintenance_user'))]"/>
     </record>
 
+    <!-- مدير الورشة الخارجية (منقول من مديول الورشة الخارجية) -->
+    <record id="group_external_workshop_manager" model="res.groups">
+        <field name="name">مدير الورشة الخارجية</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
     <!-- فصل الشركات -->
-    <record id="maintenance_request_part_company_rule" model="ir.rule">
-        <field name="name">Maintenance request part: multi-company</field>
-        <field name="model_id" ref="model_maintenance_request_part"/>
+    <record id="rotana_maintenance_request_company_rule" model="ir.rule">
+        <field name="name">Rotana maintenance request: multi-company</field>
+        <field name="model_id" ref="model_rotana_maintenance_request"/>
         <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
     </record>
-    <record id="maintenance_request_expense_company_rule" model="ir.rule">
-        <field name="name">Maintenance request expense: multi-company</field>
-        <field name="model_id" ref="model_maintenance_request_expense"/>
+    <record id="rotana_maintenance_team_company_rule" model="ir.rule">
+        <field name="name">Rotana maintenance team: multi-company</field>
+        <field name="model_id" ref="model_rotana_maintenance_team"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rotana_maintenance_part_company_rule" model="ir.rule">
+        <field name="name">Rotana maintenance part: multi-company</field>
+        <field name="model_id" ref="model_rotana_maintenance_part"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rotana_maintenance_expense_company_rule" model="ir.rule">
+        <field name="name">Rotana maintenance expense: multi-company</field>
+        <field name="model_id" ref="model_rotana_maintenance_expense"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rotana_external_workshop_company_rule" model="ir.rule">
+        <field name="name">External workshop: multi-company</field>
+        <field name="model_id" ref="model_rotana_external_workshop"/>
         <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
     </record>
 </odoo>

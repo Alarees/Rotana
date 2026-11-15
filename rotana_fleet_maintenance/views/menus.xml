@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- التطبيق الرئيسي: صيانة روتانا (نفس أيقونة الورشة الخارجية) -->
+    <menuitem id="menu_rotana_maintenance_root"
+              name="صيانة روتانا"
+              web_icon="rotana_fleet_maintenance,static/description/icon.png"
+              sequence="30"/>
+
+    <menuitem id="menu_rotana_maintenance_requests"
+              name="طلبات الصيانة"
+              parent="menu_rotana_maintenance_root"
+              action="rotana_maintenance_request_action"
+              groups="group_fleet_maintenance_user"
+              sequence="10"/>
+
+    <menuitem id="menu_rotana_external_workshop"
+              name="الورشة الخارجية"
+              parent="menu_rotana_maintenance_root"
+              action="rotana_external_workshop_action"
+              groups="group_external_workshop_manager"
+              sequence="20"/>
+
+    <menuitem id="menu_rotana_maintenance_config"
+              name="الإعدادات"
+              parent="menu_rotana_maintenance_root"
+              groups="group_fleet_maintenance_manager"
+              sequence="90"/>
+
+    <menuitem id="menu_rotana_maintenance_teams"
+              name="الفرق والفنيون"
+              parent="menu_rotana_maintenance_config"
+              action="rotana_maintenance_team_action"
+              sequence="10"/>
+
+    <menuitem id="menu_rotana_maintenance_stages"
+              name="مراحل الطلب"
+              parent="menu_rotana_maintenance_config"
+              action="rotana_maintenance_stage_action"
+              sequence="20"/>
+
+</odoo>

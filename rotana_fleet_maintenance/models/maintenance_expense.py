@@ -3,13 +3,13 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
-class MaintenanceRequestExpense(models.Model):
-    _name = 'maintenance.request.expense'
+class RotanaMaintenanceExpense(models.Model):
+    _name = 'rotana.maintenance.expense'
     _description = 'منصرف أثناء الصيانة'
     _order = 'id'
 
     request_id = fields.Many2one(
-        'maintenance.request', string='طلب الصيانة',
+        'rotana.maintenance.request', string='طلب الصيانة',
         required=True, ondelete='cascade', index=True,
     )
     company_id = fields.Many2one(related='request_id.company_id', store=True)
