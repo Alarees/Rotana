@@ -5,30 +5,30 @@ from odoo.exceptions import UserError
 
 class RotanaMaintenanceExpense(models.Model):
     _name = 'rotana.maintenance.expense'
-    _description = 'منصرف أثناء الصيانة'
+    _description = 'Maintenance Expense'
     _order = 'id'
 
     request_id = fields.Many2one(
-        'rotana.maintenance.request', string='طلب الصيانة',
+        'rotana.maintenance.request', string='Maintenance Request',
         required=True, ondelete='cascade', index=True,
     )
     company_id = fields.Many2one(related='request_id.company_id', store=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
-    partner_id = fields.Many2one('res.partner', string='المورد')
+    partner_id = fields.Many2one('res.partner', string='Vendor')
     account_id = fields.Many2one(
-        'account.account', string='حساب المصروف',
+        'account.account', string='Expense Account',
         compute='_compute_account_id', store=True, readonly=False, precompute=True,
-        help='الحساب المدين لسطر الفاتورة. الافتراضي: حساب مصروف قطع الغيار في إعدادات الشركة.',
+        help='Debit account of the bill line. Default: the spare parts expense account of the company settings.',
     )
-    name = fields.Char(string='الوصف', required=True)
-    amount = fields.Monetary(string='المبلغ', required=True)
-    # الفاتورة التي أُنشئت لهذا السطر: وجودها يعني أنه فُوتِر ولا يُفوتَر مرة أخرى
+    name = fields.Char(string='Description', required=True)
+    amount = fields.Monetary(string='Amount', required=True)
+    # The bill created for this line: its presence means the line is invoiced and is never invoiced again
     move_id = fields.Many2one(
-        'account.move', string='الفاتورة', copy=False, readonly=True,
+        'account.move', string='Bill', copy=False, readonly=True,
         ondelete='set null', index='btree_not_null',
         groups='account.group_account_invoice',
     )
-    is_invoiced = fields.Boolean(string='تمت الفوترة', compute='_compute_is_invoiced')
+    is_invoiced = fields.Boolean(string='Invoiced', compute='_compute_is_invoiced')
 
     @api.depends('request_id.company_id')
     def _compute_account_id(self):
@@ -42,10 +42,10 @@ class RotanaMaintenanceExpense(models.Model):
 
     def write(self, vals):
         if set(vals) - {'move_id'} and any(e.sudo().move_id for e in self):
-            raise UserError(_('لا يمكن تعديل منصرف تم إنشاء فاتورة له.'))
+            raise UserError(_('An expense that already has a bill cannot be modified.'))
         return super().write(vals)
 
     def unlink(self):
         if any(e.sudo().move_id for e in self):
-            raise UserError(_('لا يمكن حذف منصرف تم إنشاء فاتورة له.'))
+            raise UserError(_('An expense that already has a bill cannot be deleted.'))
         return super().unlink()

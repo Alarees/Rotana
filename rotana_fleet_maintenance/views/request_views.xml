@@ -2,36 +2,34 @@
 <odoo>
 
     <!-- ============================================================
-         طلب صيانة روتانا: نموذج (على نسق استمارة الجوب)
+         Rotana maintenance request: form (following the job card)
          ============================================================ -->
     <record id="rotana_maintenance_request_view_form" model="ir.ui.view">
         <field name="name">rotana.maintenance.request.form</field>
         <field name="model">rotana.maintenance.request</field>
         <field name="arch" type="xml">
-            <form string="طلب صيانة">
+            <form string="Maintenance Request">
                 <header>
                     <field name="parts_state" invisible="1"/>
                     <field name="active" invisible="1"/>
-                    <button name="action_confirm_parts" string="تأكيد" type="object" class="btn-primary"
+                    <button name="action_confirm_parts" string="Confirm" type="object" class="btn-primary"
                             invisible="parts_state != 'draft' or not active"/>
-                    <button name="action_reset_parts" string="إلغاء التأكيد" type="object"
+                    <button name="action_reset_parts" string="Reset Confirmation" type="object"
                             invisible="parts_state != 'confirmed'"
-                            confirm="سيتم إلغاء إذن التسليم وإعادة الطلب إلى المسودة. هل أنت متأكد؟"/>
-                    <button name="action_create_expense_bills" string="إنشاء فواتير المنصرفات" type="object"
+                            confirm="The delivery order will be cancelled and the request set back to draft. Are you sure?"/>
+                    <button name="action_create_expense_bills" string="Create Expense Bills" type="object"
                             groups="account.group_account_invoice"
                             invisible="not active"/>
                     <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
-                    <widget name="web_ribbon" title="مؤرشف" bg_color="text-bg-danger" invisible="active"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
                     <div class="oe_title">
                         <label for="name"/>
-                        <h1><field name="name" placeholder="مثال: تسريب هواء + تغيير دواليب"/></h1>
+                        <h1><field name="name" placeholder="e.g. air leak + tire change"/></h1>
                     </div>
                     <group>
                         <group name="card_left">
-                            <field name="job_card_no"/>
-                            <field name="report_no"/>
                             <field name="fleet_id" options="{'no_create': True}"/>
                             <field name="unit_number"/>
                             <field name="license_plate"/>
@@ -43,30 +41,27 @@
                             <field name="entry_datetime"/>
                             <field name="exit_datetime"/>
                             <field name="downtime_hours" widget="float_time"/>
-                            <field name="team_id" options="{'no_create': True}"/>
-                            <field name="technician_id" options="{'no_create': True}"
-                                   domain="[('rotana_team_ids', '=', team_id)] if team_id else []"/>
                             <field name="inspector_id" options="{'no_create': True}"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="الأعمال" name="works">
+                        <page string="Works" name="works">
                             <field name="work_ids">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="team_id" options="{'no_create': True}"/>
                                     <field name="name"/>
-                                    <field name="technician_id" options="{'no_create': True}"
+                                    <field name="technician_ids" widget="many2many_tags"
+                                           options="{'no_create': True}"
                                            domain="[('rotana_team_ids', '=', team_id)] if team_id else []"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="قطع الغيار" name="spare_parts">
+                        <page string="Spare Parts" name="spare_parts">
                             <div class="container row mb-2">
                                 <div class="col">
                                     <button name="action_add_from_catalog" type="object" class="btn btn-primary"
-                                            string="اختيار قطع الغيار" icon="fa-th-large"
+                                            string="Select Spare Parts" icon="fa-th-large"
                                             invisible="parts_state != 'draft' or not active"/>
                                 </div>
                                 <div class="col">
@@ -89,27 +84,27 @@
                                            domain="[('code', '=', 'incoming')]"/>
                                     <field name="uom_id" optional="show"/>
                                     <field name="unit_cost" optional="show" groups="account.group_account_user"/>
-                                    <field name="subtotal" sum="الإجمالي" groups="account.group_account_user"/>
+                                    <field name="subtotal" sum="Total" groups="account.group_account_user"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="المنصرفات" name="expenses">
+                        <page string="Expenses" name="expenses">
                             <field name="expense_ids">
                                 <list editable="bottom" decoration-info="not is_invoiced">
                                     <field name="partner_id" readonly="is_invoiced"/>
                                     <field name="name" readonly="is_invoiced"/>
                                     <field name="account_id" readonly="is_invoiced" options="{'no_create': True}"
                                            domain="[('account_type', 'in', ('expense', 'expense_direct_cost', 'expense_depreciation'))]"/>
-                                    <field name="amount" sum="الإجمالي" readonly="is_invoiced"/>
+                                    <field name="amount" sum="Total" readonly="is_invoiced"/>
                                     <field name="is_invoiced" column_invisible="1" widget="boolean" groups="account.group_account_invoice"/>
                                     <field name="move_id" groups="account.group_account_invoice"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="ملاحظات" name="notes">
-                            <field name="description" placeholder="ملاحظات إضافية..."/>
+                        <page string="Notes" name="notes">
+                            <field name="description" placeholder="Additional notes..."/>
                         </page>
                     </notebook>
                 </sheet>
@@ -118,13 +113,12 @@
         </field>
     </record>
 
-    <!-- قائمة -->
+    <!-- List -->
     <record id="rotana_maintenance_request_view_list" model="ir.ui.view">
         <field name="name">rotana.maintenance.request.list</field>
         <field name="model">rotana.maintenance.request</field>
         <field name="arch" type="xml">
-            <list string="طلبات الصيانة" multi_edit="1">
-                <field name="job_card_no"/>
+            <list string="Maintenance Requests" multi_edit="1">
                 <field name="name"/>
                 <field name="fleet_id"/>
                 <field name="unit_number" optional="hide"/>
@@ -133,29 +127,22 @@
                 <field name="entry_datetime" optional="show"/>
                 <field name="exit_datetime" optional="show"/>
                 <field name="downtime_hours" widget="float_time" optional="hide"/>
-                <field name="team_id" optional="show"/>
-                <field name="technician_id" optional="show"/>
                 <field name="parts_state" widget="badge" optional="show"/>
                 <field name="stage_id"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
 
-    <!-- كانبان (لون البطاقة = لون الفريق) -->
+    <!-- Kanban -->
     <record id="rotana_maintenance_request_view_kanban" model="ir.ui.view">
         <field name="name">rotana.maintenance.request.kanban</field>
         <field name="model">rotana.maintenance.request</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stage_id" highlight_color="color" quick_create="false">
-                <field name="color"/>
+            <kanban default_group_by="stage_id" quick_create="false">
                 <templates>
                     <t t-name="card">
                         <div class="fw-bold"><field name="name"/></div>
-                        <div><field name="fleet_id"/> <span t-if="record.job_card_no.raw_value" class="text-muted">· <field name="job_card_no"/></span></div>
-                        <div class="text-muted small">
-                            <field name="team_id"/> <span t-if="record.technician_id.raw_value">· <field name="technician_id"/></span>
-                        </div>
+                        <div><field name="fleet_id"/></div>
                         <div class="text-muted small"><field name="entry_datetime"/></div>
                     </t>
                 </templates>
@@ -163,37 +150,33 @@
         </field>
     </record>
 
-    <!-- بحث -->
+    <!-- Search -->
     <record id="rotana_maintenance_request_view_search" model="ir.ui.view">
         <field name="name">rotana.maintenance.request.search</field>
         <field name="model">rotana.maintenance.request</field>
         <field name="arch" type="xml">
-            <search string="طلبات الصيانة">
-                <field name="name" string="الموضوع / رقم الاستمارة"
-                       filter_domain="['|', '|', ('name', 'ilike', self), ('job_card_no', 'ilike', self), ('report_no', 'ilike', self)]"/>
+            <search string="Maintenance Requests">
+                <field name="name"/>
                 <field name="fleet_id"/>
                 <field name="driver_id"/>
-                <field name="team_id"/>
-                <field name="technician_id"/>
-                <filter name="filter_open" string="قيد العمل" domain="[('stage_id.done', '=', False)]"/>
-                <filter name="filter_done" string="المكتملة" domain="[('stage_id.done', '=', True)]"/>
+                <filter name="filter_open" string="In Progress" domain="[('stage_id.done', '=', False)]"/>
+                <filter name="filter_done" string="Completed" domain="[('stage_id.done', '=', True)]"/>
                 <separator/>
-                <filter name="filter_in_workshop" string="داخل الورشة الآن"
+                <filter name="filter_in_workshop" string="Currently in Workshop"
                         domain="[('entry_datetime', '!=', False), ('exit_datetime', '=', False)]"/>
                 <separator/>
-                <filter name="filter_archived" string="المؤرشفة" domain="[('active', '=', False)]"/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
                 <group>
-                    <filter name="group_stage" string="المرحلة" context="{'group_by': 'stage_id'}"/>
-                    <filter name="group_team" string="القسم" context="{'group_by': 'team_id'}"/>
-                    <filter name="group_fleet" string="المركبة" context="{'group_by': 'fleet_id'}"/>
-                    <filter name="group_date" string="التاريخ" context="{'group_by': 'request_date:month'}"/>
+                    <filter name="group_stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="group_fleet" string="Vehicle" context="{'group_by': 'fleet_id'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'request_date:month'}"/>
                 </group>
             </search>
         </field>
     </record>
 
     <record id="rotana_maintenance_request_action" model="ir.actions.act_window">
-        <field name="name">طلبات الصيانة</field>
+        <field name="name">Maintenance Requests</field>
         <field name="res_model">rotana.maintenance.request</field>
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="rotana_maintenance_request_view_search"/>

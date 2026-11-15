@@ -8,47 +8,41 @@ from odoo.fields import Domain
 
 class RotanaMaintenanceRequest(models.Model):
     _name = 'rotana.maintenance.request'
-    _description = 'طلب صيانة روتانا'
+    _description = 'Rotana Maintenance Request'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'product.catalog.mixin']
     _order = 'id desc'
 
     # ------------------------------------------------------------------
-    # بيانات الاستمارة (إستمارة جوب)
+    # Request data (job card)
     # ------------------------------------------------------------------
-    name = fields.Char(string='الموضوع', required=True, tracking=True)
-    job_card_no = fields.Char(string='رقم الاستمارة', copy=False, tracking=True, index='btree_not_null')
-    report_no = fields.Char(string='رقم البلاغ', copy=False, tracking=True)
+    name = fields.Char(string='Subject', required=True, tracking=True)
     active = fields.Boolean(default=True)
     company_id = fields.Many2one(
-        'res.company', string='الشركة', required=True, default=lambda self: self.env.company)
+        'res.company', string='Company', required=True, default=lambda self: self.env.company)
     fleet_id = fields.Many2one(
-        'fleet.vehicle', string='الوحدة (المركبة)', required=True, tracking=True, index=True)
-    unit_number = fields.Char(related='fleet_id.unit_number', string='رقم الوحدة')
-    license_plate = fields.Char(related='fleet_id.license_plate', string='رقم اللوحة')
+        'fleet.vehicle', string='Unit (Vehicle)', required=True, tracking=True, index=True)
+    unit_number = fields.Char(related='fleet_id.unit_number', string='Unit Number')
+    license_plate = fields.Char(related='fleet_id.license_plate', string='License Plate')
     driver_id = fields.Many2one(
-        'res.partner', string='السائق',
+        'res.partner', string='Driver',
         compute='_compute_driver_id', store=True, readonly=False, tracking=True)
-    odometer = fields.Float(string='العداد', tracking=True)
+    odometer = fields.Float(string='Odometer', tracking=True)
     request_date = fields.Date(
-        string='التاريخ', default=fields.Date.context_today, required=True, tracking=True)
+        string='Date', default=fields.Date.context_today, required=True, tracking=True)
     entry_datetime = fields.Datetime(
-        string='زمن الدخول', default=fields.Datetime.now, tracking=True)
-    exit_datetime = fields.Datetime(string='زمن الخروج', tracking=True, copy=False)
+        string='Entry Time', default=fields.Datetime.now, tracking=True)
+    exit_datetime = fields.Datetime(string='Exit Time', tracking=True, copy=False)
     downtime_hours = fields.Float(
-        string='مدة التوقف', compute='_compute_downtime_hours', store=True,
-        help='الفرق بين زمن الدخول وزمن الخروج بالساعات.')
+        string='Downtime', compute='_compute_downtime_hours', store=True,
+        help='Difference between the entry time and the exit time, in hours.')
     stage_id = fields.Many2one(
-        'rotana.maintenance.stage', string='المرحلة', tracking=True, copy=False, index=True,
+        'rotana.maintenance.stage', string='Stage', tracking=True, copy=False, index=True,
         default=lambda self: self._default_stage_id(),
         group_expand='_read_group_stage_ids', ondelete='restrict')
-    team_id = fields.Many2one(
-        'rotana.maintenance.team', string='القسم', tracking=True, index='btree_not_null')
-    technician_id = fields.Many2one('hr.employee', string='الفني', tracking=True)
-    inspector_id = fields.Many2one('res.users', string='مهندس التفتيش', tracking=True)
-    color = fields.Integer(related='team_id.color', string='لون الفريق')
-    description = fields.Html(string='ملاحظات')
+    inspector_id = fields.Many2one('res.users', string='Inspection Engineer', tracking=True)
+    description = fields.Html(string='Notes')
     work_ids = fields.One2many(
-        'rotana.maintenance.work', 'request_id', string='الأعمال', copy=True)
+        'rotana.maintenance.work', 'request_id', string='Works', copy=True)
 
     @api.model
     def _default_stage_id(self):
@@ -80,57 +74,42 @@ class RotanaMaintenanceRequest(models.Model):
         for request in self:
             if request.entry_datetime and request.exit_datetime \
                     and request.exit_datetime < request.entry_datetime:
-                raise ValidationError(_('زمن الخروج لا يمكن أن يكون قبل زمن الدخول.'))
-
-    @api.constrains('job_card_no', 'company_id')
-    def _check_job_card_no_unique(self):
-        for request in self.filtered('job_card_no'):
-            if self.with_context(active_test=False).search_count([
-                ('job_card_no', '=', request.job_card_no),
-                ('company_id', '=', request.company_id.id),
-                ('id', '!=', request.id),
-            ]):
-                raise ValidationError(_('رقم الاستمارة %s مستخدم في طلب آخر.', request.job_card_no))
-
-    @api.onchange('team_id')
-    def _onchange_team_id(self):
-        if self.technician_id and self.team_id and self.technician_id not in self.team_id.technician_ids:
-            self.technician_id = False
+                raise ValidationError(_('The exit time cannot be before the entry time.'))
 
     # ------------------------------------------------------------------
-    # قطع الغيار
+    # Spare parts
     # ------------------------------------------------------------------
     part_line_ids = fields.One2many(
-        'rotana.maintenance.part', 'request_id', string='قطع الغيار', copy=True)
+        'rotana.maintenance.part', 'request_id', string='Spare Parts', copy=True)
     parts_state = fields.Selection(
         [
-            ('draft', 'مسودة'),
-            ('confirmed', 'مؤكد'),
-            ('done', 'مكتمل'),
+            ('draft', 'Draft'),
+            ('confirmed', 'Confirmed'),
+            ('done', 'Done'),
         ],
-        string='حالة قطع الغيار', default='draft', copy=False, tracking=True,
+        string='Spare Parts Status', default='draft', copy=False, tracking=True,
     )
-    # كتالوج المنتجات في أودو (واجهة JS) يقرأ حقل "state" من السجل الأب،
-    # لذلك نعرضه كنسخة من حالة قطع الغيار.
-    state = fields.Selection(related='parts_state', string='الحالة')
+    # The Odoo product catalog (JS) reads the "state" field of the parent record,
+    # so it is exposed as a copy of the spare parts status.
+    state = fields.Selection(related='parts_state', string='Status')
     currency_id = fields.Many2one(related='company_id.currency_id')
-    parts_total = fields.Monetary(compute='_compute_parts_total', string='إجمالي قطع الغيار')
+    parts_total = fields.Monetary(compute='_compute_parts_total', string='Spare Parts Total')
     picking_ids = fields.One2many(
-        'stock.picking', 'rotana_request_id', string='أذون التسليم', copy=False)
+        'stock.picking', 'rotana_request_id', string='Delivery Orders', copy=False)
     workshop_ids = fields.One2many(
         'rotana.external.workshop', 'maintenance_request_id',
-        string='طلبات الورشة الخارجية', copy=False)
+        string='External Maintenance Requests', copy=False)
     parts_move_id = fields.Many2one(
-        'account.move', string='قيد قطع الغيار', copy=False, readonly=True)
+        'account.move', string='Spare Parts Entry', copy=False, readonly=True)
 
     # ------------------------------------------------------------------
-    # المنصرفات أثناء الصيانة
+    # Expenses during maintenance
     # ------------------------------------------------------------------
     expense_ids = fields.One2many(
-        'rotana.maintenance.expense', 'request_id', string='المنصرفات', copy=False)
-    expenses_total = fields.Monetary(compute='_compute_expenses_total', string='إجمالي المنصرفات')
+        'rotana.maintenance.expense', 'request_id', string='Expenses', copy=False)
+    expenses_total = fields.Monetary(compute='_compute_expenses_total', string='Expenses Total')
     expense_move_ids = fields.Many2many(
-        'account.move', compute='_compute_expense_move_ids', compute_sudo=True, string='فواتير المنصرفات')
+        'account.move', compute='_compute_expense_move_ids', compute_sudo=True, string='Expense Bills')
 
     @api.depends('expense_ids.amount')
     def _compute_expenses_total(self):
@@ -143,22 +122,22 @@ class RotanaMaintenanceRequest(models.Model):
             request.expense_move_ids = request.expense_ids.move_id
 
     def action_create_expense_bills(self):
-        """ يحوّل المنصرفات التي لم تُفوتَر إلى فواتير مورّدين (مسودة)،
-        فاتورة لكل مورد، مربوطة بالحساب التحليلي للمركبة. """
+        """ Convert the not-yet-invoiced expenses into vendor bills (draft),
+        one bill per vendor, linked to the vehicle analytic account. """
         self.ensure_one()
         self._check_analytic_account()
         lines = self.expense_ids.filtered(lambda e: not e.move_id)
         if not lines:
-            raise UserError(_('لا توجد منصرفات جديدة لإنشاء فاتورة لها.'))
+            raise UserError(_('There are no new expenses to invoice.'))
         missing = lines.filtered(lambda e: not e.partner_id)
         if missing:
             raise UserError(_(
-                'حدد المورد للمنصرفات التالية قبل إنشاء الفواتير:\n%s',
+                'Set the vendor of the following expenses before creating the bills:\n%s',
                 '\n'.join('- %s' % (e.name or '') for e in missing)))
         no_account = lines.filtered(lambda e: not e.account_id)
         if no_account:
             raise UserError(_(
-                'حدد حساب المصروف للمنصرفات التالية قبل إنشاء الفواتير:\n%s',
+                'Set the expense account of the following expenses before creating the bills:\n%s',
                 '\n'.join('- %s' % (e.name or '') for e in no_account)))
         analytic = {str(self.fleet_id.analytic_account_id.id): 100.0}
         bills = self.env['account.move']
@@ -193,20 +172,20 @@ class RotanaMaintenanceRequest(models.Model):
             request.parts_total = sum(request.part_line_ids.mapped('subtotal'))
 
     # ------------------------------------------------------------------
-    # كتالوج المنتجات (نفس آلية industry_fsm_sale)
+    # Product catalog (same mechanism as industry_fsm_sale)
     # ------------------------------------------------------------------
     def action_add_from_catalog(self):
         action = super().action_add_from_catalog()
         kanban_view = self.env.ref('rotana_fleet_maintenance.maintenance_part_product_catalog_kanban_view')
         search_view = self.env.ref('rotana_fleet_maintenance.maintenance_part_product_catalog_search_view')
-        action['name'] = _('قطع الغيار')
+        action['name'] = _('Spare Parts')
         action['search_view_id'] = [search_view.id, 'search']
         action['views'] = [(kanban_view.id, 'kanban'), (False, 'form')]
         return action
 
     def _get_action_add_from_catalog_extra_context(self):
-        # واجهة الكتالوج (JS) تقرأ order_id من السياق لنداء المتحكم،
-        # بالإضافة إلى العملة ودقة الأرقام لعرض السعر.
+        # The catalog UI (JS) reads order_id from the context to call the controller,
+        # plus the currency and number precision used to display the price.
         return {
             **super()._get_action_add_from_catalog_extra_context(),
             'order_id': self.id,
@@ -215,7 +194,7 @@ class RotanaMaintenanceRequest(models.Model):
         }
 
     def _get_product_catalog_domain(self):
-        # قطع الغيار = منتجات مخزنية فقط
+        # Spare parts = storable products only
         return super()._get_product_catalog_domain() & Domain([
             ('type', '=', 'consu'),
             ('is_storable', '=', True),
@@ -256,36 +235,36 @@ class RotanaMaintenanceRequest(models.Model):
         return product.with_company(self.company_id).standard_price
 
     # ------------------------------------------------------------------
-    # التأكيد: إذن تسليم + حساب تحليلي
+    # Confirmation: delivery order + analytic account
     # ------------------------------------------------------------------
     def action_confirm_parts(self):
         for request in self:
             if request.parts_state != 'draft':
                 continue
             if not request.fleet_id:
-                raise UserError(_('اختر المركبة أولاً قبل تأكيد قطع الغيار.'))
-            if not request.part_line_ids:
-                raise UserError(_('أضف قطع غيار واحدة على الأقل قبل التأكيد.'))
-            request._check_analytic_account()
-            receipt_groups = request._get_receipt_groups()
-            request._create_parts_picking()
-            request._create_parts_receipts(receipt_groups)
-            request._create_workshop_requests()
+                raise UserError(_('Select the vehicle first before confirming.'))
+            # The request can be confirmed without spare parts.
+            if request.part_line_ids:
+                request._check_analytic_account()
+                receipt_groups = request._get_receipt_groups()
+                request._create_parts_picking()
+                request._create_parts_receipts(receipt_groups)
+                request._create_workshop_requests()
             request.parts_state = 'confirmed'
         return True
 
     def action_reset_parts(self):
-        """ إلغاء التأكيد: يُلغي أذون التسليم غير المنفَّذة ويعيد الطلب لمسودة. """
+        """ Reset the confirmation: cancels the delivery orders not yet done and sets the request back to draft. """
         for request in self:
             if request.parts_state != 'confirmed':
                 continue
             if request.picking_ids.filtered(lambda p: p.state == 'done'):
-                raise UserError(_('لا يمكن إلغاء التأكيد لأن إذن التسليم تم تنفيذه بالفعل.'))
+                raise UserError(_('The confirmation cannot be reset because the delivery order is already done.'))
             workshops = request.workshop_ids.filtered('part_line_id')
             sent = workshops.filtered(lambda w: w.state not in ('draft', 'confirmed'))
             if sent:
                 raise UserError(_(
-                    'لا يمكن إلغاء التأكيد لأن طلبات الورشة التالية دخلت الورشة:\n%s',
+                    'The confirmation cannot be reset because the following workshop requests already entered the workshop:\n%s',
                     '\n'.join('- %s' % w.name for w in sent)))
             workshops.sudo().unlink()
             request.picking_ids.filtered(
@@ -298,16 +277,16 @@ class RotanaMaintenanceRequest(models.Model):
         self.ensure_one()
         self.fleet_id._ensure_analytic_account()
         if not self.fleet_id.analytic_account_id:
-            raise UserError(_('لا يوجد حساب تحليلي مربوط بهذه العربة'))
+            raise UserError(_('There is no analytic account linked to this vehicle.'))
 
     def _create_parts_picking(self):
         self.ensure_one()
         warehouse = self.env['stock.warehouse'].with_company(self.company_id).search(
             [('company_id', '=', self.company_id.id)], limit=1)
-        # نوع العملية الافتراضي من إعدادات الصيانة، وإلا نوع التسليم للمستودع
+        # Default operation type from the maintenance settings, otherwise the delivery type of the warehouse
         picking_type = self.company_id.maintenance_out_picking_type_id or warehouse.out_type_id
         if not picking_type:
-            raise UserError(_('لا يوجد مستودع بنوع عملية "تسليم" للشركة %s.', self.company_id.name))
+            raise UserError(_('There is no warehouse with a "Delivery" operation type for company %s.', self.company_id.name))
         src_location = picking_type.default_location_src_id
         picking = self.env['stock.picking'].sudo().create({
             'picking_type_id': picking_type.id,
@@ -331,7 +310,7 @@ class RotanaMaintenanceRequest(models.Model):
         return picking
 
     def _create_workshop_requests(self):
-        """ طلب صيانة اسبير (مسودة) لكل سطر اسبير حالته تأهيل. """
+        """ Spare part maintenance request (draft) for every spare line whose state is rehabilitation. """
         self.ensure_one()
         Workshop = self.env['rotana.external.workshop'].sudo()
         for line in self.part_line_ids.filtered(lambda l: l.spare_state == 'rehab'):
@@ -349,13 +328,13 @@ class RotanaMaintenanceRequest(models.Model):
             })
 
     def _get_receipt_lines(self):
-        """ السطور التي يصدر لها إذن استلام عند التأكيد (للتوسعة في المديولات الأخرى). """
+        """ Lines for which a receipt is issued on confirmation (for extension by other modules). """
         self.ensure_one()
-        # سطور (تأهيل) لا يصدر لها إذن استلام: يُنشأ لها طلب ورشة خارجية بدلاً منه
+        # Rehabilitation lines get no receipt: an external maintenance request is created instead
         return self.part_line_ids.filtered(lambda l: l.spare_state != 'rehab')
 
     def _get_receipt_groups(self):
-        """ يجمّع سطور قطع الغيار بحسب نوع عملية الاستلام (تالف / تأهيل). """
+        """ Group the spare part lines by receipt operation type (scrap / rehabilitation). """
         self.ensure_one()
         company = self.company_id
         groups = defaultdict(lambda: self.env['rotana.maintenance.part'])
@@ -365,14 +344,14 @@ class RotanaMaintenanceRequest(models.Model):
                 else company.maintenance_scrap_picking_type_id)
             if not picking_type:
                 raise UserError(_(
-                    'حدد نوع العملية للقطعة \"%(product)s\" أو حدد \"عملية التالف / عملية التأهيل\" '
-                    'في إعدادات الشركة %(company)s.',
+                    'Set the operation type of the part "%(product)s" or set the "Scrap / Rehabilitation Operation Type" '
+                    'in the settings of company %(company)s.',
                     product=line.product_id.display_name, company=company.name))
             groups[picking_type] |= line
         return groups
 
     def _create_parts_receipts(self, groups):
-        """ إذن استلام واحد لكل نوع عملية (تالف / تأهيل) يضم سطور هذا النوع. """
+        """ One receipt per operation type (scrap / rehabilitation) holding the lines of that type. """
         self.ensure_one()
         pickings = self.env['stock.picking']
         for picking_type, lines in groups.items():
@@ -402,7 +381,7 @@ class RotanaMaintenanceRequest(models.Model):
         return pickings
 
     # ------------------------------------------------------------------
-    # الإكمال: قيد يومية لإنقاص قيمة المخزون
+    # Completion: journal entry decreasing the stock value
     # ------------------------------------------------------------------
     def write(self, vals):
         completing = self.browse()
@@ -417,18 +396,18 @@ class RotanaMaintenanceRequest(models.Model):
         return res
 
     def _check_parts_before_done(self):
-        """ لا يكتمل الطلب قبل تأكيد قطع الغيار وتنفيذ أذون التسليم. """
+        """ The request cannot be completed before the spare parts are confirmed and the delivery orders are done. """
         for request in self.filtered('part_line_ids'):
             if request.parts_state == 'draft':
-                raise UserError(_('أكّد قطع الغيار (إصدار إذن التسليم) قبل إكمال الطلب "%s".', request.name))
+                raise UserError(_('Confirm the spare parts (issue the delivery order) before completing the request "%s".', request.name))
             if request.parts_state == 'confirmed':
                 pickings = request.picking_ids.filtered(lambda p: p.state != 'cancel')
                 if not pickings or any(p.state != 'done' for p in pickings):
                     raise UserError(_(
-                        'لا يمكن إكمال الطلب "%s" قبل تنفيذ إذن تسليم قطع الغيار من المخزن.', request.name))
+                        'The request "%s" cannot be completed before the spare parts delivery order is done.', request.name))
 
     def _get_parts_entry_date(self, moves):
-        """ تاريخ قيد قطع الغيار = تاريخ تنفيذ التسليم وليس تاريخ اليوم. """
+        """ Date of the spare parts entry = date the delivery was done, not today's date. """
         dates = [d.date() if hasattr(d, 'date') else d for d in moves.mapped('date') if d]
         return max(dates) if dates else fields.Date.context_today(self)
 
@@ -445,8 +424,8 @@ class RotanaMaintenanceRequest(models.Model):
             credit_by_account = defaultdict(float)
             for move in moves:
                 if move.account_move_id:
-                    # أودو 19 أنشأ قيد التقييم لهذه الحركة عند التنفيذ (المنتج بتقييم Perpetual
-                    # وفي أحد الموقعين حساب تقييم)؛ تسجيل قيد يدوي هنا يكرر التكلفة.
+                    # Odoo 19 already created the valuation entry of this move when it was done (product with Perpetual valuation
+                    # and a valuation account on one of the locations); posting a manual entry here would duplicate the cost.
                     continue
                 amount = currency.round(abs(move.value))
                 if currency.is_zero(amount):
@@ -455,7 +434,7 @@ class RotanaMaintenanceRequest(models.Model):
                 expense_account = company.maintenance_expense_account_id or accounts['expense']
                 if not expense_account:
                     raise UserError(_(
-                        'حدد "حساب مصروف قطع الغيار" في إعدادات الشركة أو حساب المصروف في فئة المنتج %s.',
+                        'Set the "Spare Parts Expense Account" in the company settings or the expense account on the product category %s.',
                         move.product_id.categ_id.display_name))
                 debit_by_account[expense_account] += amount
                 credit_by_account[accounts['stock_valuation']] += amount
@@ -464,8 +443,8 @@ class RotanaMaintenanceRequest(models.Model):
                 journal = company.maintenance_journal_id or self.env['account.journal'].sudo().search(
                     [('type', '=', 'general'), ('company_id', '=', company.id)], limit=1)
                 if not journal:
-                    raise UserError(_('لا يوجد دفتر يومية من النوع "متنوع" للشركة %s.', company.name))
-                label = _('قطع غيار - %s - %s', request.fleet_id.display_name, request.name)
+                    raise UserError(_('There is no journal of type "Miscellaneous" for company %s.', company.name))
+                label = _('Spare parts - %s - %s', request.fleet_id.display_name, request.name)
                 analytic = {str(request.fleet_id.analytic_account_id.id): 100.0} if request.fleet_id.analytic_account_id else False
                 line_vals = [Command.create({
                     'name': label,

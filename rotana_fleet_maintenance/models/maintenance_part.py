@@ -5,44 +5,37 @@ from odoo.exceptions import UserError, ValidationError
 
 class RotanaMaintenancePart(models.Model):
     _name = 'rotana.maintenance.part'
-    _description = 'قطعة غيار في طلب صيانة'
+    _description = 'Maintenance Spare Part'
     _order = 'sequence, id'
 
     sequence = fields.Integer(default=10)
     request_id = fields.Many2one(
-        'rotana.maintenance.request', string='طلب الصيانة',
+        'rotana.maintenance.request', string='Maintenance Request',
         required=True, ondelete='cascade', index=True,
     )
     company_id = fields.Many2one(related='request_id.company_id', store=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
     parts_state = fields.Selection(related='request_id.parts_state')
     product_id = fields.Many2one(
-        'product.product', string='قطعة الغيار', required=True,
+        'product.product', string='Spare Part', required=True,
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]",
     )
-    team_id = fields.Many2one(
-        'rotana.maintenance.team', string='القسم',
-        compute='_compute_team_id', store=True, readonly=False)
-    quantity = fields.Float(string='الكمية', default=1.0, required=True)
+    team_id = fields.Many2one('rotana.maintenance.team', string='Section')
+    quantity = fields.Float(string='Quantity', default=1.0, required=True)
     spare_state = fields.Selection(
-        [('scrap', 'تالف'), ('rehab', 'تأهيل')],
-        string='حالة الاسبير', default='scrap', required=True,
+        [('scrap', 'Scrap'), ('rehab', 'Rehabilitation')],
+        string='Spare State', default='scrap', required=True,
     )
     picking_type_id = fields.Many2one(
-        'stock.picking.type', string='نوع العملية',
+        'stock.picking.type', string='Operation Type',
         compute='_compute_picking_type_id', store=True, readonly=False,
         domain="[('code', '=', 'incoming')]",
-        help='نوع عملية إذن الاستلام، يُحدَّد تلقائياً من إعدادات الشركة حسب حالة الاسبير.',
+        help='Operation type of the receipt, set automatically from the company settings according to the spare state.',
     )
-    uom_id = fields.Many2one(related='product_id.uom_id', string='الوحدة')
-    qty_available = fields.Float(related='product_id.qty_available', string='المتوفر')
-    unit_cost = fields.Float(compute='_compute_unit_cost', string='التكلفة')
-    subtotal = fields.Monetary(compute='_compute_subtotal', string='الإجمالي')
-
-    @api.depends('request_id.team_id')
-    def _compute_team_id(self):
-        for line in self:
-            line.team_id = line.team_id or line.request_id.team_id
+    uom_id = fields.Many2one(related='product_id.uom_id', string='Unit')
+    qty_available = fields.Float(related='product_id.qty_available', string='Available')
+    unit_cost = fields.Float(compute='_compute_unit_cost', string='Cost')
+    subtotal = fields.Monetary(compute='_compute_subtotal', string='Total')
 
     @api.depends('spare_state', 'request_id.company_id')
     def _compute_picking_type_id(self):
@@ -68,7 +61,7 @@ class RotanaMaintenancePart(models.Model):
     def _check_quantity(self):
         for line in self:
             if line.quantity <= 0:
-                raise ValidationError(_('كمية قطعة الغيار يجب أن تكون أكبر من صفر.'))
+                raise ValidationError(_('The spare part quantity must be greater than zero.'))
 
     @api.constrains('request_id', 'product_id')
     def _check_unique_product(self):
@@ -76,18 +69,18 @@ class RotanaMaintenancePart(models.Model):
             if len(line.request_id.part_line_ids.filtered(
                     lambda l: l.product_id == line.product_id)) > 1:
                 raise ValidationError(_(
-                    'قطعة الغيار %s مكررة في نفس الطلب، عدّل الكمية بدلاً من التكرار.',
+                    'The spare part %s is duplicated in the same request, change its quantity instead.',
                     line.product_id.display_name))
 
     # ------------------------------------------------------------------
-    # حماية السطور بعد التأكيد
+    # Lines are locked after confirmation
     # ------------------------------------------------------------------
     def _check_request_editable(self):
         if self.env.context.get('skip_part_editable_check'):
             return
         for line in self:
             if line.request_id.parts_state != 'draft':
-                raise UserError(_('لا يمكن تعديل قطع الغيار بعد تأكيد الطلب.'))
+                raise UserError(_('Spare parts cannot be modified after the request is confirmed.'))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -99,7 +92,7 @@ class RotanaMaintenancePart(models.Model):
         self._check_request_editable()
         res = super().write(vals)
         if 'product_id' in vals:
-            # تغيير الاسبير في سطر الصيانة ينتقل إلى طلبات الورشة التي لم تُرسل بعد
+            # Changing the spare on a maintenance line is propagated to external maintenance requests not yet sent
             workshops = self.env['rotana.external.workshop'].sudo().search([
                 ('part_line_id', 'in', self.ids),
                 ('state', 'in', ('draft', 'confirmed')),
@@ -113,10 +106,10 @@ class RotanaMaintenancePart(models.Model):
         return super().unlink()
 
     # ------------------------------------------------------------------
-    # دعم كتالوج المنتجات (product.catalog.mixin)
+    # Product catalog support (product.catalog.mixin)
     # ------------------------------------------------------------------
     def _get_product_catalog_lines_data(self, parent_record=False, **kwargs):
-        """ بيانات السطور التي يعرضها الكتالوج (الكمية والسعر ...). """
+        """ Line data shown by the catalog (quantity, price ...). """
         if len(self) == 1:
             return {
                 'quantity': self.quantity,

@@ -5,14 +5,14 @@ from odoo import api, fields, models
 class FleetVehicle(models.Model):
     _inherit = 'fleet.vehicle'
 
-    # حقل عادي (بدون compute) حتى لا يُعاد حسابه ويُمسح عند التثبيت أو الترقية.
-    # يُنشأ الحساب مرة واحدة عند إنشاء المركبة تحت خطتها التحليلية.
+    # Plain field (no compute) so it is not recomputed and wiped on install or upgrade.
+    # The account is created once, when the vehicle is created, under its analytic plan.
     analytic_account_id = fields.Many2one(
         'account.analytic.account', string='Analytic Account',
         copy=False, readonly=True, index='btree_not_null')
 
     def _ensure_analytic_account(self):
-        """ينشئ الحساب التحليلي للمركبات التي لها خطة وليس لها حساب (مرة واحدة لكل مركبة)."""
+        """Create the analytic account of vehicles that have a plan but no account (once per vehicle)."""
         Account = self.env['account.analytic.account'].sudo()
         for vehicle in self:
             if vehicle.analytic_account_id or not vehicle.analytic_plan_id:

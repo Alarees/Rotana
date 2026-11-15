@@ -3,15 +3,15 @@
     'name': 'Rotana Fleet Maintenance',
     'version': '19.0.2.0.0',
     'category': 'Maintenance',
-    'summary': 'صيانة مركبات روتانا: تطبيق مستقل بطلبات الصيانة وقطع الغيار والمنصرفات والورشة الخارجية',
+    'summary': 'Rotana fleet maintenance: standalone app for maintenance requests, spare parts, expenses and external maintenance',
     'description': """
-        تطبيق صيانة المركبات لشركة روتانا (مستقل عن مديول Maintenance القياسي):
-        - طلب صيانة بنفس بيانات استمارة الجوب: التاريخ، زمن الدخول والخروج، السائق، العداد، القسم والفني
-        - فرق الصيانة (الأقسام) وفنيوها وألوانها، وجدول أعمال لكل طلب
-        - شاشة اختيار قطع الغيار من المخزن (كتالوج المنتجات)
-        - عند التأكيد: إذن تسليم مخزني، وعند الإكمال: قيد يومية لإنقاص قيمة المخزون مربوط بالحساب التحليلي للمركبة
-        - منصرفات الصيانة وفواتير الموردين
-        - الورشة الخارجية (صيانة الاسبير - تأهيل)
+        Rotana fleet maintenance app (standalone, independent of the standard Maintenance module):
+        - Maintenance request following the job card: date, entry/exit time, driver and odometer
+        - Maintenance teams (sections) with their technicians and colors, and a works table per request
+        - Spare parts selection screen from the warehouse (product catalog)
+        - On confirmation: stock delivery order; on completion: journal entry decreasing the stock value linked to the vehicle analytic account
+        - Maintenance expenses and vendor bills
+        - External maintenance (spare part rehabilitation)
     """,
     'author': 'Rotana Development - IT Department',
     'license': 'LGPL-3',

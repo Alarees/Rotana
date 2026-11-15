@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- نوع العملية: خيار "عملية مركبات" -->
+    <!-- Operation type: "Fleet Operation" option -->
     <record id="view_picking_type_form_inherit_fleet" model="ir.ui.view">
         <field name="name">stock.picking.type.form.inherit.fleet</field>
         <field name="model">stock.picking.type</field>
@@ -13,13 +13,13 @@
         </field>
     </record>
 
-    <!-- إذن المخزن: إخفاء العميل وإظهار المركبة لعمليات المركبات -->
+    <!-- Stock picking: hide the customer and show the vehicle for fleet operations -->
     <record id="view_picking_form_inherit_fleet" model="ir.ui.view">
         <field name="name">stock.picking.form.inherit.fleet</field>
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
-            <!-- تسمية العميل (الـ div الحاوي للتسميات الثلاث) -->
+            <!-- Customer label (the div holding the three labels) -->
             <xpath expr="//label[@for='partner_id']/.." position="attributes">
                 <attribute name="invisible">is_fleet_operation</attribute>
             </xpath>
@@ -34,7 +34,7 @@
                        readonly="state in ('cancel', 'done')"
                        options="{'no_create': True, 'no_open': True}"/>
             </xpath>
-            <!-- سطر المنتج قابل للتعديل لأسطر طلب الصيانة (ينتقل التغيير إلى طلب الصيانة) -->
+            <!-- Product line editable for maintenance request lines (the change is propagated to the maintenance request) -->
             <xpath expr="//field[@name='move_ids']/list/field[@name='product_id']" position="attributes">
                 <attribute name="readonly">(parent.rotana_request_id and parent.picking_type_code == 'outgoing' and state in ('done', 'cancel')) or (not (parent.rotana_request_id and parent.picking_type_code == 'outgoing') and ((state != 'draft' and not additional) or move_lines_count &gt; 0))</attribute>
             </xpath>
@@ -44,7 +44,7 @@
         </field>
     </record>
 
-    <!-- قائمة الأذون: عمود المركبة -->
+    <!-- Picking list: vehicle column -->
     <record id="vpicktree_inherit_fleet" model="ir.ui.view">
         <field name="name">stock.picking.list.inherit.fleet</field>
         <field name="model">stock.picking</field>

@@ -4,61 +4,66 @@ from collections import defaultdict
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
-# حقول لا تُعدَّل بعد دخول الورشة
+# Fields that cannot be edited once the request entered the workshop
 LOCKED_FIELDS = {'maintenance_request_id', 'fleet_id', 'product_id', 'quantity', 'picking_type_id'}
-# المورد والمبلغ: يُعدَّلان في (في الورشة) و(تمت الصيانة) إلى أن تتم الفوترة
+# Vendor and amount: editable in (In Workshop) and (Maintenance Done) until invoiced
 FINANCIAL_FIELDS = {'partner_id', 'amount'}
 
 
 class RotanaExternalWorkshop(models.Model):
     _name = 'rotana.external.workshop'
-    _description = 'طلب صيانة اسبير (الورشة الخارجية)'
+    _description = 'Spare Part Maintenance Request (External Maintenance)'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'id desc'
 
-    name = fields.Char(string='الرقم', default='/', readonly=True, copy=False)
+    name = fields.Char(string='Number', default='/', readonly=True, copy=False)
     maintenance_request_id = fields.Many2one(
-        'rotana.maintenance.request', string='رقم الصيانة', index=True,
+        'rotana.maintenance.request', string='Maintenance Request', index=True,
         ondelete='set null', copy=False)
     fleet_id = fields.Many2one(
-        'fleet.vehicle', string='رقم المركبة', index=True,
+        'fleet.vehicle', string='Vehicle', index=True,
         compute='_compute_fleet_id', store=True, readonly=False)
     part_line_id = fields.Many2one(
-        'rotana.maintenance.part', string='سطر الاسبير في الصيانة',
+        'rotana.maintenance.part', string='Spare Line in Maintenance',
         copy=False, index='btree_not_null', ondelete='set null')
+    team_id = fields.Many2one(
+        related='part_line_id.team_id', string='Section', readonly=True)
+    technician_id = fields.Many2one(
+        'hr.employee', string='Technician', tracking=True,
+        help='Technician of the section selected on the spare part line.')
     product_id = fields.Many2one(
-        'product.product', string='الاسبير', required=True, tracking=True,
+        'product.product', string='Spare Part', required=True, tracking=True,
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]")
-    quantity = fields.Float(string='الكمية', default=1.0, required=True)
+    quantity = fields.Float(string='Quantity', default=1.0, required=True)
     company_id = fields.Many2one(
-        'res.company', string='الشركة', required=True, index=True,
+        'res.company', string='Company', required=True, index=True,
         default=lambda self: self.env.company)
     currency_id = fields.Many2one(related='company_id.currency_id')
-    partner_id = fields.Many2one('res.partner', string='المورد', tracking=True)
-    amount = fields.Monetary(string='المبلغ', tracking=True)
+    partner_id = fields.Many2one('res.partner', string='Vendor', tracking=True)
+    amount = fields.Monetary(string='Amount', tracking=True)
     state = fields.Selection(
         [
-            ('draft', 'مسودة'),
-            ('confirmed', 'مؤكد'),
-            ('in_workshop', 'في الورشة'),
-            ('done', 'تمت الصيانة'),
+            ('draft', 'Draft'),
+            ('confirmed', 'Confirmed'),
+            ('in_workshop', 'In Workshop'),
+            ('done', 'Maintenance Done'),
         ],
-        string='الحالة', default='draft', required=True, readonly=True, copy=False, tracking=True)
+        string='Status', default='draft', required=True, readonly=True, copy=False, tracking=True)
     invoice_id = fields.Many2one(
-        'account.move', string='فاتورة المورد', copy=False, readonly=True,
+        'account.move', string='Vendor Bill', copy=False, readonly=True,
         ondelete='set null', index='btree_not_null')
     invoice_state = fields.Selection(
-        [('not_invoiced', 'لم تتم الفوترة'), ('invoiced', 'تمت الفوترة')],
-        string='حالة الفوترة', compute='_compute_invoice_state', store=True, default='not_invoiced')
+        [('not_invoiced', 'Not Invoiced'), ('invoiced', 'Invoiced')],
+        string='Invoice Status', compute='_compute_invoice_state', store=True, default='not_invoiced')
     picking_type_id = fields.Many2one(
-        'stock.picking.type', string='نوع العملية',
+        'stock.picking.type', string='Operation Type',
         compute='_compute_picking_type_id', store=True, readonly=False, precompute=True,
         domain="[('code', '=', 'incoming'), ('company_id', '=', company_id)]")
     picking_id = fields.Many2one(
-        'stock.picking', string='إذن الاستلام', copy=False, readonly=True,
+        'stock.picking', string='Receipt', copy=False, readonly=True,
         ondelete='set null', index='btree_not_null')
     settlement_move_id = fields.Many2one(
-        'account.move', string='قيد تسوية المخزن', copy=False, readonly=True,
+        'account.move', string='Stock Settlement Entry', copy=False, readonly=True,
         ondelete='set null')
 
     # ------------------------------------------------------------------
@@ -86,7 +91,7 @@ class RotanaExternalWorkshop(models.Model):
     def _check_quantity(self):
         for rec in self:
             if rec.quantity <= 0:
-                raise ValidationError(_('كمية الاسبير يجب أن تكون أكبر من صفر.'))
+                raise ValidationError(_('The spare part quantity must be greater than zero.'))
 
     # ------------------------------------------------------------------
     # CRUD
@@ -101,13 +106,13 @@ class RotanaExternalWorkshop(models.Model):
 
     @api.model
     def _next_company_sequence(self, company_id):
-        """ ترقيم مستقل لكل شركة: يُنشأ تسلسل الشركة عند أول استخدام. """
+        """ Independent numbering per company: the company sequence is created on first use. """
         Sequence = self.env['ir.sequence'].sudo()
         code = 'rotana.external.workshop'
         sequence = Sequence.search([('code', '=', code), ('company_id', '=', company_id)], limit=1)
         if not sequence:
             sequence = Sequence.create({
-                'name': _('الورشة الخارجية'), 'code': code, 'prefix': 'EW/',
+                'name': _('External Maintenance'), 'code': code, 'prefix': 'EW/',
                 'padding': 5, 'company_id': company_id,
             })
         return sequence.next_by_id()
@@ -115,33 +120,33 @@ class RotanaExternalWorkshop(models.Model):
     def write(self, vals):
         keys = set(vals)
         if keys & LOCKED_FIELDS and any(r.state not in ('draft', 'confirmed') for r in self):
-            raise UserError(_('لا يمكن تعديل بيانات الطلب بعد إرساله إلى الورشة.'))
+            raise UserError(_('The request data cannot be modified after it is sent to the workshop.'))
         if keys & FINANCIAL_FIELDS:
             if any(r.state not in ('in_workshop', 'done') for r in self):
-                raise UserError(_('المورد والمبلغ يُحدَّدان في حالة (في الورشة) أو (تمت الصيانة) فقط.'))
+                raise UserError(_('Vendor and amount can only be set in the (In Workshop) or (Maintenance Done) status.'))
             if any(r.invoice_state == 'invoiced' for r in self):
-                raise UserError(_('لا يمكن تعديل المورد أو المبلغ بعد الفوترة.'))
+                raise UserError(_('The vendor or amount cannot be modified after invoicing.'))
         return super().write(vals)
 
     def unlink(self):
         if any(r.state not in ('draft', 'confirmed') for r in self):
-            raise UserError(_('لا يمكن حذف طلب دخل الورشة.'))
+            raise UserError(_('A request that entered the workshop cannot be deleted.'))
         return super().unlink()
 
     # ------------------------------------------------------------------
-    # أزرار تغيير الحالة
+    # Status buttons
     # ------------------------------------------------------------------
     def _check_workshop_manager(self):
         if self.env.su:
             return
         if not self.env.user.has_group('rotana_fleet_maintenance.group_external_workshop_manager'):
-            raise UserError(_('هذا الإجراء متاح لمدير الورشة الخارجية فقط.'))
+            raise UserError(_('This action is only available to the external maintenance manager.'))
 
     def action_confirm(self):
         self._check_workshop_manager()
         for rec in self.filtered(lambda r: r.state == 'draft'):
             if not rec.product_id or rec.quantity <= 0:
-                raise UserError(_('حدد الاسبير والكمية قبل التأكيد.'))
+                raise UserError(_('Set the spare part and quantity before confirming.'))
             rec.state = 'confirmed'
         return True
 
@@ -155,21 +160,21 @@ class RotanaExternalWorkshop(models.Model):
         self._check_workshop_manager()
         for rec in self.filtered(lambda r: r.state == 'in_workshop'):
             if not rec.partner_id:
-                raise UserError(_('حدد المورد للطلب %s قبل تمت الصيانة.', rec.name))
+                raise UserError(_('Set the vendor of request %s before marking the maintenance as done.', rec.name))
             if not rec.amount:
-                raise UserError(_('حدد المبلغ للطلب %s قبل تمت الصيانة.', rec.name))
+                raise UserError(_('Set the amount of request %s before marking the maintenance as done.', rec.name))
             if not rec.picking_type_id:
                 raise UserError(_(
-                    'حدد نوع العملية للطلب %s أو حدد \"عملية التأهيل\" في إعدادات الشركة.', rec.name))
+                    'Set the operation type of request %s or set the "Rehabilitation Operation Type" in the company settings.', rec.name))
             if rec.picking_type_id.code != 'incoming':
-                raise UserError(_('نوع العملية يجب أن يكون استلاماً.'))
+                raise UserError(_('The operation type must be a receipt.'))
             rec._create_receipt()
             rec._create_settlement_entry()
             rec.state = 'done'
         return True
 
     # ------------------------------------------------------------------
-    # إذن الاستلام (غير مربوط بطلب الصيانة ولا بالمورد)
+    # Receipt (not linked to the maintenance request nor the vendor)
     # ------------------------------------------------------------------
     def _create_receipt(self):
         self.ensure_one()
@@ -197,14 +202,14 @@ class RotanaExternalWorkshop(models.Model):
             move.picked = True
         picking.button_validate()
         if picking.state != 'done':
-            raise UserError(_('تعذر تأكيد إذن الاستلام %s آلياً، راجع الإذن.', picking.name))
+            raise UserError(_('The receipt %s could not be validated automatically, please review it.', picking.name))
         self.picking_id = picking
         return picking
 
     # ------------------------------------------------------------------
-    # قيد تسوية قيمة المخزن بقيمة الاسبير فقط (دون زيادة مبلغ الصيانة)
-    # إذن الاستلام يرفع المخزن مقابل حساب تقييم الموقع المصدر؛ القيد يُغلق
-    # هذا الحساب مقابل حساب المصروف الذي حُمِّل به الاسبير عند التسليم.
+    # Stock value settlement entry for the spare value only (without the maintenance amount)
+    # The receipt raises the stock against the valuation account of the source location; the entry closes
+    # this account against the expense account charged with the spare on delivery.
     # ------------------------------------------------------------------
     def _create_settlement_entry(self):
         self.ensure_one()
@@ -219,8 +224,8 @@ class RotanaExternalWorkshop(models.Model):
             valuation_account = move.location_id.valuation_account_id
             if not valuation_account:
                 raise UserError(_(
-                    'لا يمكن تسجيل قيد التسوية: الموقع \"%(location)s\" ليس له حساب تقييم مخزون. '
-                    'حدد الحساب في الموقع ثم أعد المحاولة.',
+                    'The settlement entry cannot be posted: location "%(location)s" has no stock valuation account. '
+                    'Set the account on the location and try again.',
                     location=move.location_id.display_name))
             amount = currency.round(abs(move.value))
             if currency.is_zero(amount):
@@ -229,7 +234,7 @@ class RotanaExternalWorkshop(models.Model):
             expense_account = company.maintenance_expense_account_id or accounts['expense']
             if not expense_account:
                 raise UserError(_(
-                    'حدد \"حساب مصروف قطع الغيار\" في إعدادات الشركة أو حساب المصروف في فئة المنتج %s.',
+                    'Set the "Spare Parts Expense Account" in the company settings or the expense account on the product category %s.',
                     move.product_id.categ_id.display_name))
             debit_by_account[valuation_account] += amount
             credit_by_account[expense_account] += amount
@@ -238,8 +243,8 @@ class RotanaExternalWorkshop(models.Model):
         journal = company.maintenance_journal_id or self.env['account.journal'].sudo().search(
             [('type', '=', 'general'), ('company_id', '=', company.id)], limit=1)
         if not journal:
-            raise UserError(_('لا يوجد دفتر يومية من النوع \"متنوع\" للشركة %s.', company.name))
-        label = _('تسوية قيمة اسبير - %s', self.name)
+            raise UserError(_('There is no journal of type "Miscellaneous" for company %s.', company.name))
+        label = _('Spare value settlement - %s', self.name)
         line_vals = [Command.create({
             'name': label,
             'account_id': account.id,
@@ -265,19 +270,19 @@ class RotanaExternalWorkshop(models.Model):
         return account_move
 
     # ------------------------------------------------------------------
-    # الفوترة (فاتورة مورد مربوطة بالحساب التحليلي للمركبة)
+    # Invoicing (vendor bill linked to the vehicle analytic account)
     # ------------------------------------------------------------------
     def action_create_invoice(self):
         self.ensure_one()
         self._check_workshop_manager()
         if self.state != 'done':
-            raise UserError(_('الفوترة متاحة بعد (تمت الصيانة) فقط.'))
+            raise UserError(_('Invoicing is only available after (Maintenance Done).'))
         if self.invoice_state == 'invoiced':
-            raise UserError(_('تمت فوترة هذا الطلب مسبقاً.'))
+            raise UserError(_('This request has already been invoiced.'))
         if not self.partner_id or not self.amount:
-            raise UserError(_('حدد المورد والمبلغ قبل الفوترة.'))
+            raise UserError(_('Set the vendor and amount before invoicing.'))
         line_vals = {
-            'name': _('صيانة خارجية - %(product)s (%(ref)s)',
+            'name': _('External maintenance - %(product)s (%(ref)s)',
                       product=self.product_id.display_name, ref=self.name),
             'quantity': 1.0,
             'price_unit': self.amount,
@@ -285,7 +290,7 @@ class RotanaExternalWorkshop(models.Model):
         expense_account = self.company_id.maintenance_expense_account_id
         if not expense_account:
             raise UserError(_(
-                'حدد \"حساب مصروف قطع الغيار\" في إعدادات الشركة %s قبل إنشاء فاتورة المورد.',
+                'Set the "Spare Parts Expense Account" in the settings of company %s before creating the vendor bill.',
                 self.company_id.name))
         line_vals['account_id'] = expense_account.id
         if self.fleet_id.analytic_account_id:

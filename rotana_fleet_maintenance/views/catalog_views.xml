@@ -2,7 +2,7 @@
 <odoo>
 
     <!-- ============================================================
-         شاشة الكتالوج (مبنية على نفس كتالوج product / industry_fsm_sale)
+         Catalog screen (built on the same product / industry_fsm_sale catalog)
          ============================================================ -->
     <record id="maintenance_part_product_catalog_kanban_view" model="ir.ui.view">
         <field name="name">maintenance.part.product.catalog.kanban</field>
@@ -12,7 +12,7 @@
         <field name="arch" type="xml">
             <xpath expr="//div[@name='o_kanban_price']" position="after">
                 <div class="text-muted small">
-                    <span>المتوفر: </span>
+                    <span>Available: </span>
                     <field name="qty_available"/>
                     <field name="uom_id"/>
                 </div>
@@ -20,7 +20,7 @@
         </field>
     </record>
 
-    <!-- بحث الكتالوج: قائمة جانبية للمخزن والفئة (كل المنتجات المخزنية بلا تقييد بفئة) -->
+    <!-- Catalog search: side panel by warehouse and category (all storable products, no category restriction) -->
     <record id="maintenance_part_product_catalog_search_view" model="ir.ui.view">
         <field name="name">maintenance.part.product.catalog.search</field>
         <field name="model">product.product</field>
@@ -28,10 +28,10 @@
         <field name="mode">primary</field>
         <field name="arch" type="xml">
             <xpath expr="//searchpanel/field[@name='categ_id']" position="before">
-                <field name="maintenance_warehouse_id" string="المخزن" icon="fa-building" expand="1"/>
+                <field name="maintenance_warehouse_id" string="Warehouse" icon="fa-building" expand="1"/>
             </xpath>
             <xpath expr="//searchpanel/field[@name='categ_id']" position="attributes">
-                <attribute name="string">الفئات</attribute>
+                <attribute name="string">Categories</attribute>
             </xpath>
         </field>
     </record>

@@ -30,7 +30,7 @@ class TestFleetMaintenance(TransactionCase):
             dict({'name': 'Test request', 'fleet_id': vehicle.id}, **kw))
 
     # ------------------------------------------------------------------
-    # المركبة والحساب التحليلي
+    # Vehicle and analytic account
     # ------------------------------------------------------------------
     def test_account_created_once_on_vehicle_creation(self):
         vehicle = self._new_vehicle('T-001')
@@ -47,7 +47,7 @@ class TestFleetMaintenance(TransactionCase):
         self.assertEqual(vehicle.analytic_account_id, account)
 
     # ------------------------------------------------------------------
-    # بيانات الاستمارة
+    # Request data
     # ------------------------------------------------------------------
     def test_request_defaults_and_downtime(self):
         vehicle = self._new_vehicle('T-010')
@@ -62,25 +62,25 @@ class TestFleetMaintenance(TransactionCase):
         with self.assertRaises(Exception):
             request.exit_datetime = entry - timedelta(hours=1)
 
-    def test_team_technicians_and_color(self):
-        employee = self.env['hr.employee'].create({'name': 'Tech One'})
+    def test_work_lines_many_technicians(self):
+        tech1 = self.env['hr.employee'].create({'name': 'Tech One'})
+        tech2 = self.env['hr.employee'].create({'name': 'Tech Two'})
         team = self.env['rotana.maintenance.team'].create({
-            'name': 'Electric', 'color': 4, 'technician_ids': [(6, 0, employee.ids)]})
-        self.assertEqual(employee.rotana_team_ids, team)
-        request = self._new_request(self._new_vehicle('T-011'), team_id=team.id, technician_id=employee.id)
-        self.assertEqual(request.color, 4)
+            'name': 'Electric', 'color': 4, 'technician_ids': [(6, 0, (tech1 | tech2).ids)]})
+        self.assertEqual(tech1.rotana_team_ids, team)
+        request = self._new_request(self._new_vehicle('T-011'))
         work = self.env['rotana.maintenance.work'].create({
-            'request_id': request.id, 'name': 'Fix wiring', 'technician_id': employee.id})
-        self.assertEqual(work.team_id, team, 'The work line takes the request team by default.')
+            'request_id': request.id, 'team_id': team.id, 'name': 'Fix wiring',
+            'technician_ids': [(6, 0, (tech1 | tech2).ids)]})
+        self.assertEqual(work.technician_ids, tech1 | tech2)
 
-    def test_job_card_number_is_unique(self):
-        vehicle = self._new_vehicle('T-012')
-        self._new_request(vehicle, job_card_no='001186')
-        with self.assertRaises(Exception):
-            self._new_request(vehicle, job_card_no='001186')
+    def test_request_has_no_job_card_or_team_fields(self):
+        fields_ = self.env['rotana.maintenance.request']._fields
+        for name in ('job_card_no', 'report_no', 'team_id', 'technician_id'):
+            self.assertNotIn(name, fields_)
 
     # ------------------------------------------------------------------
-    # المنصرفات
+    # Expenses
     # ------------------------------------------------------------------
     def test_expense_account_defaults_from_company(self):
         account = self.env['account.account'].search([
@@ -94,12 +94,16 @@ class TestFleetMaintenance(TransactionCase):
         self.assertEqual(expense.account_id, account)
 
     # ------------------------------------------------------------------
-    # قطع الغيار: تأكيد ثم إكمال
+    # Spare parts: confirm then complete
     # ------------------------------------------------------------------
-    def test_confirm_requires_parts(self):
+    def test_confirm_without_parts(self):
         request = self._new_request(self._new_vehicle('T-020'))
-        with self.assertRaises(UserError):
-            request.action_confirm_parts()
+        request.action_confirm_parts()
+        self.assertEqual(request.parts_state, 'confirmed')
+        self.assertFalse(request.picking_ids)
+        done_stage = self.env['rotana.maintenance.stage'].search([('done', '=', True)], limit=1)
+        request.stage_id = done_stage
+        self.assertEqual(request.parts_state, 'done')
 
     def test_confirm_and_complete_flow(self):
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
@@ -119,7 +123,7 @@ class TestFleetMaintenance(TransactionCase):
         self.assertTrue(pickings)
         self.assertTrue(all(p.rotana_request_id == request for p in pickings))
 
-        # لا يمكن الإكمال قبل تنفيذ أذون التسليم
+        # The request cannot be completed before the delivery orders are done
         done_stage = self.env['rotana.maintenance.stage'].search([('done', '=', True)], limit=1)
         with self.assertRaises(UserError):
             request.stage_id = done_stage
@@ -162,3 +166,23 @@ class TestFleetMaintenance(TransactionCase):
         request.action_reset_parts()
         self.assertEqual(request.parts_state, 'draft')
         self.assertFalse(request.workshop_ids)
+
+    def test_workshop_technician_follows_part_section(self):
+        warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        self.company.maintenance_scrap_picking_type_id = warehouse.in_type_id
+        self.company.maintenance_rehab_picking_type_id = warehouse.in_type_id
+        team = self.env['rotana.maintenance.team'].create({'name': 'Tires'})
+        technician = self.env['hr.employee'].create({
+            'name': 'Tire Tech', 'rotana_team_ids': [(6, 0, team.ids)]})
+        product = self.env['product.product'].create({
+            'name': 'Rehab tyre', 'type': 'consu', 'is_storable': True, 'standard_price': 4.0})
+        self.env['stock.quant']._update_available_quantity(product, warehouse.lot_stock_id, 5.0)
+        request = self._new_request(self._new_vehicle('T-040'))
+        self.env['rotana.maintenance.part'].create({
+            'request_id': request.id, 'product_id': product.id, 'quantity': 1.0,
+            'spare_state': 'rehab', 'team_id': team.id})
+        request.action_confirm_parts()
+        workshop = request.workshop_ids
+        self.assertEqual(workshop.team_id, team, 'The workshop request shows the section of the spare part line.')
+        workshop.technician_id = technician
+        self.assertEqual(workshop.technician_id, technician)

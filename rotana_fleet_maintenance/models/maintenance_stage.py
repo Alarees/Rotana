@@ -4,12 +4,12 @@ from odoo import fields, models
 
 class RotanaMaintenanceStage(models.Model):
     _name = 'rotana.maintenance.stage'
-    _description = 'مرحلة طلب صيانة روتانا'
+    _description = 'Rotana Maintenance Stage'
     _order = 'sequence, id'
 
-    name = fields.Char(string='المرحلة', required=True, translate=True)
+    name = fields.Char(string='Stage', required=True, translate=True)
     sequence = fields.Integer(default=10)
-    fold = fields.Boolean(string='مطوية في الكانبان')
+    fold = fields.Boolean(string='Folded in Kanban')
     done = fields.Boolean(
-        string='مرحلة الإكمال',
-        help='عند نقل الطلب إلى هذه المرحلة يُسجَّل زمن الخروج ويُنشأ قيد قطع الغيار.')
+        string='Completion Stage',
+        help='When a request is moved to this stage, the exit time is recorded and the spare parts entry is created.')

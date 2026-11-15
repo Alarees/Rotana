@@ -5,10 +5,10 @@ from odoo import api, fields, models
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
-    # حقل للفلترة فقط (القائمة الجانبية في كتالوج قطع الغيار):
-    # يُرجع المنتجات التي يتوفر منها رصيد موجب داخل المخزن المحدد.
+    # Filter-only field (side panel of the spare parts catalog):
+    # Returns the products that have a positive stock inside the selected warehouse.
     maintenance_warehouse_id = fields.Many2one(
-        'stock.warehouse', string='المخزن',
+        'stock.warehouse', string='Available in Warehouse',
         compute='_compute_maintenance_warehouse_id',
         search='_search_maintenance_warehouse_id',
     )
@@ -18,11 +18,11 @@ class ProductProduct(models.Model):
         self.maintenance_warehouse_id = False
 
     def _search_maintenance_warehouse_id(self, operator, value):
-        """ قائمة البحث الجانبية قد ترسل عوامل مختلفة (=, in, child_of ...)،
-        لذلك نحوّل أي عامل إلى مجموعة مخازن ثم نبحث عن رصيدها. """
+        """ The search panel may send different operators (=, in, child_of ...),
+        so any operator is converted to a set of warehouses and their stock is searched. """
         negative = operator in ('!=', 'not in')
         if operator in ('=', '!=', 'in', 'not in', 'child_of', 'parent_of'):
-            # أودو 19 يمرّر القيمة كـ OrderedSet (وليس list/set) فنحوّلها إلى قائمة أرقام
+            # Odoo 19 passes the value as an OrderedSet (not list/set), so convert it to a list of ids
             if isinstance(value, int):
                 ids = [value]
             elif value and not isinstance(value, str):
@@ -32,7 +32,7 @@ class ProductProduct(models.Model):
             warehouses = self.env['stock.warehouse'].browse([w for w in ids if isinstance(w, int)])
         else:
             warehouses = self.env['stock.warehouse'].search([('id', operator, value)])
-        # فقط مخازن الشركات المسموحة للمستخدم الحالي
+        # Only the warehouses of the companies allowed for the current user
         warehouses = warehouses.filtered(lambda w: w.company_id in self.env.companies)
         locations = warehouses.view_location_id
         product_ids = []
