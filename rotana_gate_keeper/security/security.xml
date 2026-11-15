@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Gate keeper: opens the dashboard and edits driver name, plate number and phone only.
+         Does NOT imply any stock group: the dashboard reads and writes through a restricted server method. -->
+    <record id="group_rotana_gate_keeper" model="res.groups">
+        <field name="name">Gate Keeper</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- The gate keeper is lower than the warehouse user: warehouse users can open the dashboard too -->
+    <record id="stock.group_stock_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('rotana_gate_keeper.group_rotana_gate_keeper'))]"/>
+    </record>
+</odoo>

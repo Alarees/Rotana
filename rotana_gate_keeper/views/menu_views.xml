@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_rotana_gate_keeper" model="ir.actions.client">
+        <field name="name">بوابة المخزن</field>
+        <field name="tag">rotana_gate_keeper.dashboard</field>
+        <field name="target">fullscreen</field>
+    </record>
+
+    <menuitem id="menu_rotana_gate_keeper"
+              name="بوابة المخزن"
+              action="action_rotana_gate_keeper"
+              sequence="46"
+              groups="rotana_gate_keeper.group_rotana_gate_keeper"/>
+</odoo>

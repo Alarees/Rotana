@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rotana_gate_keeper.Dashboard">
+        <div class="o_rgk">
+            <header class="o_rgk_top">
+                <button class="o_rgk_home" type="button" title="الرئيسية" t-on-click="goHome">
+                    <i class="fa fa-home"/>
+                </button>
+                <div class="o_rgk_search">
+                    <i class="fa fa-barcode"/>
+                    <input t-ref="search" type="text" autocomplete="off"
+                           placeholder="امسح الباركود أو اكتب رقم الإذن ثم Enter"
+                           t-model="state.query" t-on-keydown="onSearchKeydown"/>
+                    <button type="button" class="o_rgk_search_btn" t-on-click="search">
+                        <i class="fa fa-search"/>
+                    </button>
+                </div>
+                <div class="o_rgk_user"><i class="fa fa-user"/> <t t-out="userName"/></div>
+            </header>
+
+            <main class="o_rgk_body">
+                <div t-if="state.loading" class="o_rgk_msg"><i class="fa fa-spinner fa-spin"/> جاري البحث...</div>
+                <div t-elif="state.error" class="o_rgk_msg o_rgk_msg_error"><t t-out="state.error"/></div>
+                <div t-elif="state.notFound" class="o_rgk_msg o_rgk_msg_error">
+                    <i class="fa fa-exclamation-triangle"/> لم يتم العثور على إذن استلام أو تسليم بهذا الباركود
+                </div>
+                <div t-elif="!state.picking" class="o_rgk_msg o_rgk_hint">
+                    <i class="fa fa-barcode fa-3x"/>
+                    <div>امسح باركود إذن الاستلام أو التسليم المخزني</div>
+                </div>
+
+                <t t-if="state.picking and !state.loading">
+                    <t t-set="p" t-value="state.picking"/>
+                    <section class="o_rgk_status" t-att-class="p.is_done ? 'o_rgk_done' : 'o_rgk_pending'">
+                        <div class="o_rgk_status_main">
+                            <i t-att-class="p.is_done ? 'fa fa-check-circle' : 'fa fa-clock-o'"/>
+                            <t t-if="p.is_done">مكتمل</t>
+                            <t t-else="">غير مكتمل</t>
+                        </div>
+                        <div class="o_rgk_status_sub">
+                            <span t-out="p.name"/> · <span t-out="p.type_label"/> · <span t-out="p.state_label"/>
+                        </div>
+                    </section>
+
+                    <section class="o_rgk_cards">
+                        <div class="o_rgk_card">
+                            <div class="o_rgk_label">العميل</div>
+                            <div class="o_rgk_value"><t t-out="p.partner or '-'"/></div>
+                        </div>
+                        <div class="o_rgk_card">
+                            <div class="o_rgk_label">التاريخ</div>
+                            <div class="o_rgk_value"><t t-out="formatDate(p.date)"/></div>
+                        </div>
+                        <div class="o_rgk_card o_rgk_card_total">
+                            <div class="o_rgk_label">إجمالي صافي الوزن</div>
+                            <div class="o_rgk_value">
+                                <t t-out="formatNumber(p.total_weight)"/> <small t-out="p.weight_uom"/>
+                            </div>
+                        </div>
+                    </section>
+
+                    <nav class="o_rgk_tabs">
+                        <button type="button" t-att-class="state.tab === 'products' ? 'active' : ''"
+                                t-on-click="() => this.setTab('products')">المنتجات</button>
+                        <button type="button" t-att-class="state.tab === 'delivery' ? 'active' : ''"
+                                t-on-click="() => this.setTab('delivery')">معلومات التوصيل</button>
+                    </nav>
+
+                    <section t-if="state.tab === 'products'" class="o_rgk_panel">
+                        <div t-if="p.missing_weight" class="o_rgk_warn">
+                            <i class="fa fa-exclamation-triangle"/> بعض المنتجات ليس لها وزن في بطاقة المنتج، لذلك لم يُحتسب وزنها.
+                        </div>
+                        <div class="o_rgk_table_wrap">
+                            <table class="o_rgk_table">
+                                <thead>
+                                    <tr>
+                                        <th>المنتج</th>
+                                        <th>الكمية</th>
+                                        <th>الوحدة</th>
+                                        <th>وزن الوحدة (<t t-out="p.weight_uom"/>)</th>
+                                        <th>إجمالي وزن المنتج (<t t-out="p.weight_uom"/>)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="p.moves" t-as="line" t-key="line_index">
+                                        <td t-out="line.product"/>
+                                        <td t-out="formatNumber(line.qty)"/>
+                                        <td t-out="line.uom"/>
+                                        <td t-out="formatNumber(line.unit_weight)"/>
+                                        <td class="o_rgk_strong" t-out="formatNumber(line.weight)"/>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="4">إجمالي صافي الوزن</td>
+                                        <td class="o_rgk_strong">
+                                            <t t-out="formatNumber(p.total_weight)"/> <t t-out="p.weight_uom"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section t-else="" class="o_rgk_panel">
+                        <div t-if="!p.fields.length" class="o_rgk_msg">لا توجد حقول معلومات توصيل في هذه القاعدة</div>
+                        <div class="o_rgk_grid">
+                            <div t-foreach="p.fields" t-as="f" t-key="f.name" class="o_rgk_field">
+                                <label class="o_rgk_label" t-out="f.label"/>
+                                <input t-if="f.editable" type="text" class="o_rgk_input" autocomplete="off"
+                                       t-att-dir="f.name === 'x_driver_phone' ? 'ltr' : 'auto'"
+                                       t-att-value="state.values[f.name]"
+                                       t-on-input="(ev) => this.onInput(f.name, ev)"/>
+                                <div t-else="" class="o_rgk_readonly"><t t-out="f.display or '-'"/></div>
+                            </div>
+                        </div>
+                        <div t-if="editableFields.length" class="o_rgk_actions">
+                            <button type="button" class="o_rgk_btn o_rgk_btn_primary"
+                                    t-att-disabled="!isDirty or state.saving" t-on-click="save">
+                                <i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> حفظ
+                            </button>
+                            <button type="button" class="o_rgk_btn" t-att-disabled="!isDirty or state.saving"
+                                    t-on-click="discard">تراجع</button>
+                        </div>
+                    </section>
+                </t>
+            </main>
+        </div>
+    </t>
+
+</templates>
