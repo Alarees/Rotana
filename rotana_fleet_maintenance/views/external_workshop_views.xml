@@ -15,7 +15,7 @@
                        readonly="state not in ('draft', 'confirmed')"/>
                 <field name="quantity" readonly="state not in ('draft', 'confirmed')"/>
                 <field name="team_id" optional="show"/>
-                <field name="technician_id" options="{'no_create': True}"
+                <field name="technician_ids" widget="many2many_tags" options="{'no_create': True}"
                        domain="[('rotana_team_ids', '=', team_id)] if team_id else []"
                        readonly="state == 'done'"/>
                 <field name="partner_id" options="{'no_create': True}"
@@ -83,7 +83,7 @@
                                    readonly="state not in ('draft', 'confirmed')"/>
                             <field name="quantity" readonly="state not in ('draft', 'confirmed')"/>
                             <field name="team_id"/>
-                            <field name="technician_id" options="{'no_create': True}"
+                            <field name="technician_ids" widget="many2many_tags" options="{'no_create': True}"
                                    domain="[('rotana_team_ids', '=', team_id)] if team_id else []"
                                    readonly="state == 'done'"/>
                             <field name="picking_type_id" options="{'no_create': True}"
@@ -120,7 +120,7 @@
                 <field name="fleet_id"/>
                 <field name="maintenance_request_id"/>
                 <field name="partner_id"/>
-                <field name="technician_id"/>
+                <field name="technician_ids"/>
                 <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
                 <filter name="filter_in_workshop" string="In Workshop" domain="[('state', '=', 'in_workshop')]"/>
@@ -131,7 +131,6 @@
                     <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
                     <filter name="group_fleet" string="Vehicle" context="{'group_by': 'fleet_id'}"/>
                     <filter name="group_partner" string="Vendor" context="{'group_by': 'partner_id'}"/>
-                    <filter name="group_technician" string="Technician" context="{'group_by': 'technician_id'}"/>
                 </group>
             </search>
         </field>

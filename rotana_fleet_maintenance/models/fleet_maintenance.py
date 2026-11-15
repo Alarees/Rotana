@@ -40,6 +40,10 @@ class RotanaMaintenanceRequest(models.Model):
         default=lambda self: self._default_stage_id(),
         group_expand='_read_group_stage_ids', ondelete='restrict')
     inspector_id = fields.Many2one('res.users', string='Inspection Engineer', tracking=True)
+    odometer_log_id = fields.Many2one(
+        'fleet.vehicle.odometer', string='Odometer Log', copy=False, readonly=True,
+        ondelete='set null',
+        help='Odometer log created on the vehicle when the request is completed.')
     description = fields.Html(string='Notes')
     work_ids = fields.One2many(
         'rotana.maintenance.work', 'request_id', string='Works', copy=True)
@@ -393,7 +397,23 @@ class RotanaMaintenanceRequest(models.Model):
             completing.filtered(lambda r: not r.exit_datetime).write(
                 {'exit_datetime': fields.Datetime.now()})
             completing._create_parts_journal_entry()
+            completing._update_vehicle_odometer()
         return res
+
+    def _update_vehicle_odometer(self):
+        """ When the vehicle is repaired, record the odometer reading of the request on the
+        vehicle, dated with the entry date. The log is created once per request. """
+        Odometer = self.env['fleet.vehicle.odometer'].sudo()
+        for request in self.filtered(lambda r: r.odometer > 0 and r.fleet_id):
+            if request.entry_datetime:
+                date = fields.Datetime.context_timestamp(request, request.entry_datetime).date()
+            else:
+                date = request.request_date
+            vals = {'vehicle_id': request.fleet_id.id, 'value': request.odometer, 'date': date}
+            if request.odometer_log_id:
+                request.odometer_log_id.sudo().write(vals)
+            else:
+                request.odometer_log_id = Odometer.create(vals)
 
     def _check_parts_before_done(self):
         """ The request cannot be completed before the spare parts are confirmed and the delivery orders are done. """

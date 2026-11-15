@@ -28,9 +28,11 @@ class RotanaExternalWorkshop(models.Model):
         copy=False, index='btree_not_null', ondelete='set null')
     team_id = fields.Many2one(
         related='part_line_id.team_id', string='Section', readonly=True)
-    technician_id = fields.Many2one(
-        'hr.employee', string='Technician', tracking=True,
-        help='Technician of the section selected on the spare part line.')
+    technician_ids = fields.Many2many(
+        'hr.employee', 'rotana_external_workshop_employee_rel', 'workshop_id', 'employee_id',
+        string='Technicians', compute='_compute_technician_ids', store=True, readonly=False,
+        help='Filled from the works of the maintenance request that belong to the section '
+             'of the spare part line. It can be edited until the maintenance is done.')
     product_id = fields.Many2one(
         'product.product', string='Spare Part', required=True, tracking=True,
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]")
@@ -69,6 +71,21 @@ class RotanaExternalWorkshop(models.Model):
     # ------------------------------------------------------------------
     # Computes / constraints
     # ------------------------------------------------------------------
+    @api.depends(
+        'part_line_id.team_id',
+        'maintenance_request_id.work_ids.team_id',
+        'maintenance_request_id.work_ids.technician_ids',
+    )
+    def _compute_technician_ids(self):
+        """ Technicians of the request works that belong to the section of the spare part line. """
+        for rec in self:
+            team = rec.part_line_id.team_id
+            if rec.state in ('in_workshop', 'done') or not team:
+                rec.technician_ids = rec.technician_ids
+                continue
+            works = rec.maintenance_request_id.work_ids.filtered(lambda w: w.team_id == team)
+            rec.technician_ids = works.technician_ids
+
     @api.depends('maintenance_request_id.fleet_id')
     def _compute_fleet_id(self):
         for rec in self:

@@ -35,6 +35,7 @@
                             <field name="license_plate"/>
                             <field name="driver_id"/>
                             <field name="odometer"/>
+                            <field name="odometer_log_id" invisible="not odometer_log_id"/>
                         </group>
                         <group name="card_right">
                             <field name="request_date"/>

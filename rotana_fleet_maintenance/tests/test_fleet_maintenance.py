@@ -167,22 +167,50 @@ class TestFleetMaintenance(TransactionCase):
         self.assertEqual(request.parts_state, 'draft')
         self.assertFalse(request.workshop_ids)
 
-    def test_workshop_technician_follows_part_section(self):
+    def test_workshop_technicians_filled_from_request_works(self):
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
         self.company.maintenance_scrap_picking_type_id = warehouse.in_type_id
         self.company.maintenance_rehab_picking_type_id = warehouse.in_type_id
-        team = self.env['rotana.maintenance.team'].create({'name': 'Tires'})
-        technician = self.env['hr.employee'].create({
-            'name': 'Tire Tech', 'rotana_team_ids': [(6, 0, team.ids)]})
+        tires = self.env['rotana.maintenance.team'].create({'name': 'Tires'})
+        electric = self.env['rotana.maintenance.team'].create({'name': 'Electric'})
+        tech_a = self.env['hr.employee'].create({'name': 'Tire Tech A'})
+        tech_b = self.env['hr.employee'].create({'name': 'Tire Tech B'})
+        tech_c = self.env['hr.employee'].create({'name': 'Electrician'})
         product = self.env['product.product'].create({
             'name': 'Rehab tyre', 'type': 'consu', 'is_storable': True, 'standard_price': 4.0})
         self.env['stock.quant']._update_available_quantity(product, warehouse.lot_stock_id, 5.0)
         request = self._new_request(self._new_vehicle('T-040'))
+        Work = self.env['rotana.maintenance.work']
+        Work.create({'request_id': request.id, 'team_id': tires.id, 'name': 'Change tyres',
+                     'technician_ids': [(6, 0, (tech_a | tech_b).ids)]})
+        Work.create({'request_id': request.id, 'team_id': electric.id, 'name': 'Wiring',
+                     'technician_ids': [(6, 0, tech_c.ids)]})
         self.env['rotana.maintenance.part'].create({
             'request_id': request.id, 'product_id': product.id, 'quantity': 1.0,
-            'spare_state': 'rehab', 'team_id': team.id})
+            'spare_state': 'rehab', 'team_id': tires.id})
         request.action_confirm_parts()
         workshop = request.workshop_ids
-        self.assertEqual(workshop.team_id, team, 'The workshop request shows the section of the spare part line.')
-        workshop.technician_id = technician
-        self.assertEqual(workshop.technician_id, technician)
+        self.assertEqual(workshop.team_id, tires)
+        self.assertEqual(workshop.technician_ids, tech_a | tech_b,
+                         'Only the technicians of the works of the same section are filled.')
+        # a technician added to the works is propagated while the request is not sent yet
+        Work.search([('request_id', '=', request.id), ('team_id', '=', tires.id)]).technician_ids = tech_a
+        self.assertEqual(workshop.technician_ids, tech_a)
+
+    def test_completion_updates_vehicle_odometer(self):
+        vehicle = self._new_vehicle('T-050')
+        entry = fields.Datetime.now() - timedelta(days=2)
+        request = self._new_request(vehicle, odometer=189116.0, entry_datetime=entry)
+        done_stage = self.env['rotana.maintenance.stage'].search([('done', '=', True)], limit=1)
+        request.action_confirm_parts()
+        request.stage_id = done_stage
+        self.assertTrue(request.odometer_log_id)
+        self.assertEqual(vehicle.odometer, 189116.0)
+        self.assertEqual(request.odometer_log_id.date, fields.Datetime.context_timestamp(request, entry).date())
+        # the log is reused, not duplicated, when the reading changes
+        log = request.odometer_log_id
+        request.write({'stage_id': request.stage_id.id})
+        request.odometer = 189200.0
+        request._update_vehicle_odometer()
+        self.assertEqual(request.odometer_log_id, log)
+        self.assertEqual(log.value, 189200.0)
