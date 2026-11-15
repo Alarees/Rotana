@@ -2,29 +2,106 @@
 from collections import defaultdict
 
 from odoo import Command, _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 
 
-class MaintenanceRequest(models.Model):
-    _name = 'maintenance.request'
-    _inherit = ['maintenance.request', 'product.catalog.mixin']
+class RotanaMaintenanceRequest(models.Model):
+    _name = 'rotana.maintenance.request'
+    _description = 'طلب صيانة روتانا'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'product.catalog.mixin']
+    _order = 'id desc'
 
-    maintenance_for = fields.Selection(
-        selection_add=[
-            ('fleet', 'Fleet'),
-        ],
-        ondelete={
-            'fleet': 'set default',
-        },
-    )
-    fleet_id = fields.Many2one('fleet.vehicle', string='Fleet')
+    # ------------------------------------------------------------------
+    # بيانات الاستمارة (إستمارة جوب)
+    # ------------------------------------------------------------------
+    name = fields.Char(string='الموضوع', required=True, tracking=True)
+    job_card_no = fields.Char(string='رقم الاستمارة', copy=False, tracking=True, index='btree_not_null')
+    report_no = fields.Char(string='رقم البلاغ', copy=False, tracking=True)
+    active = fields.Boolean(default=True)
+    company_id = fields.Many2one(
+        'res.company', string='الشركة', required=True, default=lambda self: self.env.company)
+    fleet_id = fields.Many2one(
+        'fleet.vehicle', string='الوحدة (المركبة)', required=True, tracking=True, index=True)
+    unit_number = fields.Char(related='fleet_id.unit_number', string='رقم الوحدة')
+    license_plate = fields.Char(related='fleet_id.license_plate', string='رقم اللوحة')
+    driver_id = fields.Many2one(
+        'res.partner', string='السائق',
+        compute='_compute_driver_id', store=True, readonly=False, tracking=True)
+    odometer = fields.Float(string='العداد', tracking=True)
+    request_date = fields.Date(
+        string='التاريخ', default=fields.Date.context_today, required=True, tracking=True)
+    entry_datetime = fields.Datetime(
+        string='زمن الدخول', default=fields.Datetime.now, tracking=True)
+    exit_datetime = fields.Datetime(string='زمن الخروج', tracking=True, copy=False)
+    downtime_hours = fields.Float(
+        string='مدة التوقف', compute='_compute_downtime_hours', store=True,
+        help='الفرق بين زمن الدخول وزمن الخروج بالساعات.')
+    stage_id = fields.Many2one(
+        'rotana.maintenance.stage', string='المرحلة', tracking=True, copy=False, index=True,
+        default=lambda self: self._default_stage_id(),
+        group_expand='_read_group_stage_ids', ondelete='restrict')
+    team_id = fields.Many2one(
+        'rotana.maintenance.team', string='القسم', tracking=True, index='btree_not_null')
+    technician_id = fields.Many2one('hr.employee', string='الفني', tracking=True)
+    inspector_id = fields.Many2one('res.users', string='مهندس التفتيش', tracking=True)
+    color = fields.Integer(related='team_id.color', string='لون الفريق')
+    description = fields.Html(string='ملاحظات')
+    work_ids = fields.One2many(
+        'rotana.maintenance.work', 'request_id', string='الأعمال', copy=True)
+
+    @api.model
+    def _default_stage_id(self):
+        return self.env['rotana.maintenance.stage'].search([], order='sequence, id', limit=1)
+
+    @api.model
+    def _read_group_stage_ids(self, stages, domain):
+        return stages.search([], order=stages._order)
+
+    @api.depends('fleet_id')
+    def _compute_driver_id(self):
+        for request in self:
+            if request.fleet_id.driver_id:
+                request.driver_id = request.fleet_id.driver_id
+            elif not request.driver_id:
+                request.driver_id = False
+
+    @api.depends('entry_datetime', 'exit_datetime')
+    def _compute_downtime_hours(self):
+        for request in self:
+            if request.entry_datetime and request.exit_datetime:
+                delta = request.exit_datetime - request.entry_datetime
+                request.downtime_hours = max(delta.total_seconds(), 0.0) / 3600.0
+            else:
+                request.downtime_hours = 0.0
+
+    @api.constrains('entry_datetime', 'exit_datetime')
+    def _check_entry_exit(self):
+        for request in self:
+            if request.entry_datetime and request.exit_datetime \
+                    and request.exit_datetime < request.entry_datetime:
+                raise ValidationError(_('زمن الخروج لا يمكن أن يكون قبل زمن الدخول.'))
+
+    @api.constrains('job_card_no', 'company_id')
+    def _check_job_card_no_unique(self):
+        for request in self.filtered('job_card_no'):
+            if self.with_context(active_test=False).search_count([
+                ('job_card_no', '=', request.job_card_no),
+                ('company_id', '=', request.company_id.id),
+                ('id', '!=', request.id),
+            ]):
+                raise ValidationError(_('رقم الاستمارة %s مستخدم في طلب آخر.', request.job_card_no))
+
+    @api.onchange('team_id')
+    def _onchange_team_id(self):
+        if self.technician_id and self.team_id and self.technician_id not in self.team_id.technician_ids:
+            self.technician_id = False
 
     # ------------------------------------------------------------------
     # قطع الغيار
     # ------------------------------------------------------------------
     part_line_ids = fields.One2many(
-        'maintenance.request.part', 'request_id', string='قطع الغيار', copy=True)
+        'rotana.maintenance.part', 'request_id', string='قطع الغيار', copy=True)
     parts_state = fields.Selection(
         [
             ('draft', 'مسودة'),
@@ -39,7 +116,10 @@ class MaintenanceRequest(models.Model):
     currency_id = fields.Many2one(related='company_id.currency_id')
     parts_total = fields.Monetary(compute='_compute_parts_total', string='إجمالي قطع الغيار')
     picking_ids = fields.One2many(
-        'stock.picking', 'maintenance_request_id', string='أذون التسليم', copy=False)
+        'stock.picking', 'rotana_request_id', string='أذون التسليم', copy=False)
+    workshop_ids = fields.One2many(
+        'rotana.external.workshop', 'maintenance_request_id',
+        string='طلبات الورشة الخارجية', copy=False)
     parts_move_id = fields.Many2one(
         'account.move', string='قيد قطع الغيار', copy=False, readonly=True)
 
@@ -47,7 +127,7 @@ class MaintenanceRequest(models.Model):
     # المنصرفات أثناء الصيانة
     # ------------------------------------------------------------------
     expense_ids = fields.One2many(
-        'maintenance.request.expense', 'request_id', string='المنصرفات', copy=False)
+        'rotana.maintenance.expense', 'request_id', string='المنصرفات', copy=False)
     expenses_total = fields.Monetary(compute='_compute_expenses_total', string='إجمالي المنصرفات')
     expense_move_ids = fields.Many2many(
         'account.move', compute='_compute_expense_move_ids', compute_sudo=True, string='فواتير المنصرفات')
@@ -143,10 +223,10 @@ class MaintenanceRequest(models.Model):
 
     def _is_readonly(self):
         self.ensure_one()
-        return self.parts_state != 'draft' or self.archive
+        return self.parts_state != 'draft' or (not self.active)
 
     def _get_product_catalog_record_lines(self, product_ids, **kwargs):
-        grouped_lines = defaultdict(lambda: self.env['maintenance.request.part'])
+        grouped_lines = defaultdict(lambda: self.env['rotana.maintenance.part'])
         for line in self.part_line_ids:
             if line.product_id.id in product_ids:
                 grouped_lines[line.product_id] |= line
@@ -168,7 +248,7 @@ class MaintenanceRequest(models.Model):
             else:
                 line.unlink()
         elif quantity > 0:
-            self.env['maintenance.request.part'].create({
+            self.env['rotana.maintenance.part'].create({
                 'request_id': self.id,
                 'product_id': product_id,
                 'quantity': quantity,
@@ -182,14 +262,15 @@ class MaintenanceRequest(models.Model):
         for request in self:
             if request.parts_state != 'draft':
                 continue
-            if request.maintenance_for != 'fleet' or not request.fleet_id:
-                raise UserError(_('تأكيد قطع الغيار متاح لطلبات صيانة المركبات فقط، اختر المركبة أولاً.'))
+            if not request.fleet_id:
+                raise UserError(_('اختر المركبة أولاً قبل تأكيد قطع الغيار.'))
             if not request.part_line_ids:
                 raise UserError(_('أضف قطع غيار واحدة على الأقل قبل التأكيد.'))
             request._check_analytic_account()
             receipt_groups = request._get_receipt_groups()
             request._create_parts_picking()
             request._create_parts_receipts(receipt_groups)
+            request._create_workshop_requests()
             request.parts_state = 'confirmed'
         return True
 
@@ -200,6 +281,13 @@ class MaintenanceRequest(models.Model):
                 continue
             if request.picking_ids.filtered(lambda p: p.state == 'done'):
                 raise UserError(_('لا يمكن إلغاء التأكيد لأن إذن التسليم تم تنفيذه بالفعل.'))
+            workshops = request.workshop_ids.filtered('part_line_id')
+            sent = workshops.filtered(lambda w: w.state not in ('draft', 'confirmed'))
+            if sent:
+                raise UserError(_(
+                    'لا يمكن إلغاء التأكيد لأن طلبات الورشة التالية دخلت الورشة:\n%s',
+                    '\n'.join('- %s' % w.name for w in sent)))
+            workshops.sudo().unlink()
             request.picking_ids.filtered(
                 lambda p: p.state != 'cancel' and p.company_id == request.company_id
             ).with_company(request.company_id).sudo().action_cancel()
@@ -227,13 +315,13 @@ class MaintenanceRequest(models.Model):
             # 'location_dest_id': dest_location.id,
             'origin': self.name,
             'company_id': self.company_id.id,
-            'maintenance_request_id': self.id,
+            'rotana_request_id': self.id,
             'fleet_id': self.fleet_id.id,
             'move_ids': [Command.create({
                 'product_id': line.product_id.id,
                 'product_uom_qty': line.quantity,
                 'product_uom': line.product_id.uom_id.id,
-                'maintenance_part_id': line.id,
+                'rotana_part_id': line.id,
                 'location_id': src_location.id,
                 'company_id': self.company_id.id,
             }) for line in self.part_line_ids],
@@ -242,16 +330,35 @@ class MaintenanceRequest(models.Model):
         picking.action_assign()
         return picking
 
+    def _create_workshop_requests(self):
+        """ طلب صيانة اسبير (مسودة) لكل سطر اسبير حالته تأهيل. """
+        self.ensure_one()
+        Workshop = self.env['rotana.external.workshop'].sudo()
+        for line in self.part_line_ids.filtered(lambda l: l.spare_state == 'rehab'):
+            if Workshop.search_count([('part_line_id', '=', line.id)]):
+                continue
+            Workshop.create({
+                'maintenance_request_id': self.id,
+                'fleet_id': self.fleet_id.id,
+                'part_line_id': line.id,
+                'product_id': line.product_id.id,
+                'quantity': line.quantity,
+                'company_id': self.company_id.id,
+                'picking_type_id': (line.picking_type_id
+                                    or self.company_id.maintenance_rehab_picking_type_id).id,
+            })
+
     def _get_receipt_lines(self):
         """ السطور التي يصدر لها إذن استلام عند التأكيد (للتوسعة في المديولات الأخرى). """
         self.ensure_one()
-        return self.part_line_ids
+        # سطور (تأهيل) لا يصدر لها إذن استلام: يُنشأ لها طلب ورشة خارجية بدلاً منه
+        return self.part_line_ids.filtered(lambda l: l.spare_state != 'rehab')
 
     def _get_receipt_groups(self):
         """ يجمّع سطور قطع الغيار بحسب نوع عملية الاستلام (تالف / تأهيل). """
         self.ensure_one()
         company = self.company_id
-        groups = defaultdict(lambda: self.env['maintenance.request.part'])
+        groups = defaultdict(lambda: self.env['rotana.maintenance.part'])
         for line in self._get_receipt_lines():
             picking_type = line.picking_type_id or (
                 company.maintenance_rehab_picking_type_id if line.spare_state == 'rehab'
@@ -285,7 +392,7 @@ class MaintenanceRequest(models.Model):
                 'picking_type_id': picking_type.id,
                 'origin': self.name,
                 'company_id': self.company_id.id,
-                'maintenance_request_id': self.id,
+                'rotana_request_id': self.id,
                 'fleet_id': self.fleet_id.id,
                 'move_ids': move_vals,
             })
@@ -299,15 +406,18 @@ class MaintenanceRequest(models.Model):
     # ------------------------------------------------------------------
     def write(self, vals):
         completing = self.browse()
-        if vals.get('stage_id') and self.env['maintenance.stage'].browse(vals['stage_id']).done:
+        if vals.get('stage_id') and self.env['rotana.maintenance.stage'].browse(vals['stage_id']).done:
             completing = self.filtered(lambda r: not r.stage_id.done)
             completing._check_parts_before_done()
         res = super().write(vals)
         if completing:
+            completing.filtered(lambda r: not r.exit_datetime).write(
+                {'exit_datetime': fields.Datetime.now()})
             completing._create_parts_journal_entry()
         return res
 
     def _check_parts_before_done(self):
+        """ لا يكتمل الطلب قبل تأكيد قطع الغيار وتنفيذ أذون التسليم. """
         for request in self.filtered('part_line_ids'):
             if request.parts_state == 'draft':
                 raise UserError(_('أكّد قطع الغيار (إصدار إذن التسليم) قبل إكمال الطلب "%s".', request.name))

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- فرق الصيانة (الأقسام) -->
+    <record id="rotana_maintenance_team_view_list" model="ir.ui.view">
+        <field name="name">rotana.maintenance.team.list</field>
+        <field name="model">rotana.maintenance.team</field>
+        <field name="arch" type="xml">
+            <list string="فرق الصيانة" editable="bottom" default_order="sequence, name">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="technician_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                <field name="color" widget="color_picker"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rotana_maintenance_team_view_form" model="ir.ui.view">
+        <field name="name">rotana.maintenance.team.form</field>
+        <field name="model">rotana.maintenance.team</field>
+        <field name="arch" type="xml">
+            <form string="فريق صيانة">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="technician_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rotana_maintenance_team_action" model="ir.actions.act_window">
+        <field name="name">الفرق والفنيون</field>
+        <field name="res_model">rotana.maintenance.team</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- مراحل الطلب -->
+    <record id="rotana_maintenance_stage_view_list" model="ir.ui.view">
+        <field name="name">rotana.maintenance.stage.list</field>
+        <field name="model">rotana.maintenance.stage</field>
+        <field name="arch" type="xml">
+            <list string="المراحل" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="done"/>
+                <field name="fold"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rotana_maintenance_stage_action" model="ir.actions.act_window">
+        <field name="name">مراحل الطلب</field>
+        <field name="res_model">rotana.maintenance.stage</field>
+        <field name="view_mode">list</field>
+    </record>
+
+</odoo>

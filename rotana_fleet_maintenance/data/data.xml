@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="stage_new" model="rotana.maintenance.stage">
+        <field name="name">جديد</field>
+        <field name="sequence">1</field>
+    </record>
+    <record id="stage_in_progress" model="rotana.maintenance.stage">
+        <field name="name">قيد التنفيذ</field>
+        <field name="sequence">2</field>
+    </record>
+    <record id="stage_done" model="rotana.maintenance.stage">
+        <field name="name">تم الإصلاح</field>
+        <field name="sequence">3</field>
+        <field name="done" eval="True"/>
+    </record>
+</odoo>

@@ -3,14 +3,14 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
 
-class MaintenanceRequestPart(models.Model):
-    _name = 'maintenance.request.part'
+class RotanaMaintenancePart(models.Model):
+    _name = 'rotana.maintenance.part'
     _description = 'قطعة غيار في طلب صيانة'
     _order = 'sequence, id'
 
     sequence = fields.Integer(default=10)
     request_id = fields.Many2one(
-        'maintenance.request', string='طلب الصيانة',
+        'rotana.maintenance.request', string='طلب الصيانة',
         required=True, ondelete='cascade', index=True,
     )
     company_id = fields.Many2one(related='request_id.company_id', store=True)
@@ -20,6 +20,9 @@ class MaintenanceRequestPart(models.Model):
         'product.product', string='قطعة الغيار', required=True,
         domain="[('type', '=', 'consu'), ('is_storable', '=', True)]",
     )
+    team_id = fields.Many2one(
+        'rotana.maintenance.team', string='القسم',
+        compute='_compute_team_id', store=True, readonly=False)
     quantity = fields.Float(string='الكمية', default=1.0, required=True)
     spare_state = fields.Selection(
         [('scrap', 'تالف'), ('rehab', 'تأهيل')],
@@ -35,6 +38,11 @@ class MaintenanceRequestPart(models.Model):
     qty_available = fields.Float(related='product_id.qty_available', string='المتوفر')
     unit_cost = fields.Float(compute='_compute_unit_cost', string='التكلفة')
     subtotal = fields.Monetary(compute='_compute_subtotal', string='الإجمالي')
+
+    @api.depends('request_id.team_id')
+    def _compute_team_id(self):
+        for line in self:
+            line.team_id = line.team_id or line.request_id.team_id
 
     @api.depends('spare_state', 'request_id.company_id')
     def _compute_picking_type_id(self):
@@ -89,7 +97,16 @@ class MaintenanceRequestPart(models.Model):
 
     def write(self, vals):
         self._check_request_editable()
-        return super().write(vals)
+        res = super().write(vals)
+        if 'product_id' in vals:
+            # تغيير الاسبير في سطر الصيانة ينتقل إلى طلبات الورشة التي لم تُرسل بعد
+            workshops = self.env['rotana.external.workshop'].sudo().search([
+                ('part_line_id', 'in', self.ids),
+                ('state', 'in', ('draft', 'confirmed')),
+            ])
+            if workshops:
+                workshops.write({'product_id': vals['product_id']})
+        return res
 
     def unlink(self):
         self._check_request_editable()

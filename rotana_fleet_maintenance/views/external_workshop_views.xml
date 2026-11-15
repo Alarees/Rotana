@@ -135,11 +135,5 @@
         <field name="search_view_id" ref="rotana_external_workshop_view_search"/>
     </record>
 
-    <menuitem id="rotana_external_workshop_menu"
-              name="الورشة الخارجية"
-              web_icon="rotana_external_workshop,static/description/icon.png"
-              action="rotana_external_workshop_action"
-              groups="rotana_external_workshop.group_external_workshop_manager"
-              sequence="30"/>
 
 </odoo>

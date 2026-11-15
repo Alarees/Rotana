@@ -18,13 +18,13 @@ class RotanaExternalWorkshop(models.Model):
 
     name = fields.Char(string='الرقم', default='/', readonly=True, copy=False)
     maintenance_request_id = fields.Many2one(
-        'maintenance.request', string='رقم الصيانة', index=True,
+        'rotana.maintenance.request', string='رقم الصيانة', index=True,
         ondelete='set null', copy=False)
     fleet_id = fields.Many2one(
         'fleet.vehicle', string='رقم المركبة', index=True,
         compute='_compute_fleet_id', store=True, readonly=False)
     part_line_id = fields.Many2one(
-        'maintenance.request.part', string='سطر الاسبير في الصيانة',
+        'rotana.maintenance.part', string='سطر الاسبير في الصيانة',
         copy=False, index='btree_not_null', ondelete='set null')
     product_id = fields.Many2one(
         'product.product', string='الاسبير', required=True, tracking=True,
@@ -134,7 +134,7 @@ class RotanaExternalWorkshop(models.Model):
     def _check_workshop_manager(self):
         if self.env.su:
             return
-        if not self.env.user.has_group('rotana_external_workshop.group_external_workshop_manager'):
+        if not self.env.user.has_group('rotana_fleet_maintenance.group_external_workshop_manager'):
             raise UserError(_('هذا الإجراء متاح لمدير الورشة الخارجية فقط.'))
 
     def action_confirm(self):
