@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- TEST ONLY: "Delivery Info & Transport" tab on the stock picking form -->
+    <record id="view_picking_form_delivery_info_test" model="ir.ui.view">
+        <field name="name">stock.picking.form.delivery.info.test</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='note']" position="after">
+                <page string="Delivery Info &amp; Transport" name="rotana_delivery_info">
+                    <group>
+                        <group string="Transport">
+                            <field name="x_transport_type"/>
+                            <field name="x_driver_name"/>
+                            <field name="x_truck_plate_number"/>
+                            <field name="x_driver_phone"/>
+                        </group>
+                        <group string="Destination">
+                            <field name="x_destination"/>
+                            <field name="x_customer_tax_id"/>
+                            <field name="agent_customer_name"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
