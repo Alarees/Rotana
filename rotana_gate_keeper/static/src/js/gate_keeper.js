@@ -23,7 +23,6 @@ export class GateKeeperDashboard extends Component {
             picking: null,
             notFound: false,
             error: "",
-            tab: "products",
             values: {},
         });
         onMounted(() => this.focusSearch());
@@ -73,13 +72,10 @@ export class GateKeeperDashboard extends Component {
         }
     }
 
-    setPicking(picking, keepTab = false) {
+    setPicking(picking) {
         this.state.picking = picking;
         this.state.notFound = false;
         this.state.error = "";
-        if (!keepTab) {
-            this.state.tab = "products";
-        }
         this.resetValues();
     }
 
@@ -107,10 +103,6 @@ export class GateKeeperDashboard extends Component {
         this.state.values[name] = ev.target.value;
     }
 
-    setTab(tab) {
-        this.state.tab = tab;
-    }
-
     async save() {
         if (!this.isDirty || this.state.saving) {
             return;
@@ -121,7 +113,7 @@ export class GateKeeperDashboard extends Component {
                 this.state.picking.id,
                 { ...this.state.values },
             ]);
-            this.setPicking(picking, true);
+            this.setPicking(picking);
             this.notification.add("تم حفظ معلومات التوصيل", { type: "success" });
             this.focusSearch();
         } catch (error) {

@@ -32,42 +32,56 @@
 
                 <t t-if="state.picking and !state.loading">
                     <t t-set="p" t-value="state.picking"/>
-                    <section class="o_rgk_status" t-att-class="p.is_done ? 'o_rgk_done' : 'o_rgk_pending'">
-                        <div class="o_rgk_status_main">
-                            <i t-att-class="p.is_done ? 'fa fa-check-circle' : 'fa fa-clock-o'"/>
-                            <t t-if="p.is_done">مكتمل</t>
-                            <t t-else="">غير مكتمل</t>
-                        </div>
-                        <div class="o_rgk_status_sub">
-                            <span t-out="p.name"/> · <span t-out="p.type_label"/> · <span t-out="p.state_label"/>
-                        </div>
-                    </section>
-
-                    <section class="o_rgk_cards">
-                        <div class="o_rgk_card">
-                            <div class="o_rgk_label">العميل</div>
-                            <div class="o_rgk_value"><t t-out="p.partner or '-'"/></div>
-                        </div>
-                        <div class="o_rgk_card">
-                            <div class="o_rgk_label">التاريخ</div>
-                            <div class="o_rgk_value"><t t-out="formatDate(p.date)"/></div>
-                        </div>
-                        <div class="o_rgk_card o_rgk_card_total">
-                            <div class="o_rgk_label">إجمالي صافي الوزن</div>
-                            <div class="o_rgk_value">
-                                <t t-out="formatNumber(p.total_weight)"/> <small t-out="p.weight_uom"/>
+                    <section class="o_rgk_panel">
+                        <div class="o_rgk_grid">
+                            <div class="o_rgk_field o_rgk_status" t-att-class="p.is_done ? 'o_rgk_done' : 'o_rgk_pending'">
+                                <span class="o_rgk_label">الحالة</span>
+                                <div class="o_rgk_status_main">
+                                    <i t-att-class="p.is_done ? 'fa fa-check-circle' : 'fa fa-clock-o'"/>
+                                    <t t-if="p.is_done">مكتمل</t>
+                                    <t t-else="">غير مكتمل</t>
+                                </div>
+                            </div>
+                            <div class="o_rgk_field">
+                                <span class="o_rgk_label">رقم الإذن</span>
+                                <div class="o_rgk_readonly"><t t-out="p.name"/> · <t t-out="p.type_label"/></div>
+                            </div>
+                            <div class="o_rgk_field">
+                                <span class="o_rgk_label">العميل</span>
+                                <div class="o_rgk_readonly"><t t-out="p.partner or '-'"/></div>
+                            </div>
+                            <div class="o_rgk_field">
+                                <span class="o_rgk_label">التاريخ</span>
+                                <div class="o_rgk_readonly"><t t-out="formatDate(p.date)"/></div>
                             </div>
                         </div>
                     </section>
 
-                    <nav class="o_rgk_tabs">
-                        <button type="button" t-att-class="state.tab === 'products' ? 'active' : ''"
-                                t-on-click="() => this.setTab('products')">المنتجات</button>
-                        <button type="button" t-att-class="state.tab === 'delivery' ? 'active' : ''"
-                                t-on-click="() => this.setTab('delivery')">معلومات التوصيل</button>
-                    </nav>
+                    <section class="o_rgk_panel">
+                        <h3 class="o_rgk_title">معلومات التوصيل</h3>
+                        <div t-if="!p.fields.length" class="o_rgk_msg">لا توجد حقول معلومات توصيل في هذه القاعدة</div>
+                        <div class="o_rgk_grid">
+                            <div t-foreach="p.fields" t-as="f" t-key="f.name" class="o_rgk_field">
+                                <label class="o_rgk_label" t-out="f.label"/>
+                                <input t-if="f.editable" type="text" class="o_rgk_input" autocomplete="off"
+                                       t-att-dir="f.name === 'x_driver_phone' ? 'ltr' : 'auto'"
+                                       t-att-value="state.values[f.name]"
+                                       t-on-input="(ev) => this.onInput(f.name, ev)"/>
+                                <div t-else="" class="o_rgk_readonly"><t t-out="f.display or '-'"/></div>
+                            </div>
+                        </div>
+                        <div t-if="editableFields.length" class="o_rgk_actions">
+                            <button type="button" class="o_rgk_btn o_rgk_btn_primary"
+                                    t-att-disabled="!isDirty or state.saving" t-on-click="save">
+                                <i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> حفظ
+                            </button>
+                            <button type="button" class="o_rgk_btn" t-att-disabled="!isDirty or state.saving"
+                                    t-on-click="discard">تراجع</button>
+                        </div>
+                    </section>
 
-                    <section t-if="state.tab === 'products'" class="o_rgk_panel">
+                    <section class="o_rgk_panel">
+                        <h3 class="o_rgk_title">المنتجات</h3>
                         <div t-if="p.missing_weight" class="o_rgk_warn">
                             <i class="fa fa-exclamation-triangle"/> بعض المنتجات ليس لها وزن في بطاقة المنتج، لذلك لم يُحتسب وزنها.
                         </div>
@@ -100,28 +114,6 @@
                                     </tr>
                                 </tfoot>
                             </table>
-                        </div>
-                    </section>
-
-                    <section t-else="" class="o_rgk_panel">
-                        <div t-if="!p.fields.length" class="o_rgk_msg">لا توجد حقول معلومات توصيل في هذه القاعدة</div>
-                        <div class="o_rgk_grid">
-                            <div t-foreach="p.fields" t-as="f" t-key="f.name" class="o_rgk_field">
-                                <label class="o_rgk_label" t-out="f.label"/>
-                                <input t-if="f.editable" type="text" class="o_rgk_input" autocomplete="off"
-                                       t-att-dir="f.name === 'x_driver_phone' ? 'ltr' : 'auto'"
-                                       t-att-value="state.values[f.name]"
-                                       t-on-input="(ev) => this.onInput(f.name, ev)"/>
-                                <div t-else="" class="o_rgk_readonly"><t t-out="f.display or '-'"/></div>
-                            </div>
-                        </div>
-                        <div t-if="editableFields.length" class="o_rgk_actions">
-                            <button type="button" class="o_rgk_btn o_rgk_btn_primary"
-                                    t-att-disabled="!isDirty or state.saving" t-on-click="save">
-                                <i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> حفظ
-                            </button>
-                            <button type="button" class="o_rgk_btn" t-att-disabled="!isDirty or state.saving"
-                                    t-on-click="discard">تراجع</button>
                         </div>
                     </section>
                 </t>
