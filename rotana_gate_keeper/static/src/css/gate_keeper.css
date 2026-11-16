@@ -96,6 +96,7 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px 14px;
 }
+.o_rgk_span2 { grid-column: span 2; }
 .o_rgk_field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .o_rgk_input, .o_rgk_readonly {
     display: flex;
@@ -182,5 +183,6 @@
 /* Small tablets / phones */
 @media (max-width: 520px) {
     .o_rgk_grid { grid-template-columns: minmax(0, 1fr); }
+    .o_rgk_span2 { grid-column: auto; }
     .o_rgk_actions .o_rgk_btn { flex: 1 1 0; padding-inline: 12px; }
 }

@@ -2,7 +2,7 @@
 from markupsafe import Markup
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 
 GROUP_XMLID = 'rotana_gate_keeper.group_rotana_gate_keeper'
 
@@ -53,13 +53,42 @@ class RotanaGateKeeper(models.AbstractModel):
         code = (barcode or '').strip()
         if not code:
             return False
+        picking = self._find_picking(code)
+        return self._picking_payload(picking) if picking else False
+
+    def _find_picking(self, code):
+        """Find the slip among the companies currently selected in the company switcher.
+
+        Slip numbers are unique per company only, so the same number can exist in several companies.
+        """
         Picking = self.env['stock.picking'].sudo()
         domain = self._picking_domain()
-        picking = Picking.search(domain + [('name', '=', code)], limit=1)
-        if not picking:
-            escaped = code.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-            picking = Picking.search(domain + [('name', '=ilike', escaped)], limit=1)
-        return self._picking_payload(picking) if picking else False
+        escaped = code.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pickings = Picking.search(domain + [('name', '=', code)])
+        if not pickings:
+            pickings = Picking.search(domain + [('name', '=ilike', escaped)])
+        if len(pickings) > 1:
+            # Same number in several selected companies: prefer the current company.
+            pickings = pickings.filtered(lambda p: p.company_id == self.env.company) or pickings
+            if len(pickings) > 1:
+                raise UserError(_(
+                    'رقم الإذن موجود في أكثر من شركة. اختر الشركة المطلوبة فقط من مبدل الشركات ثم أعد المسح.'))
+        if pickings:
+            return pickings
+        # Not in the selected companies: tell the user when it belongs to another company they can access
+        # (never reveal slips of companies the user has no access to).
+        other_companies = self.env.user.company_ids - self.env.companies
+        if other_companies:
+            other = Picking.search([
+                ('picking_type_code', 'in', ('incoming', 'outgoing')),
+                ('company_id', 'in', other_companies.ids),
+                ('name', '=', code),
+            ], limit=1)
+            if other:
+                raise UserError(_(
+                    'هذا الإذن يتبع شركة "%s". فعّل هذه الشركة من مبدل الشركات ثم أعد المسح.',
+                    other.company_id.name))
+        return Picking.browse()
 
     @api.model
     def save_delivery_info(self, picking_id, values):
@@ -125,6 +154,7 @@ class RotanaGateKeeper(models.AbstractModel):
             'is_done': is_done,
             'type': picking.picking_type_code,
             'type_label': 'استلام' if picking.picking_type_code == 'incoming' else 'تسليم',
+            'company': picking.company_id.display_name or False,
             'partner': picking.partner_id.display_name or False,
             'date': fields.Datetime.to_string(date) if date else False,
             'moves': moves,

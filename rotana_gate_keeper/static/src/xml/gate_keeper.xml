@@ -44,13 +44,21 @@
                             </div>
                             <div class="o_rgk_field">
                                 <span class="o_rgk_label">رقم الإذن</span>
-                                <div class="o_rgk_readonly"><t t-out="p.name"/> · <t t-out="p.type_label"/></div>
+                                <div class="o_rgk_readonly"><t t-out="p.name"/></div>
                             </div>
                             <div class="o_rgk_field">
+                                <span class="o_rgk_label">نوع الإذن</span>
+                                <div class="o_rgk_readonly"><t t-out="p.type_label"/></div>
+                            </div>
+                            <div class="o_rgk_field">
+                                <span class="o_rgk_label">الشركة</span>
+                                <div class="o_rgk_readonly"><t t-out="p.company or '-'"/></div>
+                            </div>
+                            <div class="o_rgk_field o_rgk_span2">
                                 <span class="o_rgk_label">العميل</span>
                                 <div class="o_rgk_readonly"><t t-out="p.partner or '-'"/></div>
                             </div>
-                            <div class="o_rgk_field">
+                            <div class="o_rgk_field o_rgk_span2">
                                 <span class="o_rgk_label">التاريخ</span>
                                 <div class="o_rgk_readonly"><t t-out="formatDate(p.date)"/></div>
                             </div>

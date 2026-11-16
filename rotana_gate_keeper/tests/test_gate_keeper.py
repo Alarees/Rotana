@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -57,3 +57,28 @@ class TestGateKeeper(TransactionCase):
         self.env['rotana.gate.keeper'].with_user(self.gate_user).save_delivery_info(
             self.picking.id, {'origin': 'CHANGED', 'partner_id': 1})
         self.assertEqual(self.picking.origin, 'ORIGINAL')
+
+    def _other_company_picking(self):
+        company = self.env['res.company'].create({'name': 'Gate test company B'})
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'outgoing'), ('company_id', '=', company.id)], limit=1)
+        return company, self.env['stock.picking'].with_company(company).create({
+            'picking_type_id': picking_type.id,
+            'location_id': picking_type.default_location_src_id.id,
+            'location_dest_id': picking_type.default_location_dest_id.id,
+        })
+
+    def test_other_company_without_access_is_not_found(self):
+        _company, other = self._other_company_picking()
+        res = self.env['rotana.gate.keeper'].with_user(self.gate_user).search_picking(other.name)
+        self.assertFalse(res)
+
+    def test_other_company_with_access_but_not_selected(self):
+        company, other = self._other_company_picking()
+        self.gate_user.write({'company_ids': [Command.link(company.id)]})
+        gate = self.env['rotana.gate.keeper'].with_user(self.gate_user).with_context(
+            allowed_company_ids=[self.env.company.id])
+        with self.assertRaises(UserError):
+            gate.search_picking(other.name)
+        with self.assertRaises(AccessError):
+            gate.save_delivery_info(other.id, {})
